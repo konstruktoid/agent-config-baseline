@@ -1,0 +1,10 @@
+# The single reviewed exceptions file for this repository. Empty: this
+# repository is expected to pass its own baseline without exceptions.
+#
+# Entry format:
+# - control: ACB-GEN-002
+#   path: "mcp/legacy-server.json"
+#   justification: "..."
+#   approver: "..."
+#   expires: "2026-12-31"
+[]

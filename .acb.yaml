@@ -1,0 +1,15 @@
+# Operator configuration for this repository's self-check (PROMPT.md ground
+# rule 6). acb reads this file from the working directory, never from inside
+# the PATH it scans.
+exclude:
+  - path: "controls/**"
+    reason: "Control definitions quote failing indicator examples by design."
+  - path: "tests/fixtures/**"
+    reason: "Pass and fail fixtures; the fail fixtures violate controls by design."
+
+# Ground rule 6: the prompt, the README and the files added here are subject
+# to the controls. None of them is named AGENTS.md, so they are declared.
+instruction_files:
+  - PROMPT.md
+  - README.md
+  - CONTRIBUTING.md

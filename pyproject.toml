@@ -1,0 +1,34 @@
+[project]
+name = "agent-config-baseline"
+version = "0.1.0"
+description = "Vendor-neutral security baseline checker for AI agent configuration files"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "PyYAML==6.0.2",
+    "jsonschema==4.23.0",
+]
+
+[project.scripts]
+acb = "acb.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/acb"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"controls" = "acb/_data/controls"
+"schema" = "acb/_data/schema"
+"clients" = "acb/_data/clients"
+
+[dependency-groups]
+dev = [
+    "pytest==8.3.5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

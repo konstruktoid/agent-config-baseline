@@ -1,0 +1,127 @@
+"""`acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE]`
+
+PATH is untrusted content. Configuration comes from the operator: the
+exceptions file and operator config default to files in the current working
+directory, client data defaults to acb's bundled set. Nothing inside PATH
+can change how PATH is judged.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+from acb import __version__
+from acb.clients import ClientDataError, load_clients
+from acb.config import CONFIG_FILENAME, ConfigError, load_config
+from acb.discovery import discover
+from acb.exceptions import EXCEPTIONS_FILENAME, ExceptionsFileError, apply_exceptions, load_exceptions
+from acb.loader import (
+    ControlLoadError,
+    active_controls,
+    default_clients_dir,
+    default_controls_dir,
+    default_schema_path,
+    load_controls,
+)
+from acb.report import FORMATTERS, RunInfo
+from acb.runner import all_pass, run
+
+
+class UsageError(Exception):
+    pass
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="acb")
+    parser.add_argument("--version", action="version", version=f"acb {__version__}")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    check = subparsers.add_parser("check", help="evaluate PATH against the strict-general baseline")
+    check.add_argument("path", type=Path)
+    check.add_argument("--format", choices=sorted(FORMATTERS), default="text")
+    check.add_argument(
+        "--exceptions",
+        type=Path,
+        default=None,
+        help=f"reviewed exceptions file (default: ./{EXCEPTIONS_FILENAME} in the working directory, if present)",
+    )
+    check.add_argument("--clients", type=Path, default=None, help="client data directory (default: acb's bundled clients/)")
+    check.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help=f"operator configuration (default: ./{CONFIG_FILENAME} in the working directory, if present)",
+    )
+    return parser
+
+
+def _operator_file(explicit: Path | None, default_name: str) -> Path | None:
+    if explicit is not None:
+        if not explicit.is_file():
+            raise UsageError(f"{explicit}: no such file")
+        return explicit
+    default = Path(default_name)
+    return default if default.is_file() else None
+
+
+def _uri_prefix(root: Path) -> str:
+    relative = os.path.relpath(root, Path.cwd())
+    if relative == "." or relative.startswith(".."):
+        return ""
+    return Path(relative).as_posix()
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+
+    root = args.path.resolve()
+    if not root.is_dir():
+        print(f"error: {args.path} is not a directory", file=sys.stderr)
+        return 2
+
+    try:
+        all_controls = load_controls(default_controls_dir(), default_schema_path())
+        controls = active_controls(all_controls)
+
+        if args.clients is not None and not args.clients.is_dir():
+            raise UsageError(f"{args.clients}: not a directory")
+        clients = load_clients(args.clients if args.clients is not None else default_clients_dir())
+
+        config = load_config(_operator_file(args.config, CONFIG_FILENAME))
+        exceptions_path = _operator_file(args.exceptions, EXCEPTIONS_FILENAME)
+        entries = load_exceptions(exceptions_path, {c.id for c in all_controls})
+    except (UsageError, ControlLoadError, ClientDataError, ConfigError, ExceptionsFileError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    inventory = discover(root, clients, config)
+    findings = run(controls, inventory, clients, root)
+    exceptions_display = str(exceptions_path) if exceptions_path is not None else None
+    applied = apply_exceptions(findings, entries, {c.id: c for c in controls}, exceptions_display)
+
+    inside = tuple(
+        str(path)
+        for path in (config.source, exceptions_path)
+        if path is not None and Path(os.path.realpath(path)).is_relative_to(root)
+    )
+    info = RunInfo(
+        version=__version__,
+        target=str(args.path),
+        config=config,
+        exceptions_file=exceptions_display,
+        exception_count=len(entries),
+        stale_exceptions=applied.stale,
+        clients=clients,
+        inventory=inventory,
+        uri_prefix=_uri_prefix(root),
+        operator_files_inside_path=inside,
+    )
+    print(FORMATTERS[args.format](controls, applied.findings, info))
+    return 0 if all_pass(controls, applied.findings, inventory) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
