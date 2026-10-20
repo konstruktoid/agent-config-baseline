@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-SKILL-001: SKILL.md frontmatter conforms to the Agent Skills specification</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-SKILL-001: SKILL.md frontmatter conforms to the Agent Skills specification</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>skill</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>not-permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>Every skill directory contains a SKILL.md whose YAML frontmatter is parseable and satisfies the field constraints of the Agent Skills specification. Unknown top-level keys are not permitted; client-specific data belongs under `metadata`.</p>
+<h2>Rationale</h2><p>The name and description are the only content an agent reads before deciding to load a skill, so they are the skill&#x27;s attack surface at discovery time. Malformed or non-conforming frontmatter is parsed differently by different clients, which makes behaviour unpredictable and lets metadata smuggle content that one client renders and another ignores. Strict conformance makes the same skill mean the same thing everywhere.</p>
+<h2>Audit procedures</h2>
+<h3><code>frontmatter-parses</code> (structure)</h3><p>SKILL.md begins with a YAML frontmatter block delimited by `---` lines that parses as a mapping using a safe YAML loader (no tags, no anchors resolving to non-scalar types, no duplicate keys).</p>
+<h3><code>required-fields</code> (structure)</h3><p>`name` is 1-64 characters, matches ^[a-z0-9]+(-[a-z0-9]+)*$ (no leading, trailing or consecutive hyphens), and equals the parent directory name. `description` is a non-empty string of at most 1024 characters.</p>
+<h3><code>optional-fields</code> (structure)</h3><p>If present: `license` is a string; `compatibility` is 1-500 characters; `metadata` is a mapping of string keys to string values; `allowed-tools` is a string. No other top-level keys exist.</p>
+<h2>Remediation</h2><p>Correct the frontmatter to match the specification. Rename the skill directory or the `name` field so they match. Move any non-standard top-level keys under `metadata` as string values.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04</li><li>Specification: https://agentskills.io/specification</li></ul>
+</main>
+</body>
+</html>
