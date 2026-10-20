@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from acb.clients import ClientData
 from tests._harness import context_for
 
 FIXTURES_ROOT = Path(__file__).resolve().parent.parent / "fixtures"
@@ -14,7 +15,9 @@ def audit_ids_for(control_id: str) -> list[str]:
     return sorted(p.name for p in directory.iterdir() if p.is_dir())
 
 
-def check_pass_and_fail(control_id: str, audits: dict, skip: frozenset[str] = frozenset()) -> None:
+def check_pass_and_fail(
+    control_id: str, audits: dict, skip: frozenset[str] = frozenset(), clients: ClientData = ClientData()
+) -> None:
     """Run every <CONTROL-ID>/<audit-id>/{pass,fail} fixture through `audits[audit_id]`.
 
     `skip` names audit ids that need non-default ClientData to exercise
@@ -38,9 +41,9 @@ def check_pass_and_fail(control_id: str, audits: dict, skip: frozenset[str] = fr
         fail_dir = FIXTURES_ROOT / control_id / audit_id / "fail"
 
         if pass_dir.is_dir():
-            findings = check(context_for(pass_dir))
+            findings = check(context_for(pass_dir, clients))
             assert findings == [], f"{control_id}/{audit_id} pass fixture produced findings: {findings}"
 
         if fail_dir.is_dir():
-            findings = check(context_for(fail_dir))
+            findings = check(context_for(fail_dir, clients))
             assert findings, f"{control_id}/{audit_id} fail fixture produced no findings"

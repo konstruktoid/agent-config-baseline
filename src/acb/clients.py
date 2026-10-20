@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -32,6 +33,11 @@ class ClientData:
     mcp_key_paths: tuple[str, ...] = ()
     permission_bypass_flags: tuple[str, ...] = ()
     config_write_paths: tuple[str, ...] = ()
+    # Per-client structured data (agent settings, extension packages); keyed by client name.
+    profiles: tuple[tuple[str, dict[str, Any]], ...] = ()
+
+    def profile(self, client: str) -> dict[str, Any]:
+        return dict(self.profiles).get(client, {})
 
 
 _LIST_FIELDS = (
@@ -51,6 +57,7 @@ def load_clients(clients_dir: Path | None) -> ClientData:
 
     names: list[str] = []
     merged: dict[str, list[str]] = {field: [] for field in _LIST_FIELDS}
+    profiles: list[tuple[str, dict]] = []
     for path in sorted(list(clients_dir.glob("*.yaml")) + list(clients_dir.glob("*.yml"))):
         try:
             data = safe_load_strict(path.read_text(encoding="utf-8"))
@@ -66,9 +73,11 @@ def load_clients(clients_dir: Path | None) -> ClientData:
         names.append(data["client"])
         for field in _LIST_FIELDS:
             merged[field].extend(data.get(field, []))
+        profiles.append((data["client"], data))
 
     return ClientData(
         source=clients_dir,
         clients=tuple(names),
+        profiles=tuple(profiles),
         **{field: tuple(dict.fromkeys(values)) for field, values in merged.items()},
     )

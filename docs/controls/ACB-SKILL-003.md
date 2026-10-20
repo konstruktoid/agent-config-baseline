@@ -49,4 +49,6 @@ Replace binaries and archives with source. Decode embedded payloads into reviewa
 
 - OWASP Top 10 for Agentic Applications 2026: ASI04, ASI05
 - OWASP Agentic Skills Top 10: AST02
+- Careful Adoption of Agentic AI Services risk areas: design-and-configuration, accountability
+- NIST CSF 2.0: ID.RA-09, PR.PS-05
 - Specification: https://agentskills.io/specification

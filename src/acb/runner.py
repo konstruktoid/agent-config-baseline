@@ -38,8 +38,10 @@ def _run_audit(control: Control, audit_id: str, check, ctx: CheckContext) -> lis
     return result
 
 
-def run(controls: list[Control], inventory: Inventory, clients: ClientData, root: Path) -> list[Finding]:
-    ctx = CheckContext(inventory=inventory, clients=clients, root=Path(root).resolve())
+def run(
+    controls: list[Control], inventory: Inventory, clients: ClientData, root: Path, run_validators: bool = False
+) -> list[Finding]:
+    ctx = CheckContext(inventory=inventory, clients=clients, root=Path(root).resolve(), run_validators=run_validators)
     findings: list[Finding] = []
 
     for control in controls:

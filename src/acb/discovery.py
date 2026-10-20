@@ -1,5 +1,6 @@
 """Find the artifacts a baseline run evaluates under PATH: skills, instruction
-files and MCP server declarations.
+files, MCP server declarations, and the extension packages and agent settings
+files that client data describes.
 
 Discovery errs toward finding too much rather than too little: anything it
 cannot inspect but might be an artifact is recorded as unscanned, which makes
@@ -57,6 +58,22 @@ class McpDeclaration:
 
 
 @dataclass(frozen=True)
+class ExtensionPackage:
+    root: Path
+    manifest: Path
+    manifest_data: dict
+    client: str
+
+
+@dataclass(frozen=True)
+class SettingsFile:
+    path: Path
+    scope: str
+    data: dict
+    client: str
+
+
+@dataclass(frozen=True)
 class Unscanned:
     path: str
     reason: str
@@ -68,6 +85,9 @@ class Inventory:
     skills: tuple[Skill, ...]
     instruction_files: tuple[InstructionFile, ...]
     mcp_declarations: tuple[McpDeclaration, ...]
+    extension_packages: tuple[ExtensionPackage, ...] = ()
+    agent_settings: tuple[SettingsFile, ...] = ()
+    test_files: tuple[Path, ...] = ()
     unscanned: tuple[Unscanned, ...] = ()
     excluded: dict[str, int] = field(default_factory=dict)
     notes: tuple[str, ...] = ()
@@ -78,6 +98,9 @@ class Inventory:
                 "skill": self.skills,
                 "instruction-file": self.instruction_files,
                 "mcp-server-declaration": self.mcp_declarations,
+                "extension-package": self.extension_packages,
+                "agent-settings": [s for s in self.agent_settings if s.scope == "project"],
+                "managed-settings": [s for s in self.agent_settings if s.scope == "managed"],
             }[artifact_type]
         )
 
@@ -279,6 +302,57 @@ def _classify_mcp(path: Path, rel: str, clients: ClientData) -> McpDeclaration |
     return McpDeclaration(path=path, key=key, servers=servers)
 
 
+_TEST_DIR_NAMES = {"test", "tests", "__tests__", "spec", "specs"}
+_TEST_NAME_RE = re.compile(r"^(test_.+|.+_test\.[^.]+|.+\.(test|spec)\.[^.]+|.+\.bats)$")
+
+
+def is_test_file(rel: str) -> bool:
+    """Vendor-neutral test naming: a tests/ style directory, or a test_/_test/.test./.spec./.bats file name."""
+    parts = rel.split("/")
+    return bool(_TEST_DIR_NAMES & {p.lower() for p in parts[:-1]}) or bool(_TEST_NAME_RE.match(parts[-1]))
+
+
+def _suffix_matches(rel: str, match: str) -> bool:
+    return rel == match or rel.endswith("/" + match)
+
+
+def _parse_json_object(path: Path, rel: str, what: str) -> dict | Unscanned:
+    text = safe_read_text(path)
+    if text is None:
+        return Unscanned(rel, f"{what} is a symlink or not valid UTF-8; not inspected")
+    try:
+        data = json.loads(text)
+    except (json.JSONDecodeError, RecursionError) as exc:
+        return Unscanned(rel, f"{what} could not be parsed as JSON: {exc}")
+    if not isinstance(data, dict):
+        return Unscanned(rel, f"{what} is not a JSON object")
+    return data
+
+
+def _classify_client_files(
+    path: Path, rel: str, root: Path, clients: ClientData
+) -> list[ExtensionPackage | SettingsFile | Unscanned]:
+    """Settings files and extension package manifests exist only in client data."""
+    found: list[ExtensionPackage | SettingsFile | Unscanned] = []
+    for client, profile in clients.profiles:
+        for spec in profile.get("agent_settings", {}).get("files", []):
+            if _suffix_matches(rel, spec["match"]):
+                data = _parse_json_object(path, rel, f"{client} {spec['scope']} settings file")
+                found.append(
+                    data if isinstance(data, Unscanned) else SettingsFile(path, spec["scope"], data, client)
+                )
+        for manifest in profile.get("extension_packages", {}).get("manifest_paths", []):
+            if _suffix_matches(rel, manifest):
+                package_root = path
+                for _ in manifest.split("/"):
+                    package_root = package_root.parent
+                data = _parse_json_object(path, rel, f"{client} extension manifest")
+                found.append(
+                    data if isinstance(data, Unscanned) else ExtensionPackage(package_root, path, data, client)
+                )
+    return found
+
+
 def _referenced_docs(
     instruction: InstructionFile,
     root: Path,
@@ -330,6 +404,9 @@ def discover(root: Path, clients: ClientData, config: CheckerConfig) -> Inventor
     skills: list[Skill] = []
     instruction_files: list[InstructionFile] = []
     mcp_declarations: list[McpDeclaration] = []
+    extension_packages: list[ExtensionPackage] = []
+    agent_settings: list[SettingsFile] = []
+    test_files: list[Path] = []
     unscanned: list[Unscanned] = []
     notes: list[str] = []
     excluded: Counter = Counter()
@@ -365,6 +442,17 @@ def discover(root: Path, clients: ClientData, config: CheckerConfig) -> Inventor
             elif isinstance(classified, Unscanned):
                 unscanned.append(classified)
 
+        if is_test_file(rel):
+            test_files.append(path)
+
+        for item in _classify_client_files(path, rel, root, clients):
+            if isinstance(item, ExtensionPackage):
+                extension_packages.append(item)
+            elif isinstance(item, SettingsFile):
+                agent_settings.append(item)
+            else:
+                unscanned.append(item)
+
     for pattern in config.instruction_files:
         if pattern not in matched_patterns:
             notes.append(f"instruction_files pattern {pattern!r} matched no file")
@@ -393,6 +481,9 @@ def discover(root: Path, clients: ClientData, config: CheckerConfig) -> Inventor
         skills=tuple(skills),
         instruction_files=tuple(instruction_files),
         mcp_declarations=tuple(mcp_declarations),
+        extension_packages=tuple(extension_packages),
+        agent_settings=tuple(agent_settings),
+        test_files=tuple(test_files),
         unscanned=tuple(unscanned),
         excluded=dict(excluded),
         notes=tuple(notes),

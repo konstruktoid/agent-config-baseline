@@ -17,7 +17,7 @@
 <h3><code>no-allowed-tools</code> (structure)</h3><p>The parsed frontmatter of SKILL.md does not contain a key that pre-approves tools, at the top level or nested under `metadata`. This includes the specified `allowed-tools` key and common variant spellings of it (`allowed_tools`, `allowedTools`): the intent this control blocks is self-granted tool approval, and that intent does not depend on which casing or separator a client happens to read.</p>
 <p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>allowed-tools: Bash Read Write</code></li><li><code>allowed-tools: Bash(*)</code></li><li><code>allowedTools: Bash Read Write</code></li></ul>
 <h2>Remediation</h2><p>Remove `allowed-tools`. Document the tools the skill needs in the body or in `compatibility` so the operator can decide whether to grant them in their own client configuration.</p>
-<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI02, ASI03</li><li>Specification: https://agentskills.io/specification</li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI02, ASI03</li><li>Careful Adoption of Agentic AI Services risk areas: privilege</li><li>NIST CSF 2.0: PR.AA-05</li><li>Specification: https://agentskills.io/specification</li></ul>
 </main>
 </body>
 </html>

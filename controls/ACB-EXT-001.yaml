@@ -1,0 +1,43 @@
+schema_version: "1.0"
+id: ACB-EXT-001
+title: In-process extension code is declared in package documentation
+status: draft
+profiles: [strict-general]
+applies_to: [extension-package]
+check_type: static
+severity: medium
+description: >-
+  An extension package that ships in-process modules, code the agent host
+  loads and runs inside its own process, names every such module in the
+  package README. Modules are found wherever the host can load them: the
+  package's hook configuration files and its module directory.
+rationale: >-
+  In-process extension code runs with the user's privileges, outside any
+  sandbox that isolates the agent's own commands, and can see and change
+  every prompt and tool call. The same package format also carries skills
+  and instructions, so a consumer who believes they are installing content
+  can be installing code. Declaring each module in the documentation a
+  consumer reads before installing makes that code visible at the point of
+  decision, and makes a newly added module a documentation change a
+  reviewer sees.
+audit:
+  - id: modules-documented
+    method: inventory
+    procedure: >-
+      Enumerate the package's in-process modules: every module a hook
+      configuration file lists, and every file with a module suffix in the
+      package's module directory, excluding test files. Each module's
+      package-relative path appears in the README at the package root. A
+      package with in-process modules and no README fails.
+remediation: >-
+  Add a section to the package README that names each in-process module by
+  its package-relative path and states what it does. If the package is
+  meant to ship content only, remove the modules (see ACB-EXT-002).
+exceptions: permitted
+references:
+  owasp_asi: [ASI04]
+  owasp_ast: [AST02]
+  five_eyes_risk_areas: [design-and-configuration, accountability]
+  nist_csf: [ID.AM-02, ID.RA-09]
+  other:
+    - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

@@ -1,0 +1,44 @@
+schema_version: "1.0"
+id: ACB-CFG-001
+title: The agent cannot modify its own configuration, extensions or instructions
+status: draft
+profiles: [strict-general]
+applies_to: [agent-settings, managed-settings]
+check_type: static
+severity: high
+description: >-
+  The agent's committed permission configuration denies its own file-writing
+  tools access to the agent's settings and hook definitions, its extension
+  and plugin directories, its instruction files and its tool server
+  declarations.
+rationale: >-
+  Settings, hooks, extensions and instruction files are the agent's
+  controls and part of its monitoring. An agent that can write them can
+  widen its permissions, disable or rewrite a guard, install code that runs
+  in its own host, or change the instructions every later session starts
+  from, all through ordinary file edits. Agents must not be able to access
+  or interfere with the mechanisms that oversee them; a deny rule enforced
+  by the host, rather than an instruction to the model, is what makes that
+  hold.
+audit:
+  - id: self-protection-rules
+    method: structure
+    procedure: >-
+      Collect the deny rules from every agent settings file in the
+      repository. For every protected target the client defines (project
+      and user configuration directories, instruction files, tool server
+      declarations), at least one of the client's equivalent deny rules is
+      present. Allow and ask rules, and instructions to the model, do not
+      count.
+remediation: >-
+  Add deny rules for the file-writing tools covering each protected target
+  to the committed settings, and enable the host's sandbox so that commands
+  the agent runs cannot write those paths either.
+exceptions: permitted
+references:
+  owasp_asi: [ASI03, ASI10]
+  five_eyes_risk_areas: [privilege, accountability]
+  nist_csf: [PR.AA-05, PR.PS-01]
+  other:
+    - https://www.nist.gov/system/files/documents/2026/10/16/Key_Practices_for_Incident_Readiness_and_Response_in_Super_Intelligence%20_Training_and_Evaluation.pdf
+    - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

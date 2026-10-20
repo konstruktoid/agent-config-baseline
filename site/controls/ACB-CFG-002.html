@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-CFG-002: The agent cannot install, enable or sideload extensions</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-CFG-002: The agent cannot install, enable or sideload extensions</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>agent-settings</code>, <code>managed-settings</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>Installing or enabling an extension requires a human action outside the agent&#x27;s own tool calls. The committed permission configuration denies the agent the client&#x27;s extension install and management commands, and managed policy, where present, stops extensions from loading outside the managed install path, including extension code the agent writes itself.</p>
+<h2>Rationale</h2><p>An agent that can install or load extensions can give itself new code running in its own host with the user&#x27;s privileges, and an agent that can write extension code and have it loaded can do the same without any install step. Either way the agent decides what oversees it. Extension installation is a privilege decision that belongs to a person.</p>
+<h2>Audit procedures</h2>
+<h3><code>install-commands-denied</code> (structure)</h3><p>Collect the deny rules from every agent settings file in the repository. For every extension install rule group the client defines, at least one of its rules is present.</p>
+<h3><code>managed-sideload-disabled</code> (structure)</h3><p>Every managed settings file holds the client&#x27;s sideload restriction values. Not applicable when the repository contains no managed settings file.</p>
+<h2>Remediation</h2><p>Deny the extension install and management commands in committed settings, and set the sideload restriction in managed policy so that extensions load only from the managed install path.</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>install-commands-denied</code></h3><p>Plugins, including mods, install with `claude plugin install` from a shell or `/plugin install` in a session. Bash rule patterns match the command as written, so a deny rule does not catch every spelling (for example an absolute path to the binary); the managed sideload restriction is the stronger layer.</p><ul><li><a href="https://code.claude.com/docs/en/plugins/mods/overview">https://code.claude.com/docs/en/plugins/mods/overview</a></li><li><a href="https://code.claude.com/docs/en/permissions">https://code.claude.com/docs/en/permissions</a></li></ul>
+<h3>claude-code: <code>managed-sideload-disabled</code></h3><p>disableSideloadFlags in managed settings rejects --plugin-dir and --plugin-url and keeps mods that Claude writes during a session from loading.</p><ul><li><a href="https://code.claude.com/docs/en/plugins/mods/admin">https://code.claude.com/docs/en/plugins/mods/admin</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI03, ASI04</li><li>OWASP Agentic Skills Top 10: AST02</li><li>Careful Adoption of Agentic AI Services risk areas: privilege, structural</li><li>NIST CSF 2.0: PR.PS-05, PR.AA-05</li><li>https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf</li></ul>
+</main>
+</body>
+</html>

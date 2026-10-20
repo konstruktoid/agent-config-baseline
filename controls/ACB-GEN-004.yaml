@@ -38,6 +38,8 @@ remediation: >-
 exceptions: not-permitted
 references:
   owasp_asi: [ASI01]
+  five_eyes_risk_areas: [behaviour, accountability]
+  nist_csf: [ID.RA-09]
   other:
     - https://www.unicode.org/reports/tr36/
     - https://trojansource.codes/

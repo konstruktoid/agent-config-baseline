@@ -41,3 +41,5 @@ Remove the directive or script. Document the configuration change for the operat
 
 - OWASP Top 10 for Agentic Applications 2026: ASI06, ASI10
 - OWASP Agentic Skills Top 10: AST02
+- Careful Adoption of Agentic AI Services risk areas: privilege, design-and-configuration
+- NIST CSF 2.0: PR.AA-05, PR.PS-01

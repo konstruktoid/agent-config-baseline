@@ -28,7 +28,7 @@
     "id": {
       "description": "Stable identifier. Never renumbered, never reused after retirement.",
       "type": "string",
-      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN)-[0-9]{3}$"
+      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG)-[0-9]{3}$"
     },
     "title": {
       "type": "string",
@@ -42,7 +42,7 @@
     "deprecated_by": {
       "description": "Replacement control ID when status is deprecated.",
       "type": "string",
-      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN)-[0-9]{3}$"
+      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG)-[0-9]{3}$"
     },
     "profiles": {
       "description": "Profiles this control belongs to. Only strict-general exists today; the array keeps the schema stable if profiles are added.",
@@ -52,7 +52,7 @@
       "items": { "enum": ["strict-general"] }
     },
     "applies_to": {
-      "description": "Artifact types the control evaluates. Defined by open specifications, never by product.",
+      "description": "Artifact types the control evaluates. Skills, instruction files and MCP server declarations are defined by open specifications; extension packages and agent settings (project-scope agent-settings, organization-scope managed-settings) have no open specification, so they are located only through client data and are never defined by one product.",
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
@@ -60,7 +60,10 @@
         "enum": [
           "skill",
           "instruction-file",
-          "mcp-server-declaration"
+          "mcp-server-declaration",
+          "extension-package",
+          "agent-settings",
+          "managed-settings"
         ]
       }
     },
@@ -132,6 +135,20 @@
           "description": "OWASP Agentic Skills Top 10 IDs.",
           "type": "array",
           "items": { "type": "string", "pattern": "^AST(0[1-9]|10)$" }
+        },
+        "five_eyes_risk_areas": {
+          "description": "Risk areas from Careful Adoption of Agentic AI Services (ASD's ACSC, CISA, NSA, Canadian Centre for Cyber Security, NCSC-NZ, NCSC-UK; May 2026).",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["privilege", "design-and-configuration", "behaviour", "structural", "accountability"] }
+        },
+        "nist_csf": {
+          "description": "NIST Cybersecurity Framework 2.0 (NIST CSWP 29) subcategory IDs.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(GV|ID|PR|DE|RS|RC)\\.[A-Z]{2}-[0-9]{2}$" }
         },
         "specifications": {
           "type": "array",

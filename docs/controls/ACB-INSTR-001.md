@@ -51,3 +51,5 @@ Remove the directive. If a workflow genuinely needs unattended operation, docume
 ## References
 
 - OWASP Top 10 for Agentic Applications 2026: ASI02, ASI09
+- Careful Adoption of Agentic AI Services risk areas: design-and-configuration, behaviour
+- NIST CSF 2.0: PR.AA-05

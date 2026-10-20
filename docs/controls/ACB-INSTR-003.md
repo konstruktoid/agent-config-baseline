@@ -54,3 +54,5 @@ Remove the directive. Where external content is part of the task, state explicit
 ## References
 
 - OWASP Top 10 for Agentic Applications 2026: ASI01, ASI06
+- Careful Adoption of Agentic AI Services risk areas: behaviour, structural
+- NIST CSF 2.0: PR.AA-05

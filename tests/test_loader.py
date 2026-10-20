@@ -10,10 +10,30 @@ SCHEMA_PATH = default_schema_path()
 
 def test_bundled_controls_load_and_validate():
     controls = load_controls(default_controls_dir(), SCHEMA_PATH)
-    assert len(controls) == 10
+    assert len(controls) == 18
     ids = {c.id for c in controls}
     assert "ACB-GEN-001" in ids
     assert "ACB-SKILL-003" in ids
+    assert "ACB-EXT-001" in ids
+    assert "ACB-CFG-004" in ids
+
+
+def test_every_control_maps_to_risk_areas_and_csf():
+    for control in load_controls(default_controls_dir(), SCHEMA_PATH):
+        assert control.references.get("five_eyes_risk_areas"), f"{control.id} has no five_eyes_risk_areas"
+        assert control.references.get("nist_csf"), f"{control.id} has no nist_csf"
+
+
+def test_controls_name_no_client():
+    from acb.clients import load_clients
+    from acb.loader import default_clients_dir
+
+    names = load_clients(default_clients_dir()).clients
+    for control in load_controls(default_controls_dir(), SCHEMA_PATH):
+        text = control.source_path.read_text(encoding="utf-8").lower()
+        for name in names:
+            for word in {name, name.split("-")[0]}:
+                assert word not in text, f"{control.id} names client {word!r}; product facts belong in clients/"
 
 
 def test_active_controls_filters_profile_and_status():

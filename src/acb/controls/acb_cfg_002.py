@@ -1,0 +1,57 @@
+"""ACB-CFG-002: The agent cannot install, enable or sideload extensions."""
+
+from __future__ import annotations
+
+from acb.extensions import missing_rule_groups, requirement_failures, settings_by_client
+from acb.model import Finding, Outcome
+
+CONTROL_ID = "ACB-CFG-002"
+
+
+def _check_install_commands_denied(ctx) -> list[Finding]:
+    audit = "install-commands-denied"
+    findings: list[Finding] = []
+    for client, files in settings_by_client(ctx.inventory.agent_settings).items():
+        anchor = ctx.relative(sorted(files, key=lambda s: s.scope != "project")[0].path)
+        missing = missing_rule_groups(files, ctx.clients.profile(client), "extension_install_rules")
+        if missing is None:
+            findings.append(
+                Finding(CONTROL_ID, audit, Outcome.NOT_EVALUATED, f"client {client} defines no extension install rules", anchor)
+            )
+            continue
+        for group in missing:
+            findings.append(
+                Finding(
+                    CONTROL_ID,
+                    audit,
+                    Outcome.FAIL,
+                    f"no deny rule covers {group['target']}; add one of: {', '.join(group['any_of'])}",
+                    anchor,
+                )
+            )
+    return findings
+
+
+def _check_managed_sideload_disabled(ctx) -> list[Finding]:
+    audit = "managed-sideload-disabled"
+    managed = [s for s in ctx.inventory.agent_settings if s.scope == "managed"]
+    if not managed:
+        return [Finding(CONTROL_ID, audit, Outcome.NOT_APPLICABLE, "no managed settings file in the repository")]
+    findings: list[Finding] = []
+    for settings in managed:
+        rel = ctx.relative(settings.path)
+        requirements = ctx.clients.profile(settings.client).get("managed_requirements", {}).get("sideload_restriction")
+        if not requirements:
+            findings.append(
+                Finding(CONTROL_ID, audit, Outcome.NOT_EVALUATED, f"client {settings.client} defines no sideload restriction", rel)
+            )
+            continue
+        for failure in requirement_failures(settings, requirements):
+            findings.append(Finding(CONTROL_ID, audit, Outcome.FAIL, failure, rel))
+    return findings
+
+
+AUDITS = {
+    "install-commands-denied": _check_install_commands_denied,
+    "managed-sideload-disabled": _check_managed_sideload_disabled,
+}

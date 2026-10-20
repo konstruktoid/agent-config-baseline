@@ -22,7 +22,7 @@
 <h3><code>downloads-verified</code> (pattern)</h3><p>Every fetched URL (curl, wget, Invoke-WebRequest, language HTTP clients in scripts) is followed by a digest verification against a value in the artifact, or the URL itself contains a full 40 or 64 character commit hash.</p>
 <p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>curl -o tool https://example.com/releases/latest/tool</code></li><li><code>https://raw.githubusercontent.com/example/repo/main/script.sh</code></li></ul>
 <h2>Remediation</h2><p>Pin every reference to an exact version and add an integrity check: bundle a hashed lockfile, pin images by digest, reference repository content by commit hash, and verify downloaded files with a pinned SHA-256 before use.</p>
-<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04</li><li>OWASP Agentic Skills Top 10: AST02</li><li>https://slsa.dev/</li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04</li><li>OWASP Agentic Skills Top 10: AST02</li><li>Careful Adoption of Agentic AI Services risk areas: design-and-configuration</li><li>NIST CSF 2.0: ID.RA-09, PR.PS-01</li><li>https://slsa.dev/</li></ul>
 </main>
 </body>
 </html>

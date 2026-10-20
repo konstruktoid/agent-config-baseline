@@ -61,5 +61,7 @@ exceptions: permitted
 references:
   owasp_asi: [ASI04]
   owasp_ast: [AST02]
+  five_eyes_risk_areas: [design-and-configuration]
+  nist_csf: [ID.RA-09, PR.PS-01]
   other:
     - https://slsa.dev/

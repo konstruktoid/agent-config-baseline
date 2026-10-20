@@ -1,0 +1,3 @@
+# guard
+
+`hooks/register.js`

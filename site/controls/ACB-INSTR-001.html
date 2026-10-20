@@ -20,7 +20,7 @@
 <h3><code>safety-disable</code> (pattern)</h3><p>No instruction directs disabling of verification mechanisms the repository relies on, such as commit hooks, signature verification or TLS verification.</p>
 <p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>git commit --no-verify</code></li><li><code>curl -k</code></li><li><code>export NODE_TLS_REJECT_UNAUTHORIZED=0</code></li><li><code>GIT_SSL_NO_VERIFY=1</code></li></ul>
 <h2>Remediation</h2><p>Remove the directive. If a workflow genuinely needs unattended operation, document that requirement for the operator, who decides whether to configure it in their own client.</p>
-<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI02, ASI09</li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI02, ASI09</li><li>Careful Adoption of Agentic AI Services risk areas: design-and-configuration, behaviour</li><li>NIST CSF 2.0: PR.AA-05</li></ul>
 </main>
 </body>
 </html>
