@@ -292,6 +292,11 @@ def render_all(controls: list[Control]) -> dict[Path, str]:
     return docs
 
 
+def generated_files_on_disk() -> set[Path]:
+    on_disk = set(DOCS_CONTROLS_DIR.glob("*.md")) | {MAPPINGS_PATH}
+    return on_disk | {p for p in SITE_DIR.rglob("*") if p.is_file()}
+
+
 def main(argv: list[str] | None = None) -> int:
     check = "--check" in (sys.argv[1:] if argv is None else argv)
     controls = load_controls(REPO_ROOT / "controls", REPO_ROOT / "schema" / "control.schema.json")
@@ -299,8 +304,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if check:
         expected = set(docs)
-        on_disk = set(DOCS_CONTROLS_DIR.glob("*.md")) | {MAPPINGS_PATH}
-        on_disk |= {p for p in SITE_DIR.rglob("*") if p.is_file()}
+        on_disk = generated_files_on_disk()
         stale = sorted(
             str(p.relative_to(REPO_ROOT))
             for p in expected | on_disk
@@ -314,6 +318,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(docs)} generated doc(s) are up to date")
         return 0
 
+    for path in generated_files_on_disk() - set(docs):
+        path.unlink()
     for path, text in docs.items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
