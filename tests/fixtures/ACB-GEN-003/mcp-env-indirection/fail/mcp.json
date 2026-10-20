@@ -1,0 +1,42 @@
+{
+  "mcpServers": {
+    "example": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "API_TOKEN": "sk-live-abcd1234efgh5678"
+      },
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.abcdefgh"
+      }
+    },
+    "fake-placeholder": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "API_KEY": "abc$def123realsecret",
+        "GITHUB_PAT": "ghp_abcdefghijklmnopqrstuvwxyz012345",
+        "PASSWD": "realworldpassword1",
+        "DB_PASS": "realworldpassword2",
+        "PASSWORD": 86753091,
+        "AUTH_NOTE": "realsecret <x>"
+      }
+    },
+    "query-string-secret": {
+      "command": "node",
+      "args": ["server.js"],
+      "url": "https://mcp.example.com/sse?api_key=LIVEVALUE123456"
+    },
+    "header-in-args": {
+      "command": "node",
+      "args": ["server.js", "--header", "Authorization: Bearer shorttok123"]
+    },
+    "env-as-list": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": [
+        {"name": "API_KEY", "value": "livesecret1234567890"}
+      ]
+    }
+  }
+}

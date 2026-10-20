@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "example": {
+      "command": "node",
+      "args": ["server.js", "--token", "${API_TOKEN}"],
+      "env": {
+        "API_TOKEN": "${API_TOKEN}"
+      },
+      "headers": {
+        "Authorization": "Bearer ${AUTH_TOKEN}"
+      }
+    },
+    "safe-keys": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "GITHUB_PAT": "${GITHUB_PAT}",
+        "PASSWD": "<PASSWD>",
+        "DB_PASS": "{{DB_PASS}}"
+      }
+    },
+    "safe-query-string": {
+      "command": "node",
+      "args": ["server.js"],
+      "url": "https://mcp.example.com/sse?api_key=${API_KEY}"
+    },
+    "safe-header-in-args": {
+      "command": "node",
+      "args": ["server.js", "--header", "Authorization: Bearer ${AUTH_TOKEN}"]
+    },
+    "safe-env-as-list": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": [
+        {"name": "API_KEY", "value": "${API_KEY}"}
+      ]
+    }
+  }
+}

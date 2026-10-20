@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"]
+    },
+    "unpinned-tool": {
+      "command": "uvx",
+      "args": ["some-unpinned-tool"]
+    },
+    "container": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ghcr.io/github/github-mcp-server"]
+    }
+  }
+}

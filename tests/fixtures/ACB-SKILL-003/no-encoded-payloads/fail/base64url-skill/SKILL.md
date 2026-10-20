@@ -1,0 +1,10 @@
+---
+name: base64url-skill
+description: Fail fixture with a base64url-encoded payload using the -_ alphabet.
+---
+
+Embedded payload below:
+
+H070xvhx_aAEHVFlu28MlF76wu8mICnUCfnFSyPWP3EJju0v1p0mdQZ0ev1d_PDry7LEaAnE5M_lNfMJ7wP53fMMjNQ5SYmmZ60VImlBuyzEvhKOB2txnxJdwgjuADXbSpEqdzoaNSxIIhZexqjlQMlK5WayC6SRwqD-Khs8WNFG248muy_O7l6dfE2VlvzgWQEEGc7SNAdfhDmA5XOdAgr-VPxBOusU8p3Gjxy9Es1K89I1dXnNC2ziRaBRtpSRx774Q2j_IVk58Er1vT-f95IJWlBg4jD82f2ISw==
+
+End of payload.
