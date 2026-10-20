@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Validate, test and self-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.12"
+          enable-cache: true
+
+      - name: Install project
+        run: uv sync --locked
+
+      - name: Validate control schema
+        run: |
+          uv run python -c "
+          from acb.loader import load_controls, default_controls_dir, default_schema_path
+          controls = load_controls(default_controls_dir(), default_schema_path())
+          print(f'{len(controls)} control(s) validated against schema/control.schema.json')
+          "
+
+      - name: Check generated docs are up to date
+        run: uv run python scripts/gen_docs.py --check
+
+      - name: Run test suite
+        run: uv run pytest -q
+
+      - name: Self-check (acb check .)
+        run: uv run acb check . --format text

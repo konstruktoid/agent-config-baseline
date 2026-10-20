@@ -1,0 +1,146 @@
+name: acb check (reusable)
+
+# Callable by other repositories:
+#
+#   jobs:
+#     acb:
+#       uses: konstruktoid/agent-config-baseline/.github/workflows/acb-check.yml@<commit-sha-or-tag>
+#       with:
+#         acb-ref: "<commit-sha-of-agent-config-baseline-to-install>"
+#
+# `acb-ref` is required and separate from the `@<ref>` used to call this
+# workflow: the `@<ref>` on `uses:` pins which version of *this workflow
+# file* runs; `acb-ref` pins which version of the `acb` *tool* it installs
+# and runs against the caller's repository. Callers should normally set
+# both to the same value.
+#
+# The caller's .acb.yaml and .acb-exceptions.yaml are read from the pull
+# request's base commit (or the pushed commit outside pull requests), never
+# from the head being checked: a change cannot exclude or waive itself. A new
+# exception has to merge before the change that needs it.
+#
+# What this workflow cannot enforce: the caller's own workflow file comes from
+# the pull request head, so a change can edit `path`, `fail-on-findings` or
+# `acb-ref` in the same pull request. Protect the caller workflow with a
+# required-workflow ruleset or CODEOWNERS. For `push`, `merge_group` and
+# `workflow_dispatch` there is no base commit, so the commit under test supplies
+# its own operator files; use this workflow on pull requests for gating.
+# `pull_request_target` is refused: it checks out the base branch, so the
+# pull request would never be scanned.
+
+on:
+  workflow_call:
+    inputs:
+      acb-ref:
+        description: Full 40-character commit SHA of konstruktoid/agent-config-baseline to install acb from. Tags and branches are rejected because they can move.
+        required: true
+        type: string
+      path:
+        description: Path within the caller's repository to check.
+        required: false
+        type: string
+        default: "."
+      fail-on-findings:
+        description: Fail the job if acb reports any control as failing or not-evaluated.
+        required: false
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  check:
+    name: Run acb and upload SARIF
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write # required to upload SARIF via github/codeql-action/upload-sarif
+    steps:
+      - name: Reject unsupported events and mutable references
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACB_REF: ${{ inputs.acb-ref }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request_target" ]; then
+            echo "pull_request_target is not supported: it would scan the base branch, not the pull request" >&2
+            exit 1
+          fi
+          if ! printf '%s' "$ACB_REF" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "acb-ref must be a full 40-character commit SHA" >&2
+            exit 1
+          fi
+
+      - name: Checkout caller repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: target
+
+      - name: Checkout operator configuration from the base commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+          path: operator-config
+          sparse-checkout: |
+            .acb.yaml
+            .acb-exceptions.yaml
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout agent-config-baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: konstruktoid/agent-config-baseline
+          ref: ${{ inputs.acb-ref }}
+          persist-credentials: false
+          path: acb-src
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.12"
+          enable-cache: true
+
+      - name: Install acb
+        working-directory: acb-src
+        run: uv sync --locked
+
+      # Runs inside the caller's checkout so SARIF paths are repository-relative.
+      # Both operator files are always passed explicitly (an empty file when the
+      # base commit has none), so acb never falls back to the head's copies.
+      - name: Run acb check
+        id: acb
+        working-directory: target
+        env:
+          CHECK_PATH: ${{ inputs.path }}
+        run: |
+          : > ../empty.yaml
+          config=../operator-config/.acb.yaml
+          exceptions=../operator-config/.acb-exceptions.yaml
+          [ -f "$config" ] || config=../empty.yaml
+          [ -f "$exceptions" ] || exceptions=../empty.yaml
+          set +e
+          uv run --project ../acb-src acb check "$CHECK_PATH" --format sarif \
+            --config "$config" --exceptions "$exceptions" > ../results.sarif
+          status=$?
+          set -e
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          if [ "$status" -eq 2 ]; then
+            echo "acb could not run: invalid configuration or arguments" >&2
+            exit 2
+          fi
+
+      - name: Upload SARIF to code scanning
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          sarif_file: results.sarif
+          checkout_path: target
+
+      - name: Fail on findings
+        if: inputs.fail-on-findings && steps.acb.outputs.exit_code != '0'
+        env:
+          ACB_EXIT_CODE: ${{ steps.acb.outputs.exit_code }}
+        run: |
+          echo "acb reported failing or not-evaluated controls (exit code ${ACB_EXIT_CODE})" >&2
+          exit 1
