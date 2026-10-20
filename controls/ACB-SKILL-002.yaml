@@ -1,0 +1,42 @@
+schema_version: "1.0"
+id: ACB-SKILL-002
+title: Skills do not pre-approve tools
+status: draft
+profiles: [strict-general]
+applies_to: [skill]
+check_type: static
+severity: high
+description: >-
+  The experimental `allowed-tools` frontmatter field is absent. A skill does
+  not grant itself permission to run tools without the confirmation the
+  user or operator has configured.
+rationale: >-
+  `allowed-tools` lets a skill author decide, at install time, which tool
+  calls skip human approval. That moves an authorization decision from the
+  person running the agent to whoever wrote the skill, and it travels with
+  the skill through every registry and fork. Support for the field varies
+  between clients, so its effect on any given installation is also hard to
+  predict. A strict baseline keeps approval decisions with the operator.
+audit:
+  - id: no-allowed-tools
+    method: structure
+    procedure: >-
+      The parsed frontmatter of SKILL.md does not contain a key that
+      pre-approves tools, at the top level or nested under `metadata`. This
+      includes the specified `allowed-tools` key and common variant
+      spellings of it (`allowed_tools`, `allowedTools`): the intent this
+      control blocks is self-granted tool approval, and that intent does not
+      depend on which casing or separator a client happens to read.
+    indicators:
+      - "allowed-tools: Bash Read Write"
+      - "allowed-tools: Bash(*)"
+      - "allowedTools: Bash Read Write"
+remediation: >-
+  Remove `allowed-tools`. Document the tools the skill needs in the body or
+  in `compatibility` so the operator can decide whether to grant them in
+  their own client configuration.
+exceptions: permitted
+references:
+  owasp_asi: [ASI02, ASI03]
+  specifications:
+    - https://agentskills.io/specification

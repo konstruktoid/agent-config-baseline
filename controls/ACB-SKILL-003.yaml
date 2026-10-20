@@ -1,0 +1,58 @@
+schema_version: "1.0"
+id: ACB-SKILL-003
+title: Bundled skill content is transparent, referenced and contained
+status: draft
+profiles: [strict-general]
+applies_to: [skill]
+check_type: static
+severity: high
+description: >-
+  Every file bundled in a skill is human-reviewable text, every executable
+  file is referenced from SKILL.md or a file SKILL.md references, and no
+  reference resolves outside the skill directory.
+rationale: >-
+  Reviewers read SKILL.md; agents may execute anything in the directory.
+  Unreferenced scripts, compiled binaries, archives and encoded blobs are
+  content a reviewer is unlikely to inspect but an agent can still reach.
+  Path references that escape the skill directory let a skill pull in
+  files its reviewer never saw.
+audit:
+  - id: text-only
+    method: inventory
+    procedure: >-
+      Every file under the skill directory is valid UTF-8 text, except files
+      under `assets/` whose detected media type is an image format. No
+      executable binaries, archives, compiled bytecode or packed formats are
+      present anywhere.
+    indicators:
+      - "scripts/helper (ELF executable)"
+      - "scripts/tool.pyc"
+      - "assets/bundle.tar.gz"
+  - id: no-encoded-payloads
+    method: pattern
+    procedure: >-
+      No text file contains a base64, hex or similar encoded run longer than
+      256 characters, and no script is minified (any line over 500
+      characters in a script file fails).
+  - id: executables-referenced
+    method: inventory
+    procedure: >-
+      Every file under `scripts/`, and every file anywhere with an
+      executable bit or a shebang, is referenced by relative path from
+      SKILL.md or from a file directly referenced by SKILL.md.
+  - id: references-contained
+    method: pattern
+    procedure: >-
+      No file reference in SKILL.md or bundled files is absolute, contains
+      `..` segments, or resolves (after symlink resolution) outside the
+      skill directory. The skill directory contains no symlinks.
+remediation: >-
+  Replace binaries and archives with source. Decode embedded payloads into
+  reviewable files. Reference every script from SKILL.md or delete it.
+  Copy needed files into the skill rather than referencing outside paths.
+exceptions: permitted
+references:
+  owasp_asi: [ASI04, ASI05]
+  owasp_ast: [AST02]
+  specifications:
+    - https://agentskills.io/specification

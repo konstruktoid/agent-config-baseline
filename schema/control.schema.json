@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/konstruktoid/agent-config-baseline/schema/control.schema.json",
+  "title": "agent-config-baseline control",
+  "description": "A single control record. Control content is versioned by release; this schema is versioned by schema_version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "status",
+    "profiles",
+    "applies_to",
+    "check_type",
+    "severity",
+    "description",
+    "rationale",
+    "audit",
+    "remediation",
+    "references"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Version of this schema the record conforms to.",
+      "const": "1.0"
+    },
+    "id": {
+      "description": "Stable identifier. Never renumbered, never reused after retirement.",
+      "type": "string",
+      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN)-[0-9]{3}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 120
+    },
+    "status": {
+      "description": "draft: may change incompatibly. active: stable. deprecated: retained for reference, not evaluated.",
+      "enum": ["draft", "active", "deprecated"]
+    },
+    "deprecated_by": {
+      "description": "Replacement control ID when status is deprecated.",
+      "type": "string",
+      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN)-[0-9]{3}$"
+    },
+    "profiles": {
+      "description": "Profiles this control belongs to. Only strict-general exists today; the array keeps the schema stable if profiles are added.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["strict-general"] }
+    },
+    "applies_to": {
+      "description": "Artifact types the control evaluates. Defined by open specifications, never by product.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "skill",
+          "instruction-file",
+          "mcp-server-declaration"
+        ]
+      }
+    },
+    "check_type": {
+      "description": "static: decidable from file contents alone. provenance: needs release/attestation metadata. behavioural: needs evaluation runs.",
+      "enum": ["static", "provenance", "behavioural"]
+    },
+    "severity": {
+      "description": "Maps to SARIF level: high=error, medium=warning, low=note. In strict-general every control must pass regardless of severity.",
+      "enum": ["high", "medium", "low"]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 20
+    },
+    "audit": {
+      "description": "Ordered audit procedures. Each must be implementable without calling a model.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "method", "procedure"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "method": {
+            "description": "structure: parse and check fields. pattern: match text indicators. inventory: enumerate files and compare.",
+            "enum": ["structure", "pattern", "inventory"]
+          },
+          "procedure": {
+            "type": "string",
+            "minLength": 20
+          },
+          "indicators": {
+            "description": "Illustrative, non-exhaustive examples of failing content. The checker owns the actual detection logic.",
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "remediation": {
+      "type": "string",
+      "minLength": 20
+    },
+    "exceptions": {
+      "description": "Whether a documented, reviewed exception may waive this control for a specific artifact. Inline suppression is never permitted.",
+      "enum": ["permitted", "not-permitted"],
+      "default": "permitted"
+    },
+    "references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owasp_asi"],
+      "properties": {
+        "owasp_asi": {
+          "description": "OWASP Top 10 for Agentic Applications 2026 IDs.",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^ASI(0[1-9]|10)$" }
+        },
+        "owasp_ast": {
+          "description": "OWASP Agentic Skills Top 10 IDs.",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^AST(0[1-9]|10)$" }
+        },
+        "specifications": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" }
+        },
+        "other": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "deprecated" } } },
+      "then": { "required": ["deprecated_by"] }
+    }
+  ]
+}

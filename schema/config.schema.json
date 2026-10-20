@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/konstruktoid/agent-config-baseline/schema/config.schema.json",
+  "title": "acb operator configuration",
+  "description": "Operator-supplied checker configuration (--config, default ./.acb.yaml relative to the working directory). Never read from inside the scanned PATH.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "exclude": {
+      "description": "Paths under PATH removed from discovery. Every exclusion is reported in the output with its reason.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "reason"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "instruction_files": {
+      "description": "Additional files under PATH evaluated as instruction files (e.g. an agent prompt that is not named AGENTS.md).",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

@@ -1,0 +1,65 @@
+schema_version: "1.0"
+id: ACB-GEN-002
+title: External code and dependencies are pinned immutably
+status: draft
+profiles: [strict-general]
+applies_to: [skill, instruction-file, mcp-server-declaration]
+check_type: static
+severity: high
+description: >-
+  Every package, tool, container image or remote file that an artifact
+  installs, runs or instructs the agent to install or run is pinned to an
+  immutable reference: an exact version with an integrity digest, a
+  content digest, or a full commit hash.
+rationale: >-
+  Agent artifacts are executed long after review. A floating reference
+  (latest, a branch, a version range, an unversioned package name) means
+  the code that runs is not the code that was reviewed. MCP server
+  declarations that launch unpinned packages through a package runner are
+  a common case: every client start may fetch a different release.
+audit:
+  - id: package-runners-pinned
+    method: pattern
+    procedure: >-
+      Invocations of package runners and installers specify an exact
+      version. Version ranges, dist-tags and bare package names fail.
+    indicators:
+      - "npx -y @example/mcp-server"
+      - "npx @example/tool@latest"
+      - "uvx example-tool"
+      - "pip install example"
+      - "go install example.com/tool@latest"
+  - id: lockfile-or-hash
+    method: pattern
+    procedure: >-
+      Where an exact version is given, an integrity mechanism is also
+      present: a lockfile with hashes bundled in the artifact, a
+      --require-hashes style flag, or an explicit digest check.
+  - id: images-by-digest
+    method: pattern
+    procedure: >-
+      Container image references include an @sha256: digest.
+    indicators:
+      - "docker run example/server:latest"
+      - "docker run example/server:1.2"
+  - id: downloads-verified
+    method: pattern
+    procedure: >-
+      Every fetched URL (curl, wget, Invoke-WebRequest, language HTTP
+      clients in scripts) is followed by a digest verification against a
+      value in the artifact, or the URL itself contains a full 40 or 64
+      character commit hash.
+    indicators:
+      - "curl -o tool https://example.com/releases/latest/tool"
+      - "https://raw.githubusercontent.com/example/repo/main/script.sh"
+remediation: >-
+  Pin every reference to an exact version and add an integrity check:
+  bundle a hashed lockfile, pin images by digest, reference repository
+  content by commit hash, and verify downloaded files with a pinned
+  SHA-256 before use.
+exceptions: permitted
+references:
+  owasp_asi: [ASI04]
+  owasp_ast: [AST02]
+  other:
+    - https://slsa.dev/

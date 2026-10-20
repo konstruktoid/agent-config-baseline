@@ -1,0 +1,44 @@
+schema_version: "1.0"
+id: ACB-GEN-003
+title: Artifacts contain no embedded secrets
+status: draft
+profiles: [strict-general]
+applies_to: [skill, instruction-file, mcp-server-declaration]
+check_type: static
+severity: high
+description: >-
+  No artifact contains credentials, tokens, private keys or connection
+  strings with embedded passwords. MCP server declarations reference
+  secrets through environment variable indirection or a secret store,
+  never as literal values.
+rationale: >-
+  Agent artifacts are designed to be shared, forked and published to
+  registries, and their contents are loaded into model context where they
+  can be echoed, logged or exfiltrated. A secret in an artifact is a
+  secret disclosed to every consumer and every agent session that reads it.
+audit:
+  - id: secret-scan
+    method: pattern
+    procedure: >-
+      Run a secret scanner with high-confidence provider rules and generic
+      high-entropy detection over all files. Any finding fails.
+    indicators:
+      - "-----BEGIN OPENSSH PRIVATE KEY-----"
+      - "postgres://admin:hunter2@db.example.com/prod"
+  - id: mcp-env-indirection
+    method: structure
+    procedure: >-
+      In MCP server declarations, values of `env`, `headers` and argument
+      fields whose key or flag name suggests a credential (token, key,
+      secret, password, auth) are environment-variable references or
+      placeholders, not literals.
+    indicators:
+      - "\"env\": {\"API_TOKEN\": \"sk-live-...\"}"
+      - "\"Authorization\": \"Bearer eyJ...\""
+remediation: >-
+  Remove the secret, rotate it, and purge it from version history. Replace
+  literals with environment variable references and document the variable
+  name the consumer must provide.
+exceptions: not-permitted
+references:
+  owasp_asi: [ASI03]

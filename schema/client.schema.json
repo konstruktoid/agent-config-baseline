@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/konstruktoid/agent-config-baseline/schema/client.schema.json",
+  "title": "acb client data",
+  "description": "Facts about one agent client that no open specification defines. One file per client under clients/. Every client is optional.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["client"],
+  "properties": {
+    "client": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "instruction_file_names": {
+      "description": "File names this client loads as agent instructions, in addition to AGENTS.md.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "pattern": "^[^/]+$" }
+    },
+    "mcp_declaration_paths": {
+      "description": "Paths relative to the scanned root where this client reads MCP server declarations.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "mcp_key_paths": {
+      "description": "Dotted key paths, inside a JSON or YAML file, where this client keeps its MCP server mapping (e.g. mcp.servers).",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*$" }
+    },
+    "permission_bypass_flags": {
+      "description": "Command-line flags or settings this client documents as disabling permission prompts or sandboxing.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "config_write_paths": {
+      "description": "Agent configuration locations for this client, as written in scripts (e.g. ~/.example/settings.json).",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}
