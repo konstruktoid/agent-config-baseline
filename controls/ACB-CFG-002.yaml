@@ -1,0 +1,45 @@
+schema_version: "1.0"
+id: ACB-CFG-002
+title: The agent cannot install, enable or sideload extensions
+status: draft
+profiles: [strict-general]
+applies_to: [agent-settings, managed-settings]
+check_type: static
+severity: high
+description: >-
+  Installing or enabling an extension requires a human action outside the
+  agent's own tool calls. The committed permission configuration denies the
+  agent the client's extension install and management commands, and
+  managed policy, where present, stops extensions from loading outside the
+  managed install path, including extension code the agent writes itself.
+rationale: >-
+  An agent that can install or load extensions can give itself new code
+  running in its own host with the user's privileges, and an agent that
+  can write extension code and have it loaded can do the same without any
+  install step. Either way the agent decides what oversees it. Extension
+  installation is a privilege decision that belongs to a person.
+audit:
+  - id: install-commands-denied
+    method: structure
+    procedure: >-
+      Collect the deny rules from every agent settings file in the
+      repository. For every extension install rule group the client
+      defines, at least one of its rules is present.
+  - id: managed-sideload-disabled
+    method: structure
+    procedure: >-
+      Every managed settings file holds the client's sideload restriction
+      values. Not applicable when the repository contains no managed
+      settings file.
+remediation: >-
+  Deny the extension install and management commands in committed
+  settings, and set the sideload restriction in managed policy so that
+  extensions load only from the managed install path.
+exceptions: permitted
+references:
+  owasp_asi: [ASI03, ASI04]
+  owasp_ast: [AST02]
+  five_eyes_risk_areas: [privilege, structural]
+  nist_csf: [PR.PS-05, PR.AA-05]
+  other:
+    - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

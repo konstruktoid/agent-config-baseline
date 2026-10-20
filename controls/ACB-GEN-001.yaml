@@ -38,3 +38,5 @@ exceptions: not-permitted
 references:
   owasp_asi: [ASI04, ASI05]
   owasp_ast: [AST02]
+  five_eyes_risk_areas: [design-and-configuration]
+  nist_csf: [ID.RA-09, PR.PS-05]

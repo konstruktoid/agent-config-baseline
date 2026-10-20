@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-EXT-004: Blocking guards have tests that prove they deny</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-EXT-004: Blocking guards have tests that prove they deny</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>extension-package</code>, <code>agent-settings</code>, <code>managed-settings</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>Every committed guard that is meant to stop an agent action, whether a lifecycle hook registered for an event that can block or an in-process module that handles a tool-call guard event, has an automated test that shows the guarded action does not happen, not only that a warning is printed.</p>
+<h2>Rationale</h2><p>A guard that reports failure the wrong way, or that crashes, can let every action through while appearing to work: hosts commonly treat an unexpected exit status or an exception in extension code as a non-blocking error and continue. A published case had a blocking hook print &quot;BLOCKED&quot; and allow every write because it signalled failure with the wrong exit code. Only a test that asserts the denial catches this.</p>
+<h2>Audit procedures</h2>
+<h3><code>guards-have-tests</code> (inventory)</h3><p>For each handler registered for a blocking event in an agent settings file or a package hook configuration, the handler runs a script file in the repository and at least one test file (a file under a tests, test, spec or __tests__ directory, or named test_*, *_test.*, *.test.*, *.spec.* or *.bats) references that script by file name. A handler with no script file fails, because no test can exercise it. For each package with an in-process module that handles a guard event, the package contains at least one module test file.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>hooks/block-writes.sh (blocking hook script no test references)</code></li></ul>
+<h2>Remediation</h2><p>Move the guard&#x27;s logic into a script, and add a test that feeds it a request it must refuse and asserts the refusal the host acts on (the exit status or decision output), not the text it prints. For in-process guards, add a module test that fires the guarded event and asserts the denial, including when the guard&#x27;s own check fails.</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>guards-have-tests</code></h3><p>A PreToolUse command hook blocks only by exiting with code 2 or by printing a deny decision; exit code 1 is a non-blocking error and the tool call goes ahead. A mod hook that throws or times out is skipped, so the event goes ahead unless the hook has a .catch handler that refuses. Mod tests are files ending in .test.ts or .test.tsx, run with `claude plugin test`.</p><ul><li><a href="https://code.claude.com/docs/en/hooks">https://code.claude.com/docs/en/hooks</a></li><li><a href="https://code.claude.com/docs/en/plugins/mods/admin">https://code.claude.com/docs/en/plugins/mods/admin</a></li><li><a href="https://code.claude.com/docs/en/plugins/mods/reference">https://code.claude.com/docs/en/plugins/mods/reference</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI02</li><li>Careful Adoption of Agentic AI Services risk areas: design-and-configuration, behaviour</li><li>NIST CSF 2.0: ID.IM-02, PR.PS-06</li><li>https://www.nist.gov/system/files/documents/2026/10/16/Key_Practices_for_Incident_Readiness_and_Response_in_Super_Intelligence%20_Training_and_Evaluation.pdf</li></ul>
+</main>
+</body>
+</html>

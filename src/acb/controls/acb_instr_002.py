@@ -214,7 +214,7 @@ def _check_config_write_scripts(ctx) -> list[Finding]:
                 audit_id="config-write-scripts",
                 outcome=Outcome.NOT_APPLICABLE,
                 message=(
-                    "no client-declared configuration locations in scope (no client data loaded); "
+                    "no client-declared configuration locations in scope (none in the loaded client data); "
                     "writes to instruction-file names were checked"
                 ),
             )

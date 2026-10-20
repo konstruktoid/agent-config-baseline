@@ -38,4 +38,6 @@ Correct the frontmatter to match the specification. Rename the skill directory o
 ## References
 
 - OWASP Top 10 for Agentic Applications 2026: ASI04
+- Careful Adoption of Agentic AI Services risk areas: design-and-configuration
+- NIST CSF 2.0: PR.PS-01
 - Specification: https://agentskills.io/specification

@@ -41,3 +41,5 @@ exceptions: permitted
 references:
   owasp_asi: [ASI06, ASI10]
   owasp_ast: [AST02]
+  five_eyes_risk_areas: [privilege, design-and-configuration]
+  nist_csf: [PR.AA-05, PR.PS-01]

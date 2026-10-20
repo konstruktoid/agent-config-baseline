@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-CFG-003: Blocking policy is enforced in a layer user-installed extensions cannot override</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-CFG-003: Blocking policy is enforced in a layer user-installed extensions cannot override</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>managed-settings</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>Where the agent host supports organization-managed policy, the managed layer restricts in-process extension loading to organization-managed extensions and does not let any other extension approve an action a deny rule refuses. A repository that cannot carry managed policy is not the subject of this control: audit the deployed managed settings instead by running the checker on the directory that holds them.</p>
+<h2>Rationale</h2><p>Deny rules, ask rules and blocking hooks are only as strong as the layer that evaluates them. In-process extension code that can approve a tool call can make a rule the user set, or a hook the user installed, ineffective. Policy that must hold has to live where user-installed extension code cannot reach it, and the decision about which actions need human sign-off belongs to the system&#x27;s designers and operators, not to the agent or to code it loads.</p>
+<h2>Audit procedures</h2>
+<h3><code>managed-extension-restriction</code> (structure)</h3><p>Every managed settings file holds the client&#x27;s extension restriction values: in-process extension code limited to managed extensions, no option that lets other extensions approve calls a deny rule refuses, and the host&#x27;s own policy guard kept in any explicit load order.</p>
+<h2>Remediation</h2><p>Set the extension restriction values in managed policy and deploy them through the organization&#x27;s settings management, then confirm on an endpoint that a user-installed extension is refused.</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>managed-extension-restriction</code></h3><p>Set pluginConfigs.&quot;cc-plugin-sec-default@builtin&quot;.options.allowManagedModsOnly to true in managed settings, leave allowModsToOverrideDenyRules unset, and if prependPlugins is set, list sec-default@builtin in it. Without managed settings or a Team or Enterprise login, a mod can approve a call that a deny rule refuses or a PreToolUse hook blocked. Confirm on an endpoint with `claude --debug` and the guard&#x27;s refusal line.</p><ul><li><a href="https://code.claude.com/docs/en/plugins/mods/admin">https://code.claude.com/docs/en/plugins/mods/admin</a></li><li><a href="https://code.claude.com/docs/en/permissions">https://code.claude.com/docs/en/permissions</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI03, ASI04</li><li>Careful Adoption of Agentic AI Services risk areas: design-and-configuration, structural</li><li>NIST CSF 2.0: PR.PS-01, PR.PS-05</li><li>https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf</li></ul>
+</main>
+</body>
+</html>

@@ -49,3 +49,5 @@ remediation: >-
 exceptions: not-permitted
 references:
   owasp_asi: [ASI01, ASI06]
+  five_eyes_risk_areas: [behaviour, structural]
+  nist_csf: [PR.AA-05]

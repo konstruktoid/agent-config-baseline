@@ -1,0 +1,223 @@
+# Claude Code facts used by the extension (EXT) and agent configuration (CFG)
+# controls. Every entry cites the page that states it; nothing here is
+# inferred. The controls themselves stay product-neutral.
+client: claude-code
+
+agent_settings:
+  files:
+    - match: .claude/settings.json
+      scope: project
+      source: https://code.claude.com/docs/en/settings
+    - match: .claude/settings.local.json
+      scope: project
+      source: https://code.claude.com/docs/en/settings
+    - match: managed-settings.json
+      scope: managed
+      source: https://code.claude.com/docs/en/plugins/mods/admin
+  deny_rules_key: [permissions, deny]
+  ask_rules_key: [permissions, ask]
+  hooks_key: [hooks]
+  blocking_hook_events: [PreToolUse]
+  hook_path_variables:
+    CLAUDE_PROJECT_DIR: project
+    CLAUDE_PLUGIN_ROOT: package
+  source: https://code.claude.com/docs/en/permissions
+
+self_protection_rules:
+  - target: project agent configuration directory (.claude/, holding settings, hooks and skills)
+    any_of: [Edit, "Edit(.claude/**)", "Edit(/.claude/**)", "Edit(./.claude/**)", "Edit(**/.claude/**)"]
+    source: https://code.claude.com/docs/en/permissions
+  - target: user agent configuration directory (~/.claude/, holding user settings, plugin data and agent-written mods)
+    any_of: [Edit, "Edit(~/.claude/**)"]
+    source: https://code.claude.com/docs/en/permission-modes
+  - target: AGENTS.md instruction files
+    any_of: [Edit, "Edit(AGENTS.md)", "Edit(**/AGENTS.md)"]
+    source: https://code.claude.com/docs/en/plugins/mods/overview
+  - target: CLAUDE.md instruction files
+    any_of: [Edit, "Edit(CLAUDE.md)", "Edit(**/CLAUDE.md)"]
+    source: https://code.claude.com/docs/en/settings
+  - target: project MCP server declarations (.mcp.json)
+    any_of: [Edit, "Edit(.mcp.json)", "Edit(**/.mcp.json)", "Edit(/.mcp.json)", "Edit(./.mcp.json)"]
+    source: https://code.claude.com/docs/en/permission-modes
+
+extension_install_rules:
+  - target: plugin install and management commands run through the shell tool
+    any_of: [Bash, "Bash(claude *)", "Bash(claude plugin *)"]
+    source: https://code.claude.com/docs/en/plugins/mods/overview
+
+managed_requirements:
+  extension_restriction:
+    - key: [pluginConfigs, cc-plugin-sec-default@builtin, options, allowManagedModsOnly]
+      check: equals
+      value: true
+      source: https://code.claude.com/docs/en/plugins/mods/admin
+    - key: [pluginConfigs, cc-plugin-sec-default@builtin, options, allowModsToOverrideDenyRules]
+      check: not-equals
+      value: true
+      source: https://code.claude.com/docs/en/plugins/mods/admin
+    - key: [prependPlugins]
+      check: contains-if-present
+      value: sec-default@builtin
+      source: https://code.claude.com/docs/en/plugins/mods/admin
+  sideload_restriction:
+    - key: [disableSideloadFlags]
+      check: equals
+      value: true
+      source: https://code.claude.com/docs/en/plugins/mods/admin
+
+extension_packages:
+  manifest_paths: [.claude-plugin/plugin.json]
+  content_paths: [skills, commands, agents, output-styles, SKILL.md]
+  content_manifest_keys: [[skills], [commands], [agents], [outputStyles]]
+  component_paths:
+    - {path: hooks/hooks.json, kind: lifecycle-hooks}
+    - {path: .mcp.json, kind: tool-servers}
+    - {path: .lsp.json, kind: language-servers}
+    - {path: monitors/monitors.json, kind: background-processes}
+    - {path: bin, kind: executables}
+  component_manifest_keys:
+    - {key: [hooks], kind: lifecycle-hooks}
+    - {key: [mcpServers], kind: tool-servers}
+    - {key: [lspServers], kind: language-servers}
+    - {key: [experimental, monitors], kind: background-processes}
+    - {key: [monitors], kind: background-processes}
+  hook_files: [hooks/hooks.json]
+  hook_files_manifest_key: [hooks]
+  module_list_key: [modules]
+  module_dirs: [hooks]
+  module_suffixes: [.js, .mjs, .cjs, .jsx, .ts, .mts, .cts, .tsx]
+  module_test_suffixes: [.test.ts, .test.tsx]
+  module_event_pattern: "\\bon\\s*\\(\\s*['\"`]([a-z]+(?:\\.[A-Za-z]+)+)['\"`]"
+  module_call_pattern: "(\\$\\s*\\??\\.\\s*[a-z]+\\s*\\??\\.\\s*[A-Za-z]+)\\s*\\("
+  guard_events: [tool.call, tool.check]
+  approval_events: [tool.check]
+  high_risk_capabilities:
+    - tool.check
+    - tool.call
+    - prompt.submit
+    - session.append
+    - $.process.run
+    - $.process.spawn
+    - $.http.fetch
+    - $.model.complete
+    - $.prompt.submit
+    - $.session.send
+    - $.env.get
+    - $.env.set
+    - $.settings.read
+    - $.fs.read
+    - $.fs.write
+    - $.mcp.call
+  validator:
+    command: [claude, plugin, validate]
+    line_pattern: "^\\s*(?:❯\\s*)?(?P<module>\\S+\\.[A-Za-z]{1,4}) (?P<kind>hooks|calls): (?P<items>.+?)\\s*$"
+    event_kind: hooks
+    call_kind: calls
+    source: https://code.claude.com/docs/en/plugins/mods/admin
+  source: https://code.claude.com/docs/en/plugins/manifest-reference
+
+audit_notes:
+  - control: ACB-EXT-001
+    audit: modules-documented
+    note: >-
+      A mod is a plugin whose hooks/hooks.json lists a hooks module under
+      `modules` (for example ./register.js, or .mjs, .cjs, .jsx, .ts, .mts,
+      .cts or .tsx). The plugin manifest's `hooks` field can name further hook
+      files. Mods run inside Claude Code with the user's permissions and are
+      not sandboxed.
+    sources:
+      - https://code.claude.com/docs/en/plugins/mods/reference
+      - https://code.claude.com/docs/en/plugins/manifest-reference
+      - https://code.claude.com/docs/en/plugins/mods/overview
+  - control: ACB-EXT-002
+    audit: no-executable-components
+    note: >-
+      A plugin that ships skills can also ship hooks (hooks/hooks.json or the
+      manifest `hooks` field), a mod, MCP servers (.mcp.json or
+      `mcpServers`), LSP servers (.lsp.json or `lspServers`), monitors
+      (monitors/monitors.json or `experimental.monitors`) and executables on
+      the shell tool's PATH (bin/). Any of these fails a package that ships
+      skills, commands or agents.
+    sources:
+      - https://code.claude.com/docs/en/plugins/manifest-reference
+      - https://code.claude.com/docs/en/plugins/mods/overview
+  - control: ACB-EXT-003
+    audit: record-current
+    note: >-
+      Generate the record with `claude plugin validate <package-dir>` and keep
+      its `hooks:` and `calls:` lines in extension-capabilities.txt. Run
+      `acb check --run-validators` where the claude CLI is installed to compare
+      the record with the validator; without it this procedure is not
+      evaluated. In the `hooks:` line, tool.check means the mod can approve or
+      deny a tool call before a permission prompt, and tool.call and
+      prompt.submit mean it sees and can change every tool call and prompt.
+    sources:
+      - https://code.claude.com/docs/en/plugins/mods/admin
+      - https://code.claude.com/docs/en/plugins/mods/reference
+  - control: ACB-EXT-004
+    audit: guards-have-tests
+    note: >-
+      A PreToolUse command hook blocks only by exiting with code 2 or by
+      printing a deny decision; exit code 1 is a non-blocking error and the
+      tool call goes ahead. A mod hook that throws or times out is skipped,
+      so the event goes ahead unless the hook has a .catch handler that
+      refuses. Mod tests are files ending in .test.ts or .test.tsx, run with
+      `claude plugin test`.
+    sources:
+      - https://code.claude.com/docs/en/hooks
+      - https://code.claude.com/docs/en/plugins/mods/admin
+      - https://code.claude.com/docs/en/plugins/mods/reference
+  - control: ACB-CFG-001
+    audit: self-protection-rules
+    note: >-
+      Only Edit(path) and Read(path) rules govern file tools; a Write(path)
+      rule is accepted but never consulted. Edit deny rules also cover file
+      commands Claude Code recognizes in Bash and redirection targets, but not
+      arbitrary subprocesses, so pair them with the sandbox. Deny and ask
+      rules in a committed .claude/settings.json apply before workspace trust.
+    sources:
+      - https://code.claude.com/docs/en/permissions
+      - https://code.claude.com/docs/en/settings
+  - control: ACB-CFG-002
+    audit: install-commands-denied
+    note: >-
+      Plugins, including mods, install with `claude plugin install` from a
+      shell or `/plugin install` in a session. Bash rule patterns match the
+      command as written, so a deny rule does not catch every spelling (for
+      example an absolute path to the binary); the managed sideload
+      restriction is the stronger layer.
+    sources:
+      - https://code.claude.com/docs/en/plugins/mods/overview
+      - https://code.claude.com/docs/en/permissions
+  - control: ACB-CFG-002
+    audit: managed-sideload-disabled
+    note: >-
+      disableSideloadFlags in managed settings rejects --plugin-dir and
+      --plugin-url and keeps mods that Claude writes during a session from
+      loading.
+    sources:
+      - https://code.claude.com/docs/en/plugins/mods/admin
+  - control: ACB-CFG-003
+    audit: managed-extension-restriction
+    note: >-
+      Set pluginConfigs."cc-plugin-sec-default@builtin".options.allowManagedModsOnly
+      to true in managed settings, leave allowModsToOverrideDenyRules unset,
+      and if prependPlugins is set, list sec-default@builtin in it. Without
+      managed settings or a Team or Enterprise login, a mod can approve a call
+      that a deny rule refuses or a PreToolUse hook blocked. Confirm on an
+      endpoint with `claude --debug` and the guard's refusal line.
+    sources:
+      - https://code.claude.com/docs/en/plugins/mods/admin
+      - https://code.claude.com/docs/en/permissions
+  - control: ACB-CFG-004
+    audit: approval-not-delegated
+    note: >-
+      A mod that handles tool.check gives its answer after permission rules
+      and PreToolUse hooks; where the built-in guard does not load, its
+      approval can skip ask rules, PreToolUse hooks and deny rules. Source
+      matching is best effort (a handler registered through an alias is not
+      seen); the validator's hooks: line, checked by ACB-EXT-003
+      record-current, is the authoritative list.
+    sources:
+      - https://code.claude.com/docs/en/permissions
+      - https://code.claude.com/docs/en/plugins/mods/admin

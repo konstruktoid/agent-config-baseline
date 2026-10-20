@@ -1,0 +1,13 @@
+{
+  "pluginConfigs": {
+    "cc-plugin-sec-default@builtin": {
+      "options": {
+        "allowManagedModsOnly": true
+      }
+    }
+  },
+  "prependPlugins": [
+    "acme-guard@acme-tools",
+    "sec-default@builtin"
+  ]
+}

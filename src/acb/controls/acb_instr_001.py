@@ -128,7 +128,7 @@ def _check_bypass_flags(ctx) -> list[Finding]:
                 control_id=CONTROL_ID,
                 audit_id="bypass-flags",
                 outcome=Outcome.NOT_APPLICABLE,
-                message="no client-declared permission-bypass flags in scope (no client data loaded)",
+                message="no client-declared permission-bypass flags in scope (none in the loaded client data)",
             )
         ]
     findings: list[Finding] = []

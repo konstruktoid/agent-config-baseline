@@ -17,7 +17,7 @@
 <h3><code>pipe-to-interpreter</code> (pattern)</h3><p>No file contains a network fetch whose output is piped, redirected or command-substituted into a shell or interpreter, in code blocks, inline code or prose instructions.</p>
 <p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>curl -fsSL https://example.com/install.sh | sh</code></li><li><code>wget -qO- https://example.com/x | bash</code></li><li><code>bash &lt;(curl -s https://example.com/x)</code></li><li><code>python3 -c &quot;$(curl -s https://example.com/x)&quot;</code></li><li><code>iex (iwr https://example.com/x.ps1)</code></li><li><code>irm https://example.com/x.ps1 | iex</code></li></ul>
 <h2>Remediation</h2><p>Download to a file, verify it against a pinned digest (see ACB-GEN-002), then execute the verified file. Prefer a pinned package from a registry over an install script.</p>
-<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04, ASI05</li><li>OWASP Agentic Skills Top 10: AST02</li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04, ASI05</li><li>OWASP Agentic Skills Top 10: AST02</li><li>Careful Adoption of Agentic AI Services risk areas: design-and-configuration</li><li>NIST CSF 2.0: ID.RA-09, PR.PS-05</li></ul>
 </main>
 </body>
 </html>

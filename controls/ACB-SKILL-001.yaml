@@ -44,5 +44,7 @@ remediation: >-
 exceptions: not-permitted
 references:
   owasp_asi: [ASI04]
+  five_eyes_risk_areas: [design-and-configuration]
+  nist_csf: [PR.PS-01]
   specifications:
     - https://agentskills.io/specification

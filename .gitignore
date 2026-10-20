@@ -1,5 +1,7 @@
 # Local agent session state
 .claude/
+# Fixtures include agent settings directories.
+!tests/fixtures/**/.claude/
 
 # Python environments and caches
 .venv/

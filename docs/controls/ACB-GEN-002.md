@@ -61,4 +61,6 @@ Pin every reference to an exact version and add an integrity check: bundle a has
 
 - OWASP Top 10 for Agentic Applications 2026: ASI04
 - OWASP Agentic Skills Top 10: AST02
+- Careful Adoption of Agentic AI Services risk areas: design-and-configuration
+- NIST CSF 2.0: ID.RA-09, PR.PS-01
 - https://slsa.dev/

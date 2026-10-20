@@ -44,3 +44,5 @@ Remove the secret, rotate it, and purge it from version history. Replace literal
 ## References
 
 - OWASP Top 10 for Agentic Applications 2026: ASI03
+- Careful Adoption of Agentic AI Services risk areas: privilege
+- NIST CSF 2.0: PR.AA-01

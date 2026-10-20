@@ -54,6 +54,8 @@ def _run_dict(info: RunInfo) -> dict[str, Any]:
             "skills": len(inventory.skills),
             "instruction_files": len(inventory.instruction_files),
             "mcp_declarations": len(inventory.mcp_declarations),
+            "extension_packages": len(inventory.extension_packages),
+            "agent_settings": len(inventory.agent_settings),
         },
         "config": str(info.config.source) if info.config.source else None,
         "exclusions": [
@@ -86,7 +88,8 @@ def format_text(controls: list[Control], findings: list[Finding], info: RunInfo)
     lines = [
         f"acb {info.version} (strict-general) PATH: {info.target}",
         f"inventory: {inv['skills']} skill(s), {inv['instruction_files']} instruction file(s), "
-        f"{inv['mcp_declarations']} MCP declaration(s)",
+        f"{inv['mcp_declarations']} MCP declaration(s), {inv['extension_packages']} extension package(s), "
+        f"{inv['agent_settings']} agent settings file(s)",
         f"config: {run['config'] or 'none'}",
     ]
     for exclusion in run["exclusions"]:

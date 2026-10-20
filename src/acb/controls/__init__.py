@@ -33,6 +33,8 @@ class CheckContext:
     inventory: Inventory
     clients: ClientData
     root: Path
+    # Running a client's validator executes a third-party binary, so the operator opts in.
+    run_validators: bool = False
 
     def relative(self, path: Path) -> str:
         # abspath, not resolve: report the path discovery found, which for an
@@ -56,6 +58,14 @@ from acb.controls import (  # noqa: E402
     acb_skill_001,
     acb_skill_002,
     acb_skill_003,
+    acb_ext_001,
+    acb_ext_002,
+    acb_ext_003,
+    acb_ext_004,
+    acb_cfg_001,
+    acb_cfg_002,
+    acb_cfg_003,
+    acb_cfg_004,
 )
 
 _MODULES = (
@@ -69,6 +79,14 @@ _MODULES = (
     acb_skill_001,
     acb_skill_002,
     acb_skill_003,
+    acb_ext_001,
+    acb_ext_002,
+    acb_ext_003,
+    acb_ext_004,
+    acb_cfg_001,
+    acb_cfg_002,
+    acb_cfg_003,
+    acb_cfg_004,
 )
 
 REGISTRY: dict[str, dict[str, AuditFunc]] = {}

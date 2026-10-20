@@ -36,4 +36,6 @@ Remove `allowed-tools`. Document the tools the skill needs in the body or in `co
 ## References
 
 - OWASP Top 10 for Agentic Applications 2026: ASI02, ASI03
+- Careful Adoption of Agentic AI Services risk areas: privilege
+- NIST CSF 2.0: PR.AA-05
 - Specification: https://agentskills.io/specification

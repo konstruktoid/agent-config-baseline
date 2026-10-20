@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-CFG-001: The agent cannot modify its own configuration, extensions or instructions</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-CFG-001: The agent cannot modify its own configuration, extensions or instructions</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>agent-settings</code>, <code>managed-settings</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>The agent&#x27;s committed permission configuration denies its own file-writing tools access to the agent&#x27;s settings and hook definitions, its extension and plugin directories, its instruction files and its tool server declarations.</p>
+<h2>Rationale</h2><p>Settings, hooks, extensions and instruction files are the agent&#x27;s controls and part of its monitoring. An agent that can write them can widen its permissions, disable or rewrite a guard, install code that runs in its own host, or change the instructions every later session starts from, all through ordinary file edits. Agents must not be able to access or interfere with the mechanisms that oversee them; a deny rule enforced by the host, rather than an instruction to the model, is what makes that hold.</p>
+<h2>Audit procedures</h2>
+<h3><code>self-protection-rules</code> (structure)</h3><p>Collect the deny rules from every agent settings file in the repository. For every protected target the client defines (project and user configuration directories, instruction files, tool server declarations), at least one of the client&#x27;s equivalent deny rules is present. Allow and ask rules, and instructions to the model, do not count.</p>
+<h2>Remediation</h2><p>Add deny rules for the file-writing tools covering each protected target to the committed settings, and enable the host&#x27;s sandbox so that commands the agent runs cannot write those paths either.</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>self-protection-rules</code></h3><p>Only Edit(path) and Read(path) rules govern file tools; a Write(path) rule is accepted but never consulted. Edit deny rules also cover file commands Claude Code recognizes in Bash and redirection targets, but not arbitrary subprocesses, so pair them with the sandbox. Deny and ask rules in a committed .claude/settings.json apply before workspace trust.</p><ul><li><a href="https://code.claude.com/docs/en/permissions">https://code.claude.com/docs/en/permissions</a></li><li><a href="https://code.claude.com/docs/en/settings">https://code.claude.com/docs/en/settings</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI03, ASI10</li><li>Careful Adoption of Agentic AI Services risk areas: privilege, accountability</li><li>NIST CSF 2.0: PR.AA-05, PR.PS-01</li><li>https://www.nist.gov/system/files/documents/2026/10/16/Key_Practices_for_Incident_Readiness_and_Response_in_Super_Intelligence%20_Training_and_Evaluation.pdf</li><li>https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf</li></ul>
+</main>
+</body>
+</html>

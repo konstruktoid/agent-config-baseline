@@ -1,0 +1,12 @@
+{
+  "pluginConfigs": {
+    "cc-plugin-sec-default@builtin": {
+      "options": {
+        "allowModsToOverrideDenyRules": true
+      }
+    }
+  },
+  "prependPlugins": [
+    "acme-guard@acme-tools"
+  ]
+}

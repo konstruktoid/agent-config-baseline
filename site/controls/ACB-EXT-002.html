@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-EXT-002: Content packages contain no executable extension components</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-EXT-002: Content packages contain no executable extension components</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>extension-package</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>An extension package that ships agent content (skills, commands, subagent definitions or other instructions) does not also ship executable components: lifecycle hooks, in-process modules, tool servers, language servers, background processes, or executables placed on the agent&#x27;s command path. Code and content are distributed as separate packages.</p>
+<h2>Rationale</h2><p>Installing a package grants every component in it at once. A consumer who reviews a package as instructions (&quot;it is just a skills package&quot;) does not review it as code, yet a hook, server or in-process module in the same package runs with the user&#x27;s privileges, and an in-process module can approve tool calls and rewrite prompts. Separating content from code keeps the install decision honest: a content package can be trusted by reading it, and a code package is reviewed as code.</p>
+<h2>Audit procedures</h2>
+<h3><code>no-executable-components</code> (inventory)</h3><p>If the package ships agent content (a content directory or file the client defines, or a manifest field that declares content), it contains no executable component: no component file or directory the client defines, no manifest field that declares one, and no in-process module as enumerated by ACB-EXT-001.</p>
+<h2>Remediation</h2><p>Move the executable components into a separate package with its own documentation and capability record (ACB-EXT-001, ACB-EXT-003), and publish the content on its own.</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>no-executable-components</code></h3><p>A plugin that ships skills can also ship hooks (hooks/hooks.json or the manifest `hooks` field), a mod, MCP servers (.mcp.json or `mcpServers`), LSP servers (.lsp.json or `lspServers`), monitors (monitors/monitors.json or `experimental.monitors`) and executables on the shell tool&#x27;s PATH (bin/). Any of these fails a package that ships skills, commands or agents.</p><ul><li><a href="https://code.claude.com/docs/en/plugins/manifest-reference">https://code.claude.com/docs/en/plugins/manifest-reference</a></li><li><a href="https://code.claude.com/docs/en/plugins/mods/overview">https://code.claude.com/docs/en/plugins/mods/overview</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04</li><li>OWASP Agentic Skills Top 10: AST02</li><li>Careful Adoption of Agentic AI Services risk areas: privilege, design-and-configuration</li><li>NIST CSF 2.0: ID.RA-09, PR.PS-05</li><li>https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf</li></ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(.claude/**)",
+      "Edit(~/.claude/**)",
+      "Edit(AGENTS.md)",
+      "Edit(CLAUDE.md)",
+      "Edit(.mcp.json)",
+      "Bash(claude plugin *)"
+    ]
+  }
+}

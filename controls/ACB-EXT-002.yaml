@@ -1,0 +1,43 @@
+schema_version: "1.0"
+id: ACB-EXT-002
+title: Content packages contain no executable extension components
+status: draft
+profiles: [strict-general]
+applies_to: [extension-package]
+check_type: static
+severity: high
+description: >-
+  An extension package that ships agent content (skills, commands, subagent
+  definitions or other instructions) does not also ship executable
+  components: lifecycle hooks, in-process modules, tool servers, language
+  servers, background processes, or executables placed on the agent's
+  command path. Code and content are distributed as separate packages.
+rationale: >-
+  Installing a package grants every component in it at once. A consumer
+  who reviews a package as instructions ("it is just a skills package")
+  does not review it as code, yet a hook, server or in-process module in
+  the same package runs with the user's privileges, and an in-process
+  module can approve tool calls and rewrite prompts. Separating content
+  from code keeps the install decision honest: a content package can be
+  trusted by reading it, and a code package is reviewed as code.
+audit:
+  - id: no-executable-components
+    method: inventory
+    procedure: >-
+      If the package ships agent content (a content directory or file the
+      client defines, or a manifest field that declares content), it
+      contains no executable component: no component file or directory the
+      client defines, no manifest field that declares one, and no
+      in-process module as enumerated by ACB-EXT-001.
+remediation: >-
+  Move the executable components into a separate package with its own
+  documentation and capability record (ACB-EXT-001, ACB-EXT-003), and
+  publish the content on its own.
+exceptions: permitted
+references:
+  owasp_asi: [ASI04]
+  owasp_ast: [AST02]
+  five_eyes_risk_areas: [privilege, design-and-configuration]
+  nist_csf: [ID.RA-09, PR.PS-05]
+  other:
+    - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

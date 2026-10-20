@@ -35,7 +35,13 @@ def test_empty_directory_is_not_applicable_and_passes(operator_dir: Path, tmp_pa
     assert main(["check", str(empty), "--format", "json"]) == 0
     payload = _json(capsys)
     assert set(payload["summary"].values()) == {"not-applicable"}
-    assert payload["run"]["inventory"] == {"skills": 0, "instruction_files": 0, "mcp_declarations": 0}
+    assert payload["run"]["inventory"] == {
+        "skills": 0,
+        "instruction_files": 0,
+        "mcp_declarations": 0,
+        "extension_packages": 0,
+        "agent_settings": 0,
+    }
 
 
 def test_violation_fails(operator_dir: Path, target: Path, capsys):
@@ -61,7 +67,7 @@ def test_target_clients_directory_is_ignored(operator_dir: Path, target: Path, c
     (target / "clients").mkdir()
     (target / "clients" / "openapi.yaml").write_text("- not client data\n")
     assert main(["check", str(target), "--format", "json"]) == 1
-    assert _json(capsys)["run"]["clients"] == []
+    assert _json(capsys)["run"]["clients"] == ["claude-code"]
 
 
 def test_operator_exclusion_applies_and_is_reported(operator_dir: Path, target: Path, capsys):

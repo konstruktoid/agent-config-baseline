@@ -4,6 +4,14 @@ Generated from controls/*.yaml. Do not hand-edit.
 
 | ID | Title | Applies to | Severity | OWASP ASI | OWASP AST |
 | --- | --- | --- | --- | --- | --- |
+| [ACB-CFG-001](ACB-CFG-001.md) | The agent cannot modify its own configuration, extensions or instructions | agent-settings, managed-settings | high | ASI03, ASI10 | - |
+| [ACB-CFG-002](ACB-CFG-002.md) | The agent cannot install, enable or sideload extensions | agent-settings, managed-settings | high | ASI03, ASI04 | AST02 |
+| [ACB-CFG-003](ACB-CFG-003.md) | Blocking policy is enforced in a layer user-installed extensions cannot override | managed-settings | high | ASI03, ASI04 | - |
+| [ACB-CFG-004](ACB-CFG-004.md) | Human approval requirements are defined by configuration | agent-settings, managed-settings, extension-package | medium | ASI02, ASI09 | - |
+| [ACB-EXT-001](ACB-EXT-001.md) | In-process extension code is declared in package documentation | extension-package | medium | ASI04 | AST02 |
+| [ACB-EXT-002](ACB-EXT-002.md) | Content packages contain no executable extension components | extension-package | high | ASI04 | AST02 |
+| [ACB-EXT-003](ACB-EXT-003.md) | Extension capabilities are recorded and high-risk ones are justified | extension-package | medium | ASI02, ASI04 | AST02 |
+| [ACB-EXT-004](ACB-EXT-004.md) | Blocking guards have tests that prove they deny | extension-package, agent-settings, managed-settings | high | ASI02 | - |
 | [ACB-GEN-001](ACB-GEN-001.md) | Remote content is never piped into an interpreter | skill, instruction-file, mcp-server-declaration | high | ASI04, ASI05 | AST02 |
 | [ACB-GEN-002](ACB-GEN-002.md) | External code and dependencies are pinned immutably | skill, instruction-file, mcp-server-declaration | high | ASI04 | AST02 |
 | [ACB-GEN-003](ACB-GEN-003.md) | Artifacts contain no embedded secrets | skill, instruction-file, mcp-server-declaration | high | ASI03 | - |

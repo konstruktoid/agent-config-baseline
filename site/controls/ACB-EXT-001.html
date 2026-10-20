@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-EXT-001: In-process extension code is declared in package documentation</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-EXT-001: In-process extension code is declared in package documentation</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>medium</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>extension-package</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>An extension package that ships in-process modules, code the agent host loads and runs inside its own process, names every such module in the package README. Modules are found wherever the host can load them: the package&#x27;s hook configuration files and its module directory.</p>
+<h2>Rationale</h2><p>In-process extension code runs with the user&#x27;s privileges, outside any sandbox that isolates the agent&#x27;s own commands, and can see and change every prompt and tool call. The same package format also carries skills and instructions, so a consumer who believes they are installing content can be installing code. Declaring each module in the documentation a consumer reads before installing makes that code visible at the point of decision, and makes a newly added module a documentation change a reviewer sees.</p>
+<h2>Audit procedures</h2>
+<h3><code>modules-documented</code> (inventory)</h3><p>Enumerate the package&#x27;s in-process modules: every module a hook configuration file lists, and every file with a module suffix in the package&#x27;s module directory, excluding test files. Each module&#x27;s package-relative path appears in the README at the package root. A package with in-process modules and no README fails.</p>
+<h2>Remediation</h2><p>Add a section to the package README that names each in-process module by its package-relative path and states what it does. If the package is meant to ship content only, remove the modules (see ACB-EXT-002).</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>modules-documented</code></h3><p>A mod is a plugin whose hooks/hooks.json lists a hooks module under `modules` (for example ./register.js, or .mjs, .cjs, .jsx, .ts, .mts, .cts or .tsx). The plugin manifest&#x27;s `hooks` field can name further hook files. Mods run inside Claude Code with the user&#x27;s permissions and are not sandboxed.</p><ul><li><a href="https://code.claude.com/docs/en/plugins/mods/reference">https://code.claude.com/docs/en/plugins/mods/reference</a></li><li><a href="https://code.claude.com/docs/en/plugins/manifest-reference">https://code.claude.com/docs/en/plugins/manifest-reference</a></li><li><a href="https://code.claude.com/docs/en/plugins/mods/overview">https://code.claude.com/docs/en/plugins/mods/overview</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04</li><li>OWASP Agentic Skills Top 10: AST02</li><li>Careful Adoption of Agentic AI Services risk areas: design-and-configuration, accountability</li><li>NIST CSF 2.0: ID.AM-02, ID.RA-09</li><li>https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf</li></ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-EXT-003: Extension capabilities are recorded and high-risk ones are justified</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-EXT-003: Extension capabilities are recorded and high-risk ones are justified</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>medium</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>extension-package</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>A package that ships in-process modules commits a capability record, extension-capabilities.txt at the package root, listing the events each module handles and the host API calls it makes in the form the client&#x27;s validator prints. Every high-risk capability the modules use (approving tool calls, rewriting prompts or tool calls, starting processes, making network requests, calling a model, reading secrets) is named and justified in the package README.</p>
+<h2>Rationale</h2><p>What in-process code can do is decided by the events it handles and the host calls it makes, not by its description. A committed record turns a new capability into a line in a diff that a reviewer sees, instead of a change buried in module source. Capabilities that let extension code approve actions, rewrite what the model reads or reach outside the host are the ones that defeat other controls, so each needs a stated reason.</p>
+<h2>Audit procedures</h2>
+<h3><code>record-present</code> (inventory)</h3><p>If the package ships in-process modules, extension-capabilities.txt exists at the package root, is readable text, and names every module by file name.</p>
+<h3><code>high-risk-documented</code> (pattern)</h3><p>Every event a module registers a handler for and every host API call it makes, as found in module source, that the client lists as high risk appears in the package README.</p>
+<h3><code>record-current</code> (structure)</h3><p>When the operator enables validators and the client defines one, the validator&#x27;s event and call lines for the package equal the lines in extension-capabilities.txt. Without an enabled, installed validator, this procedure is not evaluated rather than passed.</p>
+<h2>Remediation</h2><p>Generate the record with the client&#x27;s validator, commit it at the package root, and regenerate it in CI so a stale record fails review. Justify each high-risk capability in the README, or remove it.</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>record-current</code></h3><p>Generate the record with `claude plugin validate &lt;package-dir&gt;` and keep its `hooks:` and `calls:` lines in extension-capabilities.txt. Run `acb check --run-validators` where the claude CLI is installed to compare the record with the validator; without it this procedure is not evaluated. In the `hooks:` line, tool.check means the mod can approve or deny a tool call before a permission prompt, and tool.call and prompt.submit mean it sees and can change every tool call and prompt.</p><ul><li><a href="https://code.claude.com/docs/en/plugins/mods/admin">https://code.claude.com/docs/en/plugins/mods/admin</a></li><li><a href="https://code.claude.com/docs/en/plugins/mods/reference">https://code.claude.com/docs/en/plugins/mods/reference</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI02, ASI04</li><li>OWASP Agentic Skills Top 10: AST02</li><li>Careful Adoption of Agentic AI Services risk areas: privilege, accountability</li><li>NIST CSF 2.0: ID.AM-02, ID.RA-09</li><li>https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf</li></ul>
+</main>
+</body>
+</html>
