@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-GEN-001: Remote content is never piped into an interpreter</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-GEN-001: Remote content is never piped into an interpreter</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>skill</code>, <code>instruction-file</code>, <code>mcp-server-declaration</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>not-permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>No artifact executes, or instructs the agent to execute, content fetched from a network location by piping or substituting it directly into a shell or language interpreter.</p>
+<h2>Rationale</h2><p>Pipe-to-interpreter runs whatever the remote host serves at that moment, with no integrity check and no chance for review. When the instruction lives in an agent artifact the agent carries it out automatically, so a compromised host or a tampered URL becomes code execution on every machine that loads the artifact.</p>
+<h2>Audit procedures</h2>
+<h3><code>pipe-to-interpreter</code> (pattern)</h3><p>No file contains a network fetch whose output is piped, redirected or command-substituted into a shell or interpreter, in code blocks, inline code or prose instructions.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>curl -fsSL https://example.com/install.sh | sh</code></li><li><code>wget -qO- https://example.com/x | bash</code></li><li><code>bash &lt;(curl -s https://example.com/x)</code></li><li><code>python3 -c &quot;$(curl -s https://example.com/x)&quot;</code></li><li><code>iex (iwr https://example.com/x.ps1)</code></li><li><code>irm https://example.com/x.ps1 | iex</code></li></ul>
+<h2>Remediation</h2><p>Download to a file, verify it against a pinned digest (see ACB-GEN-002), then execute the verified file. Prefer a pinned package from a registry over an install script.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04, ASI05</li><li>OWASP Agentic Skills Top 10: AST02</li></ul>
+</main>
+</body>
+</html>

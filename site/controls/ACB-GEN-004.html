@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-GEN-004: Artifacts contain no invisible or bidirectional control characters</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-GEN-004: Artifacts contain no invisible or bidirectional control characters</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>skill</code>, <code>instruction-file</code>, <code>mcp-server-declaration</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>not-permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>No artifact contains Unicode characters that are invisible or that reorder displayed text, so that what a human reviewer sees is what the model reads.</p>
+<h2>Rationale</h2><p>Models read code points, reviewers read rendered glyphs. Zero-width characters, Unicode tag characters and bidirectional overrides let an author hide instructions that render as nothing, or as something else, in diffs, editors and registry pages. This is a cheap, reliable way to get unreviewed instructions into model context.</p>
+<h2>Audit procedures</h2>
+<h3><code>forbidden-code-points</code> (pattern)</h3><p>No file contains any of: U+200B-U+200F, U+202A-U+202E, U+2060-U+2064, U+2066-U+2069, U+FEFF (except as the first code point of a file), U+00AD, U+180E, U+034F, U+061C, U+3164, U+2800, U+FFF9, U+FE00-U+FE0F (variation selectors), U+E0100-U+E01EF (supplementary variation selectors), any code point in U+E0000-U+E007F (tag characters), or any code point in Unicode private use areas.</p>
+<h3><code>confusable-identifiers</code> (pattern)</h3><p>Skill names, file names and command names in code blocks contain only ASCII, so mixed-script look-alikes cannot impersonate a trusted name.</p>
+<h2>Remediation</h2><p>Strip the characters, review the decoded content to determine what was hidden, and treat the artifact as potentially malicious until the origin of the characters is explained.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI01</li><li>https://www.unicode.org/reports/tr36/</li><li>https://trojansource.codes/</li></ul>
+</main>
+</body>
+</html>

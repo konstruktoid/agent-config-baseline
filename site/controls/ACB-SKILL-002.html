@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-SKILL-002: Skills do not pre-approve tools</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-SKILL-002: Skills do not pre-approve tools</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>skill</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>The experimental `allowed-tools` frontmatter field is absent. A skill does not grant itself permission to run tools without the confirmation the user or operator has configured.</p>
+<h2>Rationale</h2><p>`allowed-tools` lets a skill author decide, at install time, which tool calls skip human approval. That moves an authorization decision from the person running the agent to whoever wrote the skill, and it travels with the skill through every registry and fork. Support for the field varies between clients, so its effect on any given installation is also hard to predict. A strict baseline keeps approval decisions with the operator.</p>
+<h2>Audit procedures</h2>
+<h3><code>no-allowed-tools</code> (structure)</h3><p>The parsed frontmatter of SKILL.md does not contain a key that pre-approves tools, at the top level or nested under `metadata`. This includes the specified `allowed-tools` key and common variant spellings of it (`allowed_tools`, `allowedTools`): the intent this control blocks is self-granted tool approval, and that intent does not depend on which casing or separator a client happens to read.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>allowed-tools: Bash Read Write</code></li><li><code>allowed-tools: Bash(*)</code></li><li><code>allowedTools: Bash Read Write</code></li></ul>
+<h2>Remediation</h2><p>Remove `allowed-tools`. Document the tools the skill needs in the body or in `compatibility` so the operator can decide whether to grant them in their own client configuration.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI02, ASI03</li><li>Specification: https://agentskills.io/specification</li></ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-GEN-002: External code and dependencies are pinned immutably</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-GEN-002: External code and dependencies are pinned immutably</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>skill</code>, <code>instruction-file</code>, <code>mcp-server-declaration</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>Every package, tool, container image or remote file that an artifact installs, runs or instructs the agent to install or run is pinned to an immutable reference: an exact version with an integrity digest, a content digest, or a full commit hash.</p>
+<h2>Rationale</h2><p>Agent artifacts are executed long after review. A floating reference (latest, a branch, a version range, an unversioned package name) means the code that runs is not the code that was reviewed. MCP server declarations that launch unpinned packages through a package runner are a common case: every client start may fetch a different release.</p>
+<h2>Audit procedures</h2>
+<h3><code>package-runners-pinned</code> (pattern)</h3><p>Invocations of package runners and installers specify an exact version. Version ranges, dist-tags and bare package names fail.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>npx -y @example/mcp-server</code></li><li><code>npx @example/tool@latest</code></li><li><code>uvx example-tool</code></li><li><code>pip install example</code></li><li><code>go install example.com/tool@latest</code></li></ul>
+<h3><code>lockfile-or-hash</code> (pattern)</h3><p>Where an exact version is given, an integrity mechanism is also present: a lockfile with hashes bundled in the artifact, a --require-hashes style flag, or an explicit digest check.</p>
+<h3><code>images-by-digest</code> (pattern)</h3><p>Container image references include an @sha256: digest.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>docker run example/server:latest</code></li><li><code>docker run example/server:1.2</code></li></ul>
+<h3><code>downloads-verified</code> (pattern)</h3><p>Every fetched URL (curl, wget, Invoke-WebRequest, language HTTP clients in scripts) is followed by a digest verification against a value in the artifact, or the URL itself contains a full 40 or 64 character commit hash.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>curl -o tool https://example.com/releases/latest/tool</code></li><li><code>https://raw.githubusercontent.com/example/repo/main/script.sh</code></li></ul>
+<h2>Remediation</h2><p>Pin every reference to an exact version and add an integrity check: bundle a hashed lockfile, pin images by digest, reference repository content by commit hash, and verify downloaded files with a pinned SHA-256 before use.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI04</li><li>OWASP Agentic Skills Top 10: AST02</li><li>https://slsa.dev/</li></ul>
+</main>
+</body>
+</html>

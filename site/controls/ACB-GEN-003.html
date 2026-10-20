@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-GEN-003: Artifacts contain no embedded secrets</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-GEN-003: Artifacts contain no embedded secrets</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>skill</code>, <code>instruction-file</code>, <code>mcp-server-declaration</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>not-permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>No artifact contains credentials, tokens, private keys or connection strings with embedded passwords. MCP server declarations reference secrets through environment variable indirection or a secret store, never as literal values.</p>
+<h2>Rationale</h2><p>Agent artifacts are designed to be shared, forked and published to registries, and their contents are loaded into model context where they can be echoed, logged or exfiltrated. A secret in an artifact is a secret disclosed to every consumer and every agent session that reads it.</p>
+<h2>Audit procedures</h2>
+<h3><code>secret-scan</code> (pattern)</h3><p>Run a secret scanner with high-confidence provider rules and generic high-entropy detection over all files. Any finding fails.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>-----BEGIN OPENSSH PRIVATE KEY-----</code></li><li><code>postgres://admin:hunter2@db.example.com/prod</code></li></ul>
+<h3><code>mcp-env-indirection</code> (structure)</h3><p>In MCP server declarations, values of `env`, `headers` and argument fields whose key or flag name suggests a credential (token, key, secret, password, auth) are environment-variable references or placeholders, not literals.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>&quot;env&quot;: {&quot;API_TOKEN&quot;: &quot;sk-live-...&quot;}</code></li><li><code>&quot;Authorization&quot;: &quot;Bearer eyJ...&quot;</code></li></ul>
+<h2>Remediation</h2><p>Remove the secret, rotate it, and purge it from version history. Replace literals with environment variable references and document the variable name the consumer must provide.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI03</li></ul>
+</main>
+</body>
+</html>
