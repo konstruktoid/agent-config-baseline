@@ -1,0 +1,21 @@
+# Local agent session state
+.claude/
+
+# Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+# Fixtures include deliberate compiled files.
+!tests/fixtures/**/*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Build output
+build/
+dist/
+*.egg-info/
+
+# Coverage
+.coverage
+htmlcov/
