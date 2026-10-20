@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from acb.extensions import analyse_package, readme_text
+from acb.extensions import analyse_package, mentions, readme_text
 from acb.model import Finding, Outcome
 
 CONTROL_ID = "ACB-EXT-001"
@@ -29,7 +29,7 @@ def _check_modules_documented(ctx) -> list[Finding]:
             continue
         for module in analysis.modules:
             name = module.relative_to(package.root).as_posix()
-            if name not in readme:
+            if not mentions(readme, name):
                 where = "the package has no README" if readme == "" else "the package README does not name it"
                 findings.append(_finding(Outcome.FAIL, f"in-process module {name} is undeclared: {where}", ctx.relative(module)))
     return findings

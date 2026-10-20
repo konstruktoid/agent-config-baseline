@@ -44,5 +44,15 @@ def test_guard_module_without_module_test_fails(tmp_path):
     (tmp_path / "hooks" / "register.js").write_text("export function register(on) { on('tool.call', g) }\n")
     findings = AUDITS["guards-have-tests"](context_for(tmp_path, BUNDLED))
     assert [f.path for f in findings] == ["hooks/register.js"]
-    (tmp_path / "hooks" / "register.test.ts").write_text("// fires tool.call and asserts deny\n")
+    (tmp_path / "hooks" / "other.test.ts").write_text("// tests something else\n")
+    assert AUDITS["guards-have-tests"](context_for(tmp_path, BUNDLED))
+    (tmp_path / "hooks" / "register.test.ts").write_text("import { register } from './register.js'\n")
     assert AUDITS["guards-have-tests"](context_for(tmp_path, BUNDLED)) == []
+
+
+def test_notes_under_tests_do_not_count_as_a_test(tmp_path):
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "guard.sh").write_text("exit 2\n")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "notes.txt").write_text("TODO: test guard.sh\n")
+    assert _settings(tmp_path, "sh scripts/guard.sh")

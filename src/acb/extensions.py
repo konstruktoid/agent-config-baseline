@@ -25,6 +25,21 @@ CAPABILITY_RECORD = "extension-capabilities.txt"
 _README_NAMES = ("readme.md", "readme", "readme.txt")
 _MISSING = object()
 _VALIDATOR_TIMEOUT_SECONDS = 120
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def mentions(text: str, name: str, after_directory: bool = False) -> bool:
+    """Whether text names `name` as a whole token, not as part of a longer name.
+
+    With after_directory, a leading path such as `hooks/` or `./` still counts.
+    """
+    before = r"(?<![\w.-])" if after_directory else r"(?<![\w./-])"
+    return re.search(before + re.escape(name) + r"(?![\w/-])", text) is not None
+
+
+def _same(a: object, b: object) -> bool:
+    # JSON true and 1 compare equal in Python; a policy value must match in type too.
+    return type(a) is type(b) and a == b
 
 
 def get_key(data: object, key_path: list[str]) -> object:
@@ -52,10 +67,10 @@ def requirement_failures(settings: SettingsFile, requirements: list[dict]) -> li
     for req in requirements:
         value = get_key(settings.data, req["key"])
         key = ".".join(req["key"])
-        if req["check"] == "equals" and value != req["value"]:
+        if req["check"] == "equals" and not _same(value, req["value"]):
             shown = "unset" if value is _MISSING else json.dumps(value)
             failures.append(f"`{key}` must be {json.dumps(req['value'])} (is {shown})")
-        elif req["check"] == "not-equals" and value is not _MISSING and value == req["value"]:
+        elif req["check"] == "not-equals" and value is not _MISSING and _same(value, req["value"]):
             failures.append(f"`{key}` must not be {json.dumps(req['value'])}")
         elif req["check"] == "contains-if-present" and value is not _MISSING:
             if not isinstance(value, list) or req["value"] not in value:
@@ -64,7 +79,8 @@ def requirement_failures(settings: SettingsFile, requirements: list[dict]) -> li
 
 
 def _inside(path: Path, root: Path) -> bool:
-    return Path(os.path.normpath(path)).is_relative_to(root)
+    """Containment after symlink resolution, so a symlinked directory cannot lead outside."""
+    return Path(os.path.realpath(path)).is_relative_to(os.path.realpath(root))
 
 
 @dataclass
@@ -107,18 +123,24 @@ def analyse_package(package: ExtensionPackage, profile: dict) -> PackageAnalysis
         if has_key(package.manifest_data, comp["key"]):
             result.components.append((comp["kind"], f"manifest `{'.'.join(comp['key'])}`", package.manifest))
 
-    hook_files = [root / rel for rel in ext.get("hook_files", [])]
+    # Default hook files are optional; a hook file the manifest names must exist.
+    hook_files = [(root / rel, False) for rel in ext.get("hook_files", [])]
     manifest_hooks = get_key(package.manifest_data, ext.get("hook_files_manifest_key", ["\0"]))
     if manifest_hooks is not _MISSING:
         for item in manifest_hooks if isinstance(manifest_hooks, list) else [manifest_hooks]:
             if isinstance(item, dict):
                 result.hook_configs.append(("manifest", {"hooks": item}))
-        hook_files += [root / p for p in _manifest_paths(manifest_hooks) if p.endswith(".json")]
+        hook_files += [(root / p, True) for p in _manifest_paths(manifest_hooks) if p.endswith(".json")]
 
     modules: list[Path] = []
     list_key = ext.get("module_list_key")
-    for hook_file in hook_files:
-        if not hook_file.exists() or not _inside(hook_file, root):
+    for hook_file, declared in hook_files:
+        if not _inside(hook_file, root):
+            result.unreadable.append(f"hook file {hook_file.relative_to(root).as_posix()} resolves outside the package")
+            continue
+        if not hook_file.exists():
+            if declared:
+                result.unreadable.append(f"manifest names hook file {hook_file.relative_to(root).as_posix()}, which does not exist")
             continue
         rel = hook_file.relative_to(root).as_posix()
         text = safe_read_text(hook_file)
@@ -143,10 +165,15 @@ def analyse_package(package: ExtensionPackage, profile: dict) -> PackageAnalysis
     test_suffixes = tuple(ext.get("module_test_suffixes", []))
     for rel_dir in ext.get("module_dirs", []):
         directory = root / rel_dir
-        if directory.is_dir() and suffixes:
-            for path in sorted(directory.rglob("*")):
-                if path.is_file() and path.name.endswith(suffixes) and not path.name.endswith(test_suffixes):
-                    modules.append(path)
+        if not directory.is_dir() or not suffixes:
+            continue
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for name in sorted(dirnames):
+                if (Path(dirpath) / name).is_symlink():
+                    result.unreadable.append(f"{(Path(dirpath) / name).relative_to(root).as_posix()} is a symlinked directory; not followed")
+            for name in sorted(filenames):
+                if name.endswith(suffixes) and not name.endswith(test_suffixes):
+                    modules.append(Path(dirpath) / name)
 
     result.modules = list(dict.fromkeys(modules))
     for module in result.modules:
@@ -162,7 +189,8 @@ def module_capabilities(module: Path, profile: dict) -> tuple[set[str], set[str]
     ext = profile.get("extension_packages", {})
     events = {m.group(1) for m in re.finditer(ext["module_event_pattern"], text)} if ext.get("module_event_pattern") else set()
     calls = {m.group(1) for m in re.finditer(ext["module_call_pattern"], text)} if ext.get("module_call_pattern") else set()
-    return events, calls
+    # Patterns may tolerate whitespace and optional chaining; report the plain spelling.
+    return events, {re.sub(r"[\s?]", "", call) for call in calls}
 
 
 def readme_text(package: ExtensionPackage) -> str | None:
@@ -196,7 +224,8 @@ class ValidatorResult:
 
 def run_validator(package: ExtensionPackage, profile: dict) -> ValidatorResult:
     """Run the client's validator on the package without a shell, from an empty
-    working directory so no project configuration next to the scan is loaded."""
+    working directory and home, with only PATH inherited, so neither project nor
+    user configuration nor credentials in the environment reach it."""
     validator = profile.get("extension_packages", {}).get("validator")
     if not validator:
         return ValidatorResult(None, f"client {package.client} declares no capability validator")
@@ -212,14 +241,19 @@ def run_validator(package: ExtensionPackage, profile: dict) -> ValidatorResult:
                 capture_output=True,
                 encoding="utf-8",
                 errors="replace",
+                env={"PATH": os.environ.get("PATH", os.defpath), "HOME": cwd},
                 timeout=_VALIDATOR_TIMEOUT_SECONDS,
                 check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return ValidatorResult(None, f"validator could not run: {exc}")
     if proc.returncode != 0:
-        return ValidatorResult(None, f"validator exited {proc.returncode}: {proc.stdout.strip()[-300:]}")
-    return ValidatorResult(parse_capability_lines(proc.stdout, profile))
+        tail = _CONTROL_CHARS.sub("", proc.stdout.strip()[-300:])
+        return ValidatorResult(None, f"validator exited {proc.returncode}: {tail}")
+    lines = parse_capability_lines(proc.stdout, profile)
+    if not lines:
+        return ValidatorResult(None, "validator output had no capability lines; its format may have changed")
+    return ValidatorResult(lines)
 
 
 @dataclass(frozen=True)

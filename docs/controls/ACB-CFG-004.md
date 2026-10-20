@@ -37,7 +37,7 @@ Client-specific facts from `clients/`; the control above is the requirement.
 
 ### claude-code: `approval-not-delegated`
 
-A mod that handles tool.check gives its answer after permission rules and PreToolUse hooks; where the built-in guard does not load, its approval can skip ask rules, PreToolUse hooks and deny rules.
+A mod that handles tool.check gives its answer after permission rules and PreToolUse hooks; where the built-in guard does not load, its approval can skip ask rules, PreToolUse hooks and deny rules. Source matching is best effort (a handler registered through an alias is not seen); the validator's hooks: line, checked by ACB-EXT-003 record-current, is the authoritative list.
 
 - https://code.claude.com/docs/en/permissions
 - https://code.claude.com/docs/en/plugins/mods/admin

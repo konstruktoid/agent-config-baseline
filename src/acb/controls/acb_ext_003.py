@@ -5,6 +5,7 @@ from __future__ import annotations
 from acb.extensions import (
     CAPABILITY_RECORD,
     analyse_package,
+    mentions,
     module_capabilities,
     parse_capability_lines,
     readme_text,
@@ -31,7 +32,7 @@ def _packages_with_modules(ctx):
 def _check_record_present(ctx) -> list[Finding]:
     audit = "record-present"
     findings: list[Finding] = []
-    for package, _profile, analysis in _packages_with_modules(ctx):
+    for package, profile, analysis in _packages_with_modules(ctx):
         record = package.root / CAPABILITY_RECORD
         rel = ctx.relative(record)
         if not record.exists():
@@ -41,8 +42,9 @@ def _check_record_present(ctx) -> list[Finding]:
         if text is None:
             findings.append(_finding(audit, Outcome.NOT_EVALUATED, f"{CAPABILITY_RECORD} could not be read", rel))
             continue
+        recorded_modules = {module for module, _kind, _items in parse_capability_lines(text, profile)}
         for module in analysis.modules:
-            if module.name not in text:
+            if module.name not in recorded_modules:
                 findings.append(
                     _finding(audit, Outcome.FAIL, f"{CAPABILITY_RECORD} does not record module {module.name}", ctx.relative(module))
                 )
@@ -65,7 +67,7 @@ def _check_high_risk_documented(ctx) -> list[Finding]:
                 continue
             events, calls = capabilities
             for capability in sorted((events | calls) & high_risk):
-                if capability not in readme:
+                if not mentions(readme, capability):
                     findings.append(
                         _finding(
                             audit,

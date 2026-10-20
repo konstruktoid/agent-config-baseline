@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from acb.clients import ClientData
+from acb.model import Outcome
 from tests._harness import context_for
 
 FIXTURES_ROOT = Path(__file__).resolve().parent.parent / "fixtures"
@@ -46,4 +47,6 @@ def check_pass_and_fail(
 
         if fail_dir.is_dir():
             findings = check(context_for(fail_dir, clients))
-            assert findings, f"{control_id}/{audit_id} fail fixture produced no findings"
+            assert any(f.outcome == Outcome.FAIL for f in findings), (
+                f"{control_id}/{audit_id} fail fixture produced no FAIL finding: {findings}"
+            )

@@ -8,6 +8,9 @@ agent_settings:
     - match: .claude/settings.json
       scope: project
       source: https://code.claude.com/docs/en/settings
+    - match: .claude/settings.local.json
+      scope: project
+      source: https://code.claude.com/docs/en/settings
     - match: managed-settings.json
       scope: managed
       source: https://code.claude.com/docs/en/plugins/mods/admin
@@ -84,8 +87,8 @@ extension_packages:
   module_dirs: [hooks]
   module_suffixes: [.js, .mjs, .cjs, .jsx, .ts, .mts, .cts, .tsx]
   module_test_suffixes: [.test.ts, .test.tsx]
-  module_event_pattern: "\\bon\\(\\s*['\"`]([a-z]+(?:\\.[A-Za-z]+)+)['\"`]"
-  module_call_pattern: "(\\$\\.[a-z]+\\.[A-Za-z]+)\\s*\\("
+  module_event_pattern: "\\bon\\s*\\(\\s*['\"`]([a-z]+(?:\\.[A-Za-z]+)+)['\"`]"
+  module_call_pattern: "(\\$\\s*\\??\\.\\s*[a-z]+\\s*\\??\\.\\s*[A-Za-z]+)\\s*\\("
   guard_events: [tool.call, tool.check]
   approval_events: [tool.check]
   high_risk_capabilities:
@@ -211,7 +214,10 @@ audit_notes:
     note: >-
       A mod that handles tool.check gives its answer after permission rules
       and PreToolUse hooks; where the built-in guard does not load, its
-      approval can skip ask rules, PreToolUse hooks and deny rules.
+      approval can skip ask rules, PreToolUse hooks and deny rules. Source
+      matching is best effort (a handler registered through an alias is not
+      seen); the validator's hooks: line, checked by ACB-EXT-003
+      record-current, is the authoritative list.
     sources:
       - https://code.claude.com/docs/en/permissions
       - https://code.claude.com/docs/en/plugins/mods/admin

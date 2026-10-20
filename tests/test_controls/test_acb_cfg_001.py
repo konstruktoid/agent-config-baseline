@@ -29,7 +29,7 @@ def test_write_rules_and_allow_rules_do_not_count(tmp_path):
     rules = {"deny": ["Write(.claude/**)"], "ask": ["Edit(.claude/**)"]}
     (tmp_path / ".claude" / "settings.json").write_text(json.dumps({"permissions": rules}))
     findings = AUDITS["self-protection-rules"](context_for(tmp_path, BUNDLED))
-    assert any(".claude/" in f.message for f in findings)
+    assert len(findings) == len(BUNDLED.profile("claude-code")["self_protection_rules"])
 
 
 def test_unparseable_settings_file_is_unscanned(tmp_path):
