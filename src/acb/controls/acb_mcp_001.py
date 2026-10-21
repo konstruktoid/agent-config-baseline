@@ -12,7 +12,7 @@ CONTROL_ID = "ACB-MCP-001"
 _URL_KEYS = ("url", "serverUrl")
 _TLS_SCHEMES = {"https", "wss"}
 _AUTH_KEYS = {"auth", "oauth", "authorization"}
-_AUTH_HEADERS = {"authorization", "proxy-authorization", "x-api-key", "api-key", "apikey"}
+_AUTH_HEADERS = {"authorization", "x-api-key", "api-key", "apikey"}
 
 
 def _is_loopback(host: str) -> bool:
@@ -64,7 +64,11 @@ def _check_tls(ctx) -> list[Finding]:
         elif parts.scheme.lower() not in _TLS_SCHEMES:
             findings.append(
                 _finding(
-                    ctx, decl, "remote-uses-tls", Outcome.FAIL, f"server {name!r} uses cleartext scheme {parts.scheme!r}"
+                    ctx,
+                    decl,
+                    "remote-uses-tls",
+                    Outcome.FAIL,
+                    f"server {name!r} uses cleartext scheme {parts.scheme!r}",
                 )
             )
     return findings

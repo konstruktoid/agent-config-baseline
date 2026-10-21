@@ -21,3 +21,10 @@ def test_unparseable_url_is_not_evaluated(tmp_path):
     (tmp_path / "mcp.json").write_text('{"mcpServers": {"a": {"url": "${MCP_URL}/m"}}}')
     findings = AUDITS["remote-uses-tls"](context_for(tmp_path))
     assert [f.outcome for f in findings] == [Outcome.NOT_EVALUATED]
+
+
+def test_proxy_authorization_is_not_server_authentication(tmp_path):
+    (tmp_path / "mcp.json").write_text(
+        '{"mcpServers": {"a": {"url": "https://mcp.example.com/m", "headers": {"Proxy-Authorization": "${P}"}}}}'
+    )
+    assert AUDITS["remote-declares-auth"](context_for(tmp_path))

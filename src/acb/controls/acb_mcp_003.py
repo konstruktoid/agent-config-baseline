@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import re
+from pathlib import PurePosixPath, PureWindowsPath
 
+from acb.controls.acb_mcp_002 import WRAPPERS
 from acb.model import Finding, Outcome
 
 CONTROL_ID = "ACB-MCP-003"
@@ -25,6 +27,25 @@ def _env_pairs(env: object) -> list[tuple[str, str]]:
     return []
 
 
+_ASSIGNMENT_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$", re.DOTALL)
+
+
+def _is_wrapper(command: object) -> bool:
+    if not isinstance(command, str):
+        return False
+    name = PureWindowsPath(command).name if "\\" in command else PurePosixPath(command).name
+    return name.lower().removesuffix(".exe") in WRAPPERS
+
+
+def _wrapper_assignments(server: dict) -> list[tuple[str, str]]:
+    """NAME=value arguments of a wrapper such as env, which sets them for the program it launches."""
+    args = server.get("args")
+    if not _is_wrapper(server.get("command")) or not isinstance(args, list):
+        return []
+    matches = (_ASSIGNMENT_RE.match(arg) for arg in args if isinstance(arg, str))
+    return [(match.group(1), match.group(2)) for match in matches if match]
+
+
 def _hijacks(name: str, value: str) -> bool:
     upper = name.upper()
     if upper in _ALWAYS_HIJACK:
@@ -36,18 +57,18 @@ def _check_no_hijack_env(ctx) -> list[Finding]:
     findings: list[Finding] = []
     for decl in ctx.inventory.mcp_declarations:
         for name, server in decl.servers.items():
-            for key in _ENV_KEYS:
-                for var, value in _env_pairs(server.get(key)):
-                    if _hijacks(var, value):
-                        findings.append(
-                            Finding(
-                                control_id=CONTROL_ID,
-                                audit_id="no-hijack-env",
-                                outcome=Outcome.FAIL,
-                                message=f"server {name!r} sets process-startup hijack variable {var}",
-                                path=ctx.relative(decl.path),
-                            )
+            pairs = [pair for key in _ENV_KEYS for pair in _env_pairs(server.get(key))]
+            for var, value in pairs + _wrapper_assignments(server):
+                if _hijacks(var, value):
+                    findings.append(
+                        Finding(
+                            control_id=CONTROL_ID,
+                            audit_id="no-hijack-env",
+                            outcome=Outcome.FAIL,
+                            message=f"server {name!r} sets process-startup hijack variable {var}",
+                            path=ctx.relative(decl.path),
                         )
+                    )
     return findings
 
 

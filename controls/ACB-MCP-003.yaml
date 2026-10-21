@@ -17,8 +17,9 @@ rationale: >-
   load attacker-chosen code at start-up, before the server's own code runs
   and without that code appearing in command or args. OpenClaw fixed this
   by filtering such variables from workspace MCP stdio configuration
-  (GHSA-mj59-h3q9-ghfh, CVE-2026-44995, CWE-829); the advisory names
-  NODE_OPTIONS, LD_PRELOAD and BASH_ENV.
+  (advisory GHSA-mj59-h3q9-ghfh, which lists no known CVE and names
+  NODE_OPTIONS, LD_PRELOAD and BASH_ENV). VulnCheck assigned the issue
+  CVE-2026-44995 and CWE-829.
 audit:
   - id: no-hijack-env
     method: structure
@@ -26,11 +27,13 @@ audit:
       For each server entry with an env (or environment) mapping, or a list
       of name and value pairs, no entry sets LD_PRELOAD or BASH_ENV to a
       non-empty value, and NODE_OPTIONS does not contain a --require, -r,
-      --import, --loader or --experimental-loader option. Names are compared
-      case-insensitively.
+      --import, --loader or --experimental-loader option. The same holds for
+      NAME=value arguments of a wrapper command such as env. Names are
+      compared case-insensitively.
     indicators:
       - '"env": {"LD_PRELOAD": "/tmp/hook.so"}'
       - '"NODE_OPTIONS": "--require ./hook.js"'
+      - '"args": ["LD_PRELOAD=/tmp/hook.so", "node", "server.js"]'
 remediation: >-
   Remove the variable from the declaration. If the server needs code
   preloaded, make that part of the server's own package, where it is

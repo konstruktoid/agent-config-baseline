@@ -26,7 +26,7 @@ from acb.model import Control
 VERIFIED_AST_IDS = {"AST02"}
 
 # OWASP MCP Top 10 (2025 entries, beta) IDs, titles and links as listed on
-# https://owasp.org/projects/mcp-top-10, linked to the commit-pinned entry
+# https://owasp.org/projects/mcp-top-10 (MCP06 is titled as in its entry file, not as in the project page), linked to the commit-pinned entry
 # files so a reviewer can verify each mapping (PROMPT.md ground rule 4).
 MCP_URL = "https://owasp.org/projects/mcp-top-10"
 OWASP_MCP = {
@@ -35,7 +35,7 @@ OWASP_MCP = {
     "MCP03": ("Tool Poisoning", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP03-2025%E2%80%93Tool-Poisoning.md"),
     "MCP04": ("Software Supply Chain Attacks & Dependency Tampering", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP04-2025%E2%80%93Software-Supply-Chain-Attacks%26Dependency-Tampering.md"),
     "MCP05": ("Command Injection & Execution", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP05-2025%E2%80%93Command-Injection%26Execution.md"),
-    "MCP06": ("Prompt Injection via Contextual Payloads", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP06-2025%E2%80%93Intent-Flow-Subversion.md"),
+    "MCP06": ("Intent Flow Subversion", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP06-2025%E2%80%93Intent-Flow-Subversion.md"),
     "MCP07": ("Insufficient Authentication & Authorization", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP07-2025%E2%80%93Insufficient-Authentication%26Authorization.md"),
     "MCP08": ("Lack of Audit and Telemetry", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP08-2025%E2%80%93Lack-of-Audit-and-Telemetry.md"),
     "MCP09": ("Shadow MCP Servers", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP09-2025%E2%80%93Shadow-MCP-Servers.md"),

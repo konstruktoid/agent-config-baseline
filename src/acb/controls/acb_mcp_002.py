@@ -10,7 +10,7 @@ from acb.model import Finding, Outcome
 CONTROL_ID = "ACB-MCP-002"
 
 _INTERPRETERS = {"sh", "bash", "zsh", "dash", "ash", "ksh", "fish", "csh", "tcsh", "cmd", "powershell", "pwsh"}
-_WRAPPERS = {
+WRAPPERS = {
     "env",
     "sudo",
     "doas",
@@ -27,7 +27,8 @@ _WRAPPERS = {
     "time",
 }
 _EVAL_FLAGS = {"/c", "/k", "-command", "-encodedcommand"}
-_POSIX_EVAL_FLAG_RE = re.compile(r"^-[a-z]*c$")
+# A cluster of short options that includes c, such as -c, -lc or -ce; -C (noclobber) is not one.
+_POSIX_EVAL_FLAG_RE = re.compile(r"^-[a-zA-Z]*c[a-zA-Z]*$")
 _SHELL_OPERATOR_RE = re.compile(r"[;&|<>$`\n]")
 
 
@@ -47,7 +48,7 @@ def _interpreter_args(command: str, args: object) -> list | None:
     name = _executable_name(command)
     if name in _INTERPRETERS:
         return args
-    if name in _WRAPPERS:
+    if name in WRAPPERS:
         for index, arg in enumerate(args):
             if isinstance(arg, str) and _executable_name(arg) in _INTERPRETERS:
                 return args[index + 1 :]
@@ -58,8 +59,7 @@ def _evaluates_string(args: list) -> bool:
     for arg in args:
         if not isinstance(arg, str):
             continue
-        flag = arg.lower()
-        if flag in _EVAL_FLAGS or _POSIX_EVAL_FLAG_RE.match(flag):
+        if arg.lower() in _EVAL_FLAGS or _POSIX_EVAL_FLAG_RE.match(arg):
             return True
     return False
 

@@ -15,18 +15,19 @@ A local MCP server declaration does not set, in its environment block, a variabl
 
 ## Rationale
 
-The environment block is passed to the spawned server process as written. A repository that ships an MCP declaration can use it to make the server load attacker-chosen code at start-up, before the server's own code runs and without that code appearing in command or args. OpenClaw fixed this by filtering such variables from workspace MCP stdio configuration (GHSA-mj59-h3q9-ghfh, CVE-2026-44995, CWE-829); the advisory names NODE_OPTIONS, LD_PRELOAD and BASH_ENV.
+The environment block is passed to the spawned server process as written. A repository that ships an MCP declaration can use it to make the server load attacker-chosen code at start-up, before the server's own code runs and without that code appearing in command or args. OpenClaw fixed this by filtering such variables from workspace MCP stdio configuration (advisory GHSA-mj59-h3q9-ghfh, which lists no known CVE and names NODE_OPTIONS, LD_PRELOAD and BASH_ENV). VulnCheck assigned the issue CVE-2026-44995 and CWE-829.
 
 ## Audit procedures
 
 ### `no-hijack-env` (structure)
 
-For each server entry with an env (or environment) mapping, or a list of name and value pairs, no entry sets LD_PRELOAD or BASH_ENV to a non-empty value, and NODE_OPTIONS does not contain a --require, -r, --import, --loader or --experimental-loader option. Names are compared case-insensitively.
+For each server entry with an env (or environment) mapping, or a list of name and value pairs, no entry sets LD_PRELOAD or BASH_ENV to a non-empty value, and NODE_OPTIONS does not contain a --require, -r, --import, --loader or --experimental-loader option. The same holds for NAME=value arguments of a wrapper command such as env. Names are compared case-insensitively.
 
 Illustrative failing indicators (non-exhaustive):
 
 - `"env": {"LD_PRELOAD": "/tmp/hook.so"}`
 - `"NODE_OPTIONS": "--require ./hook.js"`
+- `"args": ["LD_PRELOAD=/tmp/hook.so", "node", "server.js"]`
 
 ## Remediation
 

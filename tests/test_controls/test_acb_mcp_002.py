@@ -15,6 +15,8 @@ def test_acb_mcp_002_fixtures():
     "server",
     [
         {"command": "/bin/bash", "args": ["-lc", "run"]},
+        {"command": "bash", "args": ["-ce", "run"]},
+        {"command": "bash", "args": ["-ec", "run"]},
         {"command": "C:\\Windows\\System32\\cmd.exe", "args": ["/c", "run"]},
         {"command": "pwsh", "args": ["-Command", "run"]},
         {"command": "node `id`"},
@@ -34,6 +36,8 @@ def test_shell_forms_fail(tmp_path, server):
         {"command": "env", "args": ["FOO=1", "node", "server.js", "-c", "x"]},
         {"command": "sudo", "args": ["-n", "bash", "run.sh"]},
         {"command": "env"},
+        {"command": "bash", "args": ["-C", "run.sh"]},
+        {"command": "bash", "args": ["--norc", "run.sh"]},
     ],
 )
 def test_wrapper_without_a_string_evaluating_shell_passes(tmp_path, server):
