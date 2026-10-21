@@ -1,0 +1,8 @@
+# Paths that change what this repository trusts or publishes.
+/.github/ @konstruktoid
+/uv.lock @konstruktoid
+/pyproject.toml @konstruktoid
+/schema/ @konstruktoid
+/controls/ @konstruktoid
+/clients/ @konstruktoid
+/SECURITY.md @konstruktoid
