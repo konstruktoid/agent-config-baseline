@@ -15,7 +15,7 @@ An allow rule in the agent's committed permission configuration that pre-approve
 
 ## Rationale
 
-A reviewer who approves a tool server approves the tools it offered at that moment. A server-wide or pattern allow rule also approves every tool the server adds or redefines later, so a server whose package, endpoint or operator is compromised after review can introduce a tool that runs without anyone being asked. Naming each tool keeps a new tool behind the host's approval prompt and turns widening the approval into a reviewed change to the settings file.
+A reviewer who approves a tool server approves the tools it offered at that moment. A server-wide or pattern allow rule also approves every tool the server adds later, so a server whose package, endpoint or operator is compromised after review can introduce a tool that runs without anyone being asked. Naming each tool keeps a new tool behind the host's approval prompt and turns widening the approval into a reviewed change to the settings file. An exact-name rule still matches a tool whose description or behaviour changes after review, so this control does not cover redefinition of an approved tool.
 
 ## Audit procedures
 
@@ -39,7 +39,7 @@ Client-specific facts from `clients/`; the control above is the requirement.
 
 ### claude-code: `tools-allowed-by-name`
 
-MCP tools are named mcp__<server>__<tool>. As an allow rule, mcp__<server> and mcp__<server>__* match every tool of the server, and a glob after the mcp__<server>__ prefix, such as mcp__github__get_*, matches every tool whose name fits it. Unanchored allow globs such as mcp__* are skipped and approve nothing. Allow rules in a project's .claude/settings.json apply only after the workspace trust dialog, which lists them, is accepted.
+MCP tools are named `mcp__<server>__<tool>`. As an allow rule, `mcp__<server>` and `mcp__<server>__*` match every tool of the server, and a glob after the `mcp__<server>__` prefix, such as `mcp__github__get_*`, matches every tool whose name fits it. Unanchored allow globs such as `mcp__*` are skipped and approve nothing. Allow rules in a project's `.claude/settings.json` apply only after the workspace trust dialog, which lists them, is accepted.
 
 - https://code.claude.com/docs/en/permissions
 

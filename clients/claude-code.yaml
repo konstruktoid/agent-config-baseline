@@ -219,13 +219,13 @@ audit_notes:
   - control: ACB-CFG-005
     audit: tools-allowed-by-name
     note: >-
-      MCP tools are named mcp__<server>__<tool>. As an allow rule,
-      mcp__<server> and mcp__<server>__* match every tool of the server, and
-      a glob after the mcp__<server>__ prefix, such as mcp__github__get_*,
-      matches every tool whose name fits it. Unanchored allow globs such as
-      mcp__* are skipped and approve nothing. Allow rules in a project's
-      .claude/settings.json apply only after the workspace trust dialog,
-      which lists them, is accepted.
+      MCP tools are named `mcp__<server>__<tool>`. As an allow rule,
+      `mcp__<server>` and `mcp__<server>__*` match every tool of the server,
+      and a glob after the `mcp__<server>__` prefix, such as
+      `mcp__github__get_*`, matches every tool whose name fits it.
+      Unanchored allow globs such as `mcp__*` are skipped and approve
+      nothing. Allow rules in a project's `.claude/settings.json` apply only
+      after the workspace trust dialog, which lists them, is accepted.
     sources:
       - https://code.claude.com/docs/en/permissions
   - control: ACB-CFG-004

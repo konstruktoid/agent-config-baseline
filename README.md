@@ -91,12 +91,12 @@ that reads it still passes. The baseline narrows what such a server can do:
 
 - ACB-GEN-002 pins a local server's package, so a malicious release is not
   picked up without a reviewed version change.
-- ACB-MCP-001 requires TLS and declared authentication, so the endpoint
-  cannot be swapped in transit or reached without credentials.
+- ACB-MCP-001 requires an encrypted endpoint and a declared authentication
+  method. It checks the declaration, not whether the server enforces it.
 - ACB-MCP-002 and ACB-MCP-003 keep the declaration itself from running
   code the reviewer did not see.
-- ACB-CFG-005 keeps allow rules from approving tools the server adds or
-  redefines after review.
+- ACB-CFG-005 keeps allow rules from approving tools the server adds after
+  review. A tool approved by name stays approved if the server redefines it.
 
 A static check of configuration files cannot detect the following, and
 the baseline does not claim to:
