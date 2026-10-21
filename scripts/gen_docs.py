@@ -9,14 +9,15 @@ from __future__ import annotations
 
 import html
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from acb.clients import load_clients  # noqa: E402
-from acb.loader import load_controls  # noqa: E402
-from acb.model import Control  # noqa: E402
+from acb.clients import load_clients
+from acb.loader import load_controls
+from acb.model import Control
 
 # OWASP AST IDs verified against the published OWASP Agentic Skills Top 10
 # (August 2026) so far (PROMPT.md ground rule 4). Any owasp_ast id used by a
@@ -77,12 +78,12 @@ def client_notes(clients) -> dict[str, list[tuple[str, dict]]]:
     return notes
 
 
-def render_control(control: Control, notes: list[tuple[str, dict]] = ()) -> str:
+def render_control(control: Control, notes: Sequence[tuple[str, dict]] = ()) -> str:
     lines = [
         f"# {control.id}: {control.title}",
         "",
-        f"| Field | Value |",
-        f"| --- | --- |",
+        "| Field | Value |",
+        "| --- | --- |",
         f"| Status | `{control.status}` |",
         f"| Severity | `{control.severity.value}` |",
         f"| Check type | `{control.check_type}` |",
@@ -270,7 +271,7 @@ def page(title: str, body: str, root: str) -> str:
     )
 
 
-def render_control_html(control: Control, notes: list[tuple[str, dict]] = ()) -> str:
+def render_control_html(control: Control, notes: Sequence[tuple[str, dict]] = ()) -> str:
     rows = [
         ["Status", code(control.status)],
         ["Severity", code(control.severity.value)],

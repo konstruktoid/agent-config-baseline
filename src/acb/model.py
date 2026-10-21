@@ -72,7 +72,7 @@ class Control:
         return tuple(a.id for a in self.audit)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], source_path: Path) -> "Control":
+    def from_dict(cls, data: dict[str, Any], source_path: Path) -> Control:
         audits = tuple(
             AuditProcedure(
                 id=a["id"],

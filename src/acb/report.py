@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
-from urllib.parse import quote
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from acb.clients import ClientData
 from acb.config import CheckerConfig
@@ -87,9 +87,11 @@ def format_text(controls: list[Control], findings: list[Finding], info: RunInfo)
     inv = run["inventory"]
     lines = [
         f"acb {info.version} (strict-general) PATH: {info.target}",
-        f"inventory: {inv['skills']} skill(s), {inv['instruction_files']} instruction file(s), "
-        f"{inv['mcp_declarations']} MCP declaration(s), {inv['extension_packages']} extension package(s), "
-        f"{inv['agent_settings']} agent settings file(s)",
+        (
+            f"inventory: {inv['skills']} skill(s), {inv['instruction_files']} instruction file(s), "
+            f"{inv['mcp_declarations']} MCP declaration(s), {inv['extension_packages']} extension package(s), "
+            f"{inv['agent_settings']} agent settings file(s)"
+        ),
         f"config: {run['config'] or 'none'}",
     ]
     for exclusion in run["exclusions"]:

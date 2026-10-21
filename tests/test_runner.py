@@ -1,10 +1,11 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-import acb.runner as runner
+from acb import runner
 from acb.clients import ClientData
-from acb.discovery import Inventory, InstructionFile, Unscanned
+from acb.discovery import InstructionFile, Inventory, Unscanned
 from acb.model import AuditProcedure, Control, Finding, Outcome, Severity
 
 
@@ -43,7 +44,7 @@ def _outcome(monkeypatch, tmp_path, audit, inventory=None) -> tuple[Outcome, lis
 
 
 def _finding(**overrides) -> Finding:
-    values = {"control_id": "ACB-GEN-999", "audit_id": "a1", "outcome": Outcome.FAIL, "message": "bad", "path": "x"}
+    values: dict[str, Any] = {"control_id": "ACB-GEN-999", "audit_id": "a1", "outcome": Outcome.FAIL, "message": "bad", "path": "x"}
     return Finding(**{**values, **overrides})
 
 

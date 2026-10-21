@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import importlib.resources as resources
 import json
 from functools import lru_cache
+from importlib import resources
 from pathlib import Path
 
 import jsonschema
 import yaml
+from jsonschema.protocols import Validator
 
 from acb.model import Control
 from acb.yamlsafe import safe_load_strict
@@ -54,7 +55,7 @@ def default_schema_path() -> Path:
 
 
 @lru_cache(maxsize=8)
-def schema_validator(name: str) -> jsonschema.Draft202012Validator:
+def schema_validator(name: str) -> Validator:
     schema = json.loads((default_schema_dir() / name).read_text(encoding="utf-8"))
     return jsonschema.Draft202012Validator(schema)
 

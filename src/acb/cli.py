@@ -17,7 +17,12 @@ from acb import __version__
 from acb.clients import ClientDataError, load_clients
 from acb.config import CONFIG_FILENAME, ConfigError, load_config
 from acb.discovery import discover
-from acb.exceptions import EXCEPTIONS_FILENAME, ExceptionsFileError, apply_exceptions, load_exceptions
+from acb.exceptions import (
+    EXCEPTIONS_FILENAME,
+    ExceptionsFileError,
+    apply_exceptions,
+    load_exceptions,
+)
 from acb.loader import (
     ControlLoadError,
     active_controls,

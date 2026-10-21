@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from acb.extensions import analyse_package, blocking_hooks, hook_script_files, mentions, module_capabilities
+from acb.extensions import (
+    analyse_package,
+    blocking_hooks,
+    hook_script_files,
+    mentions,
+    module_capabilities,
+)
 from acb.model import Finding, Outcome
 from acb.scan import safe_read_text
 
@@ -21,7 +27,7 @@ def _finding(outcome: Outcome, message: str, path: str | None) -> Finding:
 def _variables(profile: dict, project: Path, package: Path | None) -> dict[str, Path]:
     bases = {"project": project, "package": package}
     variables = profile.get("agent_settings", {}).get("hook_path_variables", {})
-    return {name: bases[kind] for name, kind in variables.items() if bases.get(kind) is not None}
+    return {name: base for name, kind in variables.items() if (base := bases.get(kind)) is not None}
 
 
 def _check_guards_have_tests(ctx) -> list[Finding]:

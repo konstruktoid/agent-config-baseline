@@ -19,9 +19,9 @@ shape.
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from acb.clients import ClientData
 from acb.discovery import Inventory
@@ -47,7 +47,15 @@ class CheckContext:
 
 AuditFunc = Callable[[CheckContext], list[Finding]]
 
-from acb.controls import (  # noqa: E402
+from acb.controls import (
+    acb_cfg_001,
+    acb_cfg_002,
+    acb_cfg_003,
+    acb_cfg_004,
+    acb_ext_001,
+    acb_ext_002,
+    acb_ext_003,
+    acb_ext_004,
     acb_gen_001,
     acb_gen_002,
     acb_gen_003,
@@ -58,14 +66,6 @@ from acb.controls import (  # noqa: E402
     acb_skill_001,
     acb_skill_002,
     acb_skill_003,
-    acb_ext_001,
-    acb_ext_002,
-    acb_ext_003,
-    acb_ext_004,
-    acb_cfg_001,
-    acb_cfg_002,
-    acb_cfg_003,
-    acb_cfg_004,
 )
 
 _MODULES = (
@@ -93,4 +93,4 @@ REGISTRY: dict[str, dict[str, AuditFunc]] = {}
 for _module in _MODULES:
     if _module.CONTROL_ID in REGISTRY:
         raise ImportError(f"{_module.__name__}: CONTROL_ID {_module.CONTROL_ID} is already registered")
-    REGISTRY[_module.CONTROL_ID] = _module.AUDITS
+    REGISTRY[_module.CONTROL_ID] = dict(_module.AUDITS)
