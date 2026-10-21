@@ -63,6 +63,7 @@
         },
         "deny_rules_key": { "$ref": "#/$defs/key_path" },
         "ask_rules_key": { "$ref": "#/$defs/key_path" },
+        "allow_rules_key": { "$ref": "#/$defs/key_path" },
         "hooks_key": { "$ref": "#/$defs/key_path" },
         "blocking_hook_events": {
           "type": "array",
@@ -87,6 +88,20 @@
       "description": "Deny-rule groups that stop the agent's own tools from installing or enabling extensions.",
       "type": "array",
       "items": { "$ref": "#/$defs/rule_group" }
+    },
+    "tool_server_allow_patterns": {
+      "description": "Allow rule forms that approve more than one named tool of a tool server, as regular expressions matched against each allow rule.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["patterns", "source"],
+      "properties": {
+        "patterns": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "source": { "$ref": "#/$defs/source" }
+      }
     },
     "managed_requirements": {
       "description": "Values a managed-scope settings file must hold.",

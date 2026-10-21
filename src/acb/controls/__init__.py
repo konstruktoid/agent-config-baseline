@@ -52,6 +52,7 @@ from acb.controls import (
     acb_cfg_002,
     acb_cfg_003,
     acb_cfg_004,
+    acb_cfg_005,
     acb_ext_001,
     acb_ext_002,
     acb_ext_003,
@@ -93,6 +94,7 @@ _MODULES = (
     acb_cfg_002,
     acb_cfg_003,
     acb_cfg_004,
+    acb_cfg_005,
 )
 
 REGISTRY: dict[str, dict[str, AuditFunc]] = {}
