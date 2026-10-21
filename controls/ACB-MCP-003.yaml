@@ -1,0 +1,47 @@
+schema_version: "1.0"
+id: ACB-MCP-003
+title: MCP server environment does not set process-startup hijack variables
+status: draft
+profiles: [strict-general]
+applies_to: [mcp-server-declaration]
+check_type: static
+severity: high
+description: >-
+  A local MCP server declaration does not set, in its environment block, a
+  variable that makes the launched process load code the declaration does
+  not name: LD_PRELOAD, BASH_ENV, or NODE_OPTIONS carrying a code-loading
+  option (--require, -r, --import, --loader, --experimental-loader).
+rationale: >-
+  The environment block is passed to the spawned server process as written.
+  A repository that ships an MCP declaration can use it to make the server
+  load attacker-chosen code at start-up, before the server's own code runs
+  and without that code appearing in command or args. OpenClaw fixed this
+  by filtering such variables from workspace MCP stdio configuration
+  (GHSA-mj59-h3q9-ghfh, CVE-2026-44995, CWE-829); the advisory names
+  NODE_OPTIONS, LD_PRELOAD and BASH_ENV.
+audit:
+  - id: no-hijack-env
+    method: structure
+    procedure: >-
+      For each server entry with an env (or environment) mapping, or a list
+      of name and value pairs, no entry sets LD_PRELOAD or BASH_ENV to a
+      non-empty value, and NODE_OPTIONS does not contain a --require, -r,
+      --import, --loader or --experimental-loader option. Names are compared
+      case-insensitively.
+    indicators:
+      - '"env": {"LD_PRELOAD": "/tmp/hook.so"}'
+      - '"NODE_OPTIONS": "--require ./hook.js"'
+remediation: >-
+  Remove the variable from the declaration. If the server needs code
+  preloaded, make that part of the server's own package, where it is
+  reviewed and pinned (see ACB-GEN-002), and keep NODE_OPTIONS to
+  non-loading options such as --max-old-space-size.
+exceptions: permitted
+references:
+  owasp_asi: [ASI05]
+  owasp_mcp: [MCP05]
+  five_eyes_risk_areas: [design-and-configuration]
+  nist_csf: [PR.PS-01, PR.PS-05]
+  other:
+    - https://github.com/openclaw/openclaw/security/advisories/GHSA-mj59-h3q9-ghfh
+    - https://www.vulncheck.com/advisories/openclaw-arbitrary-code-execution-via-mcp-stdio-environment-variables

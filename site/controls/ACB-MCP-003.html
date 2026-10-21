@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-MCP-003: MCP server environment does not set process-startup hijack variables</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-MCP-003: MCP server environment does not set process-startup hijack variables</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>mcp-server-declaration</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>A local MCP server declaration does not set, in its environment block, a variable that makes the launched process load code the declaration does not name: LD_PRELOAD, BASH_ENV, or NODE_OPTIONS carrying a code-loading option (--require, -r, --import, --loader, --experimental-loader).</p>
+<h2>Rationale</h2><p>The environment block is passed to the spawned server process as written. A repository that ships an MCP declaration can use it to make the server load attacker-chosen code at start-up, before the server&#x27;s own code runs and without that code appearing in command or args. OpenClaw fixed this by filtering such variables from workspace MCP stdio configuration (GHSA-mj59-h3q9-ghfh, CVE-2026-44995, CWE-829); the advisory names NODE_OPTIONS, LD_PRELOAD and BASH_ENV.</p>
+<h2>Audit procedures</h2>
+<h3><code>no-hijack-env</code> (structure)</h3><p>For each server entry with an env (or environment) mapping, or a list of name and value pairs, no entry sets LD_PRELOAD or BASH_ENV to a non-empty value, and NODE_OPTIONS does not contain a --require, -r, --import, --loader or --experimental-loader option. Names are compared case-insensitively.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>&quot;env&quot;: {&quot;LD_PRELOAD&quot;: &quot;/tmp/hook.so&quot;}</code></li><li><code>&quot;NODE_OPTIONS&quot;: &quot;--require ./hook.js&quot;</code></li></ul>
+<h2>Remediation</h2><p>Remove the variable from the declaration. If the server needs code preloaded, make that part of the server&#x27;s own package, where it is reviewed and pinned (see ACB-GEN-002), and keep NODE_OPTIONS to non-loading options such as --max-old-space-size.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: <a href="https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/">ASI05</a></li><li>OWASP MCP Top 10: <a href="https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP05-2025%E2%80%93Command-Injection%26Execution.md">MCP05</a></li><li>Careful Adoption of Agentic AI Services risk areas: <a href="https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9">design-and-configuration</a></li><li>NIST CSF 2.0: <a href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25">PR.PS-01</a>, <a href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25">PR.PS-05</a></li><li>https://github.com/openclaw/openclaw/security/advisories/GHSA-mj59-h3q9-ghfh</li><li>https://www.vulncheck.com/advisories/openclaw-arbitrary-code-execution-via-mcp-stdio-environment-variables</li></ul>
+</main>
+</body>
+</html>

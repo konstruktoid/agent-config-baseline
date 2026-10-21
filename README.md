@@ -48,7 +48,8 @@ client data describes where they live.
   common to skills, instruction files and MCP server declarations.
 - `MCP`: MCP server declarations. Remote servers use TLS and declare
   authentication (ACB-MCP-001), and local servers are launched as a named
-  executable, not through a shell (ACB-MCP-002).
+  executable, not through a shell (ACB-MCP-002), with no process-startup
+  hijack variables in the server's environment (ACB-MCP-003).
 - `EXT`: extension packages, the plugin or extension bundles an agent host
   installs. Some hosts load extension code into their own process with the
   user's privileges, outside the sandbox that isolates the agent's commands,
@@ -165,6 +166,38 @@ exception can waive that.
 
 `pyproject.toml` pins exact versions of `PyYAML` and `jsonschema`; `uv.lock`
 records the hashes, and CI installs with `uv sync --locked`.
+
+## FAQ
+
+### How does this relate to Agent Threat Rules (ATR)?
+
+[ATR](https://github.com/Agent-Threat-Rule/agent-threat-rules) is an
+MIT-licensed set of detection rules, mostly regular expressions, that match
+attack content in prompts, tool calls and tool responses, with a scanner
+that also reads skill and MCP files. This baseline is a set of pass/fail
+configuration controls that the checker evaluates without model calls or
+heuristics. The two answer different questions (is this content an attack, and
+is this configuration safe to ship), so they are meant to run side by side.
+
+### Are ATR rules part of this baseline?
+
+No. A control is added only when it is a structural check on a configuration
+artifact and cites an established source: an advisory, a CVE or a published
+standard. Most ATR rules match exploit payloads for one product at run time,
+which is out of scope here. ACB-MCP-003 is the one control derived from an
+ATR rule (ATR-2026-02300); it cites the underlying OpenClaw advisory
+(GHSA-mj59-h3q9-ghfh) and the VulnCheck record (CVE-2026-44995), not ATR
+itself. The advisory says "No known CVE"; the CVE comes from VulnCheck only.
+
+### Where do the mappings come from, and how do I check them?
+
+Every OWASP, Five Eyes and NIST CSF ID in a control links to its source in
+`docs/mappings.md` and on each control page. OWASP MCP Top 10 links point to
+the entry files, Five Eyes and CSF links point to a PDF page, and OWASP AST
+links point to the entry page. The OWASP Agentic Applications (ASI) links
+point to the list page only, because it exposes no per-entry URLs, and ASI IDs
+are not yet verified entry by entry. Only AST02 is verified (see
+`docs/mappings.md`).
 
 ## Licensing
 

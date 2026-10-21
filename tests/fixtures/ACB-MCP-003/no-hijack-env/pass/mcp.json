@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "example": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {"NODE_OPTIONS": "--max-old-space-size=2048", "LD_PRELOAD": "", "LOG_LEVEL": "info"}
+    }
+  }
+}
