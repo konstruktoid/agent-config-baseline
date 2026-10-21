@@ -42,6 +42,32 @@ OWASP_MCP = {
     "MCP10": ("Context Injection & Over-Sharing", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP10-2025%E2%80%93ContextInjection%26OverSharing.md"),
 }
 
+ASI_URL = "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/"
+AST_URL_BASE = "https://owasp.org/www-project-agentic-skills-top-10/"
+
+# PDF page (1-based, as a viewer counts) where each risk area's section starts
+# in the Careful Adoption PDF, found by extracting the text of FIVE_EYES_URL.
+FIVE_EYES_PAGES = {
+    "privilege": 7,
+    "design-and-configuration": 9,
+    "behaviour": 9,
+    "structural": 11,
+    "accountability": 12,
+}
+
+# PDF page of each subcategory's definition in NIST CSWP 29, found the same way.
+CSF_PAGES = {
+    "GV.RR-02": 22,
+    "ID.AM-02": 23,
+    "ID.IM-02": 24,
+    "ID.RA-09": 24,
+    "PR.AA-01": 24,
+    "PR.AA-05": 25,
+    "PR.PS-01": 25,
+    "PR.PS-05": 25,
+    "PR.PS-06": 25,
+}
+
 FIVE_EYES_TITLE = "Careful Adoption of Agentic AI Services (ASD's ACSC, CISA, NSA, CCCS, NCSC-NZ, NCSC-UK, May 2026)"
 FIVE_EYES_URL = "https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf"
 CSF_TITLE = "NIST Cybersecurity Framework 2.0 (NIST CSWP 29)"
@@ -142,15 +168,15 @@ def render_control(control: Control, notes: Sequence[tuple[str, dict]] = ()) -> 
     if refs:
         lines += ["## References", ""]
         if refs.get("owasp_asi"):
-            lines.append("- OWASP Top 10 for Agentic Applications 2026: " + ", ".join(refs["owasp_asi"]))
+            lines.append("- OWASP Top 10 for Agentic Applications 2026: " + md_links(refs["owasp_asi"], asi_url))
         if refs.get("owasp_ast"):
-            lines.append("- OWASP Agentic Skills Top 10: " + ", ".join(refs["owasp_ast"]))
+            lines.append("- OWASP Agentic Skills Top 10: " + md_links(refs["owasp_ast"], ast_url))
         if refs.get("owasp_mcp"):
-            lines.append("- OWASP MCP Top 10: " + ", ".join(f"[{i}]({mcp_entry(i)[1]})" for i in refs["owasp_mcp"]))
+            lines.append("- OWASP MCP Top 10: " + md_links(refs["owasp_mcp"], lambda i: mcp_entry(i)[1]))
         if refs.get("five_eyes_risk_areas"):
-            lines.append("- Careful Adoption of Agentic AI Services risk areas: " + ", ".join(refs["five_eyes_risk_areas"]))
+            lines.append("- Careful Adoption of Agentic AI Services risk areas: " + md_links(refs["five_eyes_risk_areas"], risk_url))
         if refs.get("nist_csf"):
-            lines.append("- NIST CSF 2.0: " + ", ".join(refs["nist_csf"]))
+            lines.append("- NIST CSF 2.0: " + md_links(refs["nist_csf"], csf_url))
         for spec in refs.get("specifications", []):
             lines.append(f"- Specification: {spec}")
         for other in refs.get("other", []):
@@ -176,6 +202,34 @@ def render_index(controls: list[Control]) -> str:
         lines.append(f"| [{control.id}]({control.id}.md) | {control.title} | {applies} | {control.severity.value} | {asi} | {ast} |")
     lines.append("")
     return "\n".join(lines)
+
+
+def asi_url(asi_id: str) -> str:
+    return ASI_URL
+
+
+def ast_url(ast_id: str) -> str:
+    return f"{AST_URL_BASE}{ast_id.lower()}.html"
+
+
+def risk_url(area: str) -> str:
+    if area not in FIVE_EYES_PAGES:
+        raise SystemExit(f"risk area {area} is not in FIVE_EYES_PAGES; find its page first")
+    return f"{FIVE_EYES_URL}#page={FIVE_EYES_PAGES[area]}"
+
+
+def csf_url(csf_id: str) -> str:
+    if csf_id not in CSF_PAGES:
+        raise SystemExit(f"NIST CSF ID {csf_id} is not in CSF_PAGES; find its page first")
+    return f"{CSF_URL}#page={CSF_PAGES[csf_id]}"
+
+
+def md_links(ids: list[str], url_for) -> str:
+    return ", ".join(f"[{i}]({url_for(i)})" for i in ids)
+
+
+def html_links(ids: list[str], url_for) -> str:
+    return ", ".join(f'<a href="{esc(url_for(i))}">{esc(i)}</a>' for i in ids)
 
 
 def mcp_entry(mcp_id: str) -> tuple[str, str]:
@@ -235,16 +289,18 @@ def render_mappings(controls: list[Control]) -> str:
         "",
         "## OWASP Top 10 for Agentic Applications 2026 (ASI)",
         "",
+        f"Source: {ASI_URL}",
+        "",
         "| ASI ID | Controls |",
         "| --- | --- |",
     ]
     for asi_id in sorted(asi_map):
-        lines.append(f"| {asi_id} | {', '.join(asi_map[asi_id])} |")
+        lines.append(f"| [{asi_id}]({asi_url(asi_id)}) | {', '.join(asi_map[asi_id])} |")
 
     lines += ["", "## OWASP Agentic Skills Top 10 (AST)", "", "| AST ID | Controls | Verified |", "| --- | --- | --- |"]
     for ast_id in sorted(ast_map):
         verified = "yes" if ast_id in VERIFIED_AST_IDS else "**TODO**"
-        lines.append(f"| {ast_id} | {', '.join(ast_map[ast_id])} | {verified} |")
+        lines.append(f"| [{ast_id}]({ast_url(ast_id)}) | {', '.join(ast_map[ast_id])} | {verified} |")
 
     lines += ["", "## TODO: unverified AST mappings", ""]
     if todo_ast:
@@ -264,7 +320,7 @@ def render_mappings(controls: list[Control]) -> str:
 
     lines += ["", f"## {FIVE_EYES_TITLE}", "", f"Source: {FIVE_EYES_URL}", "", "| Risk area | Controls |", "| --- | --- |"]
     for area in sorted(risk_map):
-        lines.append(f"| {area} | {', '.join(risk_map[area])} |")
+        lines.append(f"| [{area}]({risk_url(area)}) | {', '.join(risk_map[area])} |")
 
     lines += [
         "",
@@ -276,7 +332,7 @@ def render_mappings(controls: list[Control]) -> str:
         "| --- | --- | --- |",
     ]
     for csf in sorted(csf_map):
-        lines.append(f"| {csf} | {CSF_SUBCATEGORIES[csf]} | {', '.join(csf_map[csf])} |")
+        lines.append(f"| [{csf}]({csf_url(csf)}) | {CSF_SUBCATEGORIES[csf]} | {', '.join(csf_map[csf])} |")
     lines.append("")
 
     return "\n".join(lines)
@@ -344,17 +400,15 @@ def render_control_html(control: Control, notes: Sequence[tuple[str, dict]] = ()
     if refs:
         items = []
         if refs.get("owasp_asi"):
-            items.append("OWASP Top 10 for Agentic Applications 2026: " + esc(", ".join(refs["owasp_asi"])))
+            items.append("OWASP Top 10 for Agentic Applications 2026: " + html_links(refs["owasp_asi"], asi_url))
         if refs.get("owasp_ast"):
-            items.append("OWASP Agentic Skills Top 10: " + esc(", ".join(refs["owasp_ast"])))
+            items.append("OWASP Agentic Skills Top 10: " + html_links(refs["owasp_ast"], ast_url))
         if refs.get("owasp_mcp"):
-            items.append(
-                "OWASP MCP Top 10: " + ", ".join(f'<a href="{esc(mcp_entry(i)[1])}">{esc(i)}</a>' for i in refs["owasp_mcp"])
-            )
+            items.append("OWASP MCP Top 10: " + html_links(refs["owasp_mcp"], lambda i: mcp_entry(i)[1]))
         if refs.get("five_eyes_risk_areas"):
-            items.append("Careful Adoption of Agentic AI Services risk areas: " + esc(", ".join(refs["five_eyes_risk_areas"])))
+            items.append("Careful Adoption of Agentic AI Services risk areas: " + html_links(refs["five_eyes_risk_areas"], risk_url))
         if refs.get("nist_csf"):
-            items.append("NIST CSF 2.0: " + esc(", ".join(refs["nist_csf"])))
+            items.append("NIST CSF 2.0: " + html_links(refs["nist_csf"], csf_url))
         items += [f"Specification: {esc(spec)}" for spec in refs.get("specifications", [])]
         items += [esc(other) for other in refs.get("other", [])]
         out.append("<h2>References</h2><ul>" + "".join(f"<li>{i}</li>" for i in items) + "</ul>")
@@ -385,21 +439,21 @@ def render_mappings_html(controls: list[Control]) -> str:
         [f'<a href="{esc(mcp_entry(i)[1])}">{esc(i)}</a>', esc(mcp_entry(i)[0]), esc(", ".join(mcp[i]))]
         for i in sorted(mcp)
     ]
-    asi_rows = [[esc(i), esc(", ".join(asi_map[i]))] for i in sorted(asi_map)]
+    asi_rows = [[html_links([i], asi_url), esc(", ".join(asi_map[i]))] for i in sorted(asi_map)]
     ast_rows = [
-        [esc(i), esc(", ".join(ast_map[i])), "yes" if i in VERIFIED_AST_IDS else "<strong>TODO</strong>"]
+        [html_links([i], ast_url), esc(", ".join(ast_map[i])), "yes" if i in VERIFIED_AST_IDS else "<strong>TODO</strong>"]
         for i in sorted(ast_map)
     ]
     if todo_ast:
         todo = "<ul>" + "".join(f"<li>{esc(c)} references {esc(a)}, which is not yet verified.</li>" for a, c in todo_ast) + "</ul>"
     else:
         todo = "<p>None open: every <code>owasp_ast</code> reference currently in controls/ is verified.</p>"
-    risk_rows = [[esc(a), esc(", ".join(risk_map[a]))] for a in sorted(risk_map)]
-    csf_rows = [[esc(i), esc(CSF_SUBCATEGORIES[i]), esc(", ".join(csf_map[i]))] for i in sorted(csf_map)]
+    risk_rows = [[html_links([a], risk_url), esc(", ".join(risk_map[a]))] for a in sorted(risk_map)]
+    csf_rows = [[html_links([i], csf_url), esc(CSF_SUBCATEGORIES[i]), esc(", ".join(csf_map[i]))] for i in sorted(csf_map)]
     body = (
         "<h1>Coverage mappings</h1>"
         "<p>Mapping is by ID only; control text does not reproduce OWASP prose.</p>"
-        "<h2>OWASP Top 10 for Agentic Applications 2026 (ASI)</h2>" + table(["ASI ID", "Controls"], asi_rows) +
+        f'<h2>OWASP Top 10 for Agentic Applications 2026 (ASI)</h2><p>Source: <a href="{ASI_URL}">{esc(ASI_URL)}</a></p>' + table(["ASI ID", "Controls"], asi_rows) +
         "<h2>OWASP Agentic Skills Top 10 (AST)</h2>" + table(["AST ID", "Controls", "Verified"], ast_rows) +
         "<h2>Unverified AST mappings</h2>" + todo +
         f'<h2>OWASP MCP Top 10</h2><p>Source: <a href="{MCP_URL}">{esc(MCP_URL)}</a></p>'

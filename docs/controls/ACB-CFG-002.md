@@ -50,8 +50,8 @@ disableSideloadFlags in managed settings rejects --plugin-dir and --plugin-url a
 
 ## References
 
-- OWASP Top 10 for Agentic Applications 2026: ASI03, ASI04
-- OWASP Agentic Skills Top 10: AST02
-- Careful Adoption of Agentic AI Services risk areas: privilege, structural
-- NIST CSF 2.0: PR.PS-05, PR.AA-05
+- OWASP Top 10 for Agentic Applications 2026: [ASI03](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/), [ASI04](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- OWASP Agentic Skills Top 10: [AST02](https://owasp.org/www-project-agentic-skills-top-10/ast02.html)
+- Careful Adoption of Agentic AI Services risk areas: [privilege](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=7), [structural](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=11)
+- NIST CSF 2.0: [PR.PS-05](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25), [PR.AA-05](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25)
 - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

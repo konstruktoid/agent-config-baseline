@@ -72,7 +72,9 @@ client data describes where they live.
 Every control maps to the risk areas of *Careful Adoption of Agentic AI
 Services* (ASD's ACSC, CISA, NSA, Canadian Centre for Cyber Security,
 NCSC-NZ, NCSC-UK, May 2026) and to NIST Cybersecurity Framework 2.0
-subcategories; `docs/mappings.md` has both matrices. ACB-CFG-001 follows
+subcategories, and to OWASP Top 10 lists by ID; `docs/mappings.md` has every
+matrix, each ID linking to its source (a page of the PDF, or the OWASP
+entry). ACB-CFG-001 follows
 the incident-readiness practice that agents cannot access or interfere with
 their own monitoring (NIST CAISSI, NSA SISC and CISA, October 2026).
 
@@ -95,8 +97,8 @@ pass. Severity only affects how a finding is reported (it maps to SARIF
 - `tests/fixtures/<CONTROL-ID>/<audit-id>/{pass,fail}/` — minimal artifacts
   exercising each audit procedure.
 - `docs/controls/` — generated per-control documentation and index.
-- `docs/mappings.md` — generated OWASP, risk-area and NIST CSF 2.0 coverage
-  matrices and the list of unverified mappings.
+- `docs/mappings.md` — generated OWASP (ASI, AST, MCP), risk-area and NIST CSF 2.0
+  coverage matrices and the list of unverified mappings.
 - `scripts/gen_docs.py` — generates `docs/`; `--check` fails if it is stale.
 - `reports/` — audit reports of third-party repositories, published as found.
 - `.github/workflows/` — CI for this repository (`ci.yml`) and the reusable

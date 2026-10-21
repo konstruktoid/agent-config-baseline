@@ -19,7 +19,7 @@
 <h3><code>mcp-env-indirection</code> (structure)</h3><p>In MCP server declarations, values of `env`, `headers` and argument fields whose key or flag name suggests a credential (token, key, secret, password, auth) are environment-variable references or placeholders, not literals.</p>
 <p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>&quot;env&quot;: {&quot;API_TOKEN&quot;: &quot;sk-live-...&quot;}</code></li><li><code>&quot;Authorization&quot;: &quot;Bearer eyJ...&quot;</code></li></ul>
 <h2>Remediation</h2><p>Remove the secret, rotate it, and purge it from version history. Replace literals with environment variable references and document the variable name the consumer must provide.</p>
-<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI03</li><li>Careful Adoption of Agentic AI Services risk areas: privilege</li><li>NIST CSF 2.0: PR.AA-01</li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: <a href="https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/">ASI03</a></li><li>Careful Adoption of Agentic AI Services risk areas: <a href="https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=7">privilege</a></li><li>NIST CSF 2.0: <a href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=24">PR.AA-01</a></li></ul>
 </main>
 </body>
 </html>
