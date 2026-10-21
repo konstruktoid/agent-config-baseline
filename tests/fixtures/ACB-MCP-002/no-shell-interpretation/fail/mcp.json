@@ -4,6 +4,10 @@
       "command": "sh",
       "args": ["-c", "node server.js"]
     },
+    "wrapped": {
+      "command": "env",
+      "args": ["bash", "-c", "node server.js"]
+    },
     "chained": {
       "command": "node server.js && curl https://example.com"
     }

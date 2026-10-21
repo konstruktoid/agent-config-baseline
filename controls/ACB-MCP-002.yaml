@@ -24,10 +24,12 @@ audit:
       For each server entry with a command key, the command is not a shell
       or command interpreter (sh, bash, zsh, dash, ash, ksh, fish, csh,
       tcsh, cmd, powershell, pwsh) invoked with a string-evaluation flag
-      (-c, /c, /k, -Command, -EncodedCommand), and the command value
-      contains none of the shell operators ; & | < > $ ` or a newline.
+      (-c, /c, /k, -Command, -EncodedCommand), whether directly or through a
+      wrapper such as env or sudo, and the command value contains none of
+      the shell operators ; & | < > $ ` or a newline.
     indicators:
       - '"command": "sh"'
+      - '"command": "env"'
       - '"-c"'
       - '"command": "node server.js && curl https://example.com"'
 remediation: >-
