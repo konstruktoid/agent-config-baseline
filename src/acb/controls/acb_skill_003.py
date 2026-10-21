@@ -6,6 +6,7 @@ import os
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import unquote, urlsplit
 
 from acb.model import Finding, Outcome
 from acb.scan import (
@@ -310,7 +311,7 @@ def _check_executables_referenced(ctx: CheckContext) -> list[Finding]:
 def _looks_like_path_ref(ref: str) -> bool:
     # file:// is a real local-filesystem reference, not a web reference like
     # http(s)://, so it does not get the URL exemption other schemes get.
-    if "://" in ref and not ref.startswith("file://"):
+    if "://" in ref and not ref.lower().startswith("file://"):
         return False
     if ref.startswith(_HOME_PREFIXES):
         return True
@@ -319,15 +320,24 @@ def _looks_like_path_ref(ref: str) -> bool:
     return "/" in ref or "\\" in ref
 
 
+def _local_path(token: str) -> tuple[str, str | None]:
+    """Return the path a reference names, and why it leaves the skill directory when its form alone shows that."""
+    if token.startswith(_HOME_PREFIXES):
+        return token, "is a home-directory reference, outside the skill directory"
+    if not token.lower().startswith("file:"):
+        return token, None
+    uri = urlsplit(token)
+    # RFC 8089: an empty or localhost authority names a local file, and any other host a remote one.
+    if uri.netloc.lower() not in ("", "localhost"):
+        return token, "names a remote host, outside the skill directory"
+    return unquote(uri.path), None
+
+
 def _reference_problem(token: str, base: Path, skill_root: Path) -> str | None:
     """Return why a reference leaves the skill directory, or None when it stays inside or cannot be resolved."""
-    if token.startswith(_HOME_PREFIXES):
-        return "is a home-directory reference, outside the skill directory"
-
-    # A file:// URI is a real local path wearing a scheme prefix;
-    # strip it so the rest of the checks (absolute, `..`, resolve)
-    # apply to the path it actually names.
-    check_token = token.removeprefix("file://")
+    check_token, problem = _local_path(token)
+    if problem is not None:
+        return problem
 
     if check_token.startswith("/"):
         return "is an absolute path"

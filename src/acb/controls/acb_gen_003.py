@@ -83,12 +83,17 @@ _CRED_KEY_RE = re.compile(
 _MAX_DEPTH = 32
 
 
+# A four-character prefix identifies a token type such as ghp_ but gives away too much of a shorter secret.
+_REDACT_PREFIX_MIN_LENGTH = 16
+
+
 def _redact(value: str) -> str:
     """Redact a secret for use in a finding message.
 
     Finding messages end up in SARIF uploads and CI logs, so they never repeat the secret itself.
     """
-    return f"{value[:4]}… ({len(value)} chars)"
+    prefix = value[:4] if len(value) >= _REDACT_PREFIX_MIN_LENGTH else ""
+    return f"{prefix}… ({len(value)} chars)"
 
 
 _PLACEHOLDER_RE = re.compile(r"\$\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*|<[^>]+>|\{\{[^}]+\}\}")
@@ -294,7 +299,11 @@ def _scan_list_value(value: list, depth: int, seen: set[int]) -> list[tuple[str,
     seen.add(id(value))
     if _is_env_list_shape(value):
         converted = {str(item["name"]): item.get("value") for item in value}
-        return _scan_mapping(converted, depth + 1, seen)
+        hits = _scan_mapping(converted, depth + 1, seen)
+        # Any field besides name and value is scanned under its own key rather than dropped by the conversion.
+        for item in value:
+            hits.extend(_scan_mapping({k: v for k, v in item.items() if k not in ("name", "value")}, depth + 1, seen))
+        return hits
     hits = _scan_args_list(value)
     for item in value:
         if isinstance(item, dict):
