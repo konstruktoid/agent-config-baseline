@@ -1,6 +1,12 @@
 import pytest
 
-from acb.paths import PatternError, matches, matches_or_under, normalize_pattern, validate_pattern
+from acb.paths import (
+    PatternError,
+    matches,
+    matches_or_under,
+    normalize_pattern,
+    validate_pattern,
+)
 
 
 @pytest.mark.parametrize(
@@ -10,7 +16,6 @@ from acb.paths import PatternError, matches, matches_or_under, normalize_pattern
         ("docs/a.md", "*.md", False),
         ("docs/a.md", "docs/**/*.md", True),
         ("docs/x/a.md", "docs/**/*.md", True),
-        ("docs/a.md", "docs/**/*.md", True),
         ("docsa/b", "docs**", False),
         ("docs/x/a.md", "docs/**", True),
         ("docs", "docs/**", True),

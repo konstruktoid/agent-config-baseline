@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from acb.loader import ControlLoadError, active_controls, default_controls_dir, default_schema_path, load_controls
+from acb.loader import (
+    ControlLoadError,
+    active_controls,
+    default_controls_dir,
+    default_schema_path,
+    load_controls,
+)
 
 SCHEMA_PATH = default_schema_path()
 

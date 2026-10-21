@@ -23,7 +23,7 @@ def _run_audit(control: Control, audit_id: str, check, ctx: CheckContext) -> lis
     silently ignored when outcomes are tallied."""
     try:
         result = check(ctx)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         return [_not_evaluated(control, audit_id, f"audit raised {type(exc).__name__}: {exc}")]
     if not isinstance(result, list):
         return [_not_evaluated(control, audit_id, f"audit returned {type(result).__name__}, not a list of findings")]

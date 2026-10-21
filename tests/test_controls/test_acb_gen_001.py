@@ -1,6 +1,6 @@
 import time
 
-from acb.controls.acb_gen_001 import AUDITS, _PATTERNS
+from acb.controls.acb_gen_001 import _PATTERNS, AUDITS
 from tests.test_controls._shared import check_pass_and_fail
 
 

@@ -17,7 +17,7 @@ def audit_ids_for(control_id: str) -> list[str]:
 
 
 def check_pass_and_fail(
-    control_id: str, audits: dict, skip: frozenset[str] = frozenset(), clients: ClientData = ClientData()
+    control_id: str, audits: dict, skip: frozenset[str] = frozenset(), clients: ClientData | None = None
 ) -> None:
     """Run every <CONTROL-ID>/<audit-id>/{pass,fail} fixture through `audits[audit_id]`.
 

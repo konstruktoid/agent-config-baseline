@@ -3,8 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from acb.exceptions import ExceptionEntry, ExceptionsFileError, apply_exceptions, load_exceptions
-from acb.model import Control, Finding, Outcome
+from acb.exceptions import (
+    ExceptionEntry,
+    ExceptionsFileError,
+    apply_exceptions,
+    load_exceptions,
+)
+from acb.model import Control, Finding, Outcome, Severity
 
 KNOWN = {"ACB-GEN-002", "ACB-GEN-003"}
 
@@ -17,7 +22,7 @@ def _control(control_id: str, exceptions: str) -> Control:
         profiles=("strict-general",),
         applies_to=("skill",),
         check_type="static",
-        severity="high",  # type: ignore[arg-type]
+        severity=Severity.HIGH,
         description="x" * 20,
         rationale="x" * 20,
         audit=(),
@@ -45,7 +50,7 @@ PERMITTED = {"ACB-GEN-002": _control("ACB-GEN-002", "permitted")}
 def test_matching_unexpired_exception_waives_the_finding_with_justification():
     result = apply_exceptions([_fail("ACB-GEN-002", "mcp/legacy.json")], [_entry("ACB-GEN-002", "mcp/legacy.json", date(2999, 1, 1))], PERMITTED, today=TODAY)
     assert [f.outcome for f in result.findings] == [Outcome.EXCEPTION]
-    assert "tracked" in result.findings[0].justification
+    assert "tracked" in (result.findings[0].justification or "")
     assert result.stale == ()
 
 
