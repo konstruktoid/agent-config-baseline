@@ -9,15 +9,19 @@ from __future__ import annotations
 
 import html
 import sys
-from collections.abc import Sequence
 from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "src"))
+from typing import TYPE_CHECKING
 
 from acb.clients import load_clients
 from acb.loader import load_controls
-from acb.model import Control
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    from acb.clients import ClientData
+    from acb.model import Control
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # OWASP AST IDs verified against the published OWASP Agentic Skills Top 10
 # (August 2026) so far (PROMPT.md ground rule 4). Any owasp_ast id used by a
@@ -26,20 +30,50 @@ from acb.model import Control
 VERIFIED_AST_IDS = {"AST02"}
 
 # OWASP MCP Top 10 (2025 entries, beta) IDs, titles and links as listed on
-# https://owasp.org/projects/mcp-top-10 (MCP06 is titled as in its entry file, not as in the project page), linked to the commit-pinned entry
-# files so a reviewer can verify each mapping (PROMPT.md ground rule 4).
+# https://owasp.org/projects/mcp-top-10 (MCP06 is titled as in its entry file, not as in the project page), linked to
+# the commit-pinned entry files so a reviewer can verify each mapping (PROMPT.md ground rule 4).
 MCP_URL = "https://owasp.org/projects/mcp-top-10"
 OWASP_MCP = {
-    "MCP01": ("Token Mismanagement & Secret Exposure", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP01-2025-Token-Mismanagement-and-Secret-Exposure.md"),
-    "MCP02": ("Privilege Escalation via Scope Creep", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP02-2025%E2%80%93Privilege-Escalation-via-Scope-Creep.md"),
-    "MCP03": ("Tool Poisoning", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP03-2025%E2%80%93Tool-Poisoning.md"),
-    "MCP04": ("Software Supply Chain Attacks & Dependency Tampering", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP04-2025%E2%80%93Software-Supply-Chain-Attacks%26Dependency-Tampering.md"),
-    "MCP05": ("Command Injection & Execution", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP05-2025%E2%80%93Command-Injection%26Execution.md"),
-    "MCP06": ("Intent Flow Subversion", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP06-2025%E2%80%93Intent-Flow-Subversion.md"),
-    "MCP07": ("Insufficient Authentication & Authorization", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP07-2025%E2%80%93Insufficient-Authentication%26Authorization.md"),
-    "MCP08": ("Lack of Audit and Telemetry", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP08-2025%E2%80%93Lack-of-Audit-and-Telemetry.md"),
-    "MCP09": ("Shadow MCP Servers", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP09-2025%E2%80%93Shadow-MCP-Servers.md"),
-    "MCP10": ("Context Injection & Over-Sharing", "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP10-2025%E2%80%93ContextInjection%26OverSharing.md"),
+    "MCP01": (
+        "Token Mismanagement & Secret Exposure",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP01-2025-Token-Mismanagement-and-Secret-Exposure.md",
+    ),
+    "MCP02": (
+        "Privilege Escalation via Scope Creep",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP02-2025%E2%80%93Privilege-Escalation-via-Scope-Creep.md",
+    ),
+    "MCP03": (
+        "Tool Poisoning",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP03-2025%E2%80%93Tool-Poisoning.md",
+    ),
+    "MCP04": (
+        "Software Supply Chain Attacks & Dependency Tampering",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP04-2025%E2%80%93Software-Supply-Chain-Attacks%26Dependency-Tampering.md",
+    ),
+    "MCP05": (
+        "Command Injection & Execution",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP05-2025%E2%80%93Command-Injection%26Execution.md",
+    ),
+    "MCP06": (
+        "Intent Flow Subversion",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP06-2025%E2%80%93Intent-Flow-Subversion.md",
+    ),
+    "MCP07": (
+        "Insufficient Authentication & Authorization",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP07-2025%E2%80%93Insufficient-Authentication%26Authorization.md",
+    ),
+    "MCP08": (
+        "Lack of Audit and Telemetry",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP08-2025%E2%80%93Lack-of-Audit-and-Telemetry.md",
+    ),
+    "MCP09": (
+        "Shadow MCP Servers",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP09-2025%E2%80%93Shadow-MCP-Servers.md",
+    ),
+    "MCP10": (
+        "Context Injection & Over-Sharing",
+        "https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP10-2025%E2%80%93ContextInjection%26OverSharing.md",
+    ),
 }
 
 ASI_URL = "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/"
@@ -82,7 +116,8 @@ CSF_SUBCATEGORIES = {
     "ID.IM-02": "Improvements are identified from security tests and exercises, including those done in coordination "
     "with suppliers and relevant third parties",
     "ID.RA-09": "The authenticity and integrity of hardware and software are assessed prior to acquisition and use",
-    "PR.AA-01": "Identities and credentials for authorized users, services, and hardware are managed by the organization",
+    "PR.AA-01": "Identities and credentials for authorized users, services, and hardware are managed by "
+    "the organization",
     "PR.AA-05": "Access permissions, entitlements, and authorizations are defined in a policy, managed, enforced, and "
     "reviewed, and incorporate the principles of least privilege and separation of duties",
     "PR.PS-01": "Configuration management practices are established and applied",
@@ -112,7 +147,7 @@ th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left;
 """
 
 
-def client_notes(clients) -> dict[str, list[tuple[str, dict]]]:
+def client_notes(clients: ClientData) -> dict[str, list[tuple[str, dict]]]:
     """Implementation-specific audit notes, keyed by control ID, as (client, note) pairs."""
     notes: dict[str, list[tuple[str, dict]]] = {}
     for client, profile in clients.profiles:
@@ -121,7 +156,59 @@ def client_notes(clients) -> dict[str, list[tuple[str, dict]]]:
     return notes
 
 
+def _audit_lines(control: Control) -> list[str]:
+    """Render the audit procedures section of a control page."""
+    lines = ["", "## Audit procedures", ""]
+    for audit in control.audit:
+        lines.append(f"### `{audit.id}` ({audit.method})")
+        lines.append("")
+        lines.append(audit.procedure.strip())
+        if audit.indicators:
+            lines.append("")
+            lines.append("Illustrative failing indicators (non-exhaustive):")
+            lines.append("")
+            lines.extend(f"- `{indicator}`" for indicator in audit.indicators)
+        lines.append("")
+    return lines
+
+
+def _notes_lines(notes: Sequence[tuple[str, dict]]) -> list[str]:
+    """Render the implementation notes section of a control page."""
+    lines = [
+        "## Implementation notes",
+        "",
+        "Client-specific facts from `clients/`; the control above is the requirement.",
+        "",
+    ]
+    for client, note in notes:
+        lines += [f"### {client}: `{note['audit']}`", "", note["note"].strip(), ""]
+        lines += [f"- {source}" for source in note["sources"]] + [""]
+    return lines
+
+
+def _reference_lines(refs: dict) -> list[str]:
+    """Render the references section of a control page."""
+    lines = ["## References", ""]
+    if refs.get("owasp_asi"):
+        lines.append("- OWASP Top 10 for Agentic Applications 2026: " + md_links(refs["owasp_asi"], asi_url))
+    if refs.get("owasp_ast"):
+        lines.append("- OWASP Agentic Skills Top 10: " + md_links(refs["owasp_ast"], ast_url))
+    if refs.get("owasp_mcp"):
+        lines.append("- OWASP MCP Top 10: " + md_links(refs["owasp_mcp"], lambda i: mcp_entry(i)[1]))
+    if refs.get("five_eyes_risk_areas"):
+        lines.append(
+            "- Careful Adoption of Agentic AI Services risk areas: " + md_links(refs["five_eyes_risk_areas"], risk_url)
+        )
+    if refs.get("nist_csf"):
+        lines.append("- NIST CSF 2.0: " + md_links(refs["nist_csf"], csf_url))
+    lines.extend(f"- Specification: {spec}" for spec in refs.get("specifications", []))
+    lines.extend(f"- {other}" for other in refs.get("other", []))
+    lines.append("")
+    return lines
+
+
 def render_control(control: Control, notes: Sequence[tuple[str, dict]] = ()) -> str:
+    """Render one control as a Markdown page."""
     lines = [
         f"# {control.id}: {control.title}",
         "",
@@ -138,55 +225,21 @@ def render_control(control: Control, notes: Sequence[tuple[str, dict]] = ()) -> 
         lines.append(f"| Deprecated by | {control.deprecated_by} |")
     lines += ["", "## Description", "", control.description.strip(), "", "## Rationale", "", control.rationale.strip()]
 
-    lines += ["", "## Audit procedures", ""]
-    for audit in control.audit:
-        lines.append(f"### `{audit.id}` ({audit.method})")
-        lines.append("")
-        lines.append(audit.procedure.strip())
-        if audit.indicators:
-            lines.append("")
-            lines.append("Illustrative failing indicators (non-exhaustive):")
-            lines.append("")
-            for indicator in audit.indicators:
-                lines.append(f"- `{indicator}`")
-        lines.append("")
+    lines += _audit_lines(control)
 
     lines += ["## Remediation", "", control.remediation.strip(), ""]
 
     if notes:
-        lines += [
-            "## Implementation notes",
-            "",
-            "Client-specific facts from `clients/`; the control above is the requirement.",
-            "",
-        ]
-        for client, note in notes:
-            lines += [f"### {client}: `{note['audit']}`", "", note["note"].strip(), ""]
-            lines += [f"- {source}" for source in note["sources"]] + [""]
+        lines += _notes_lines(notes)
 
-    refs = control.references
-    if refs:
-        lines += ["## References", ""]
-        if refs.get("owasp_asi"):
-            lines.append("- OWASP Top 10 for Agentic Applications 2026: " + md_links(refs["owasp_asi"], asi_url))
-        if refs.get("owasp_ast"):
-            lines.append("- OWASP Agentic Skills Top 10: " + md_links(refs["owasp_ast"], ast_url))
-        if refs.get("owasp_mcp"):
-            lines.append("- OWASP MCP Top 10: " + md_links(refs["owasp_mcp"], lambda i: mcp_entry(i)[1]))
-        if refs.get("five_eyes_risk_areas"):
-            lines.append("- Careful Adoption of Agentic AI Services risk areas: " + md_links(refs["five_eyes_risk_areas"], risk_url))
-        if refs.get("nist_csf"):
-            lines.append("- NIST CSF 2.0: " + md_links(refs["nist_csf"], csf_url))
-        for spec in refs.get("specifications", []):
-            lines.append(f"- Specification: {spec}")
-        for other in refs.get("other", []):
-            lines.append(f"- {other}")
-        lines.append("")
+    if control.references:
+        lines += _reference_lines(control.references)
 
     return "\n".join(lines).rstrip() + "\n"
 
 
 def render_index(controls: list[Control]) -> str:
+    """Render the Markdown index of all controls."""
     lines = [
         "# Control index",
         "",
@@ -199,46 +252,60 @@ def render_index(controls: list[Control]) -> str:
         asi = ", ".join(control.references.get("owasp_asi", [])) or "-"
         ast = ", ".join(control.references.get("owasp_ast", [])) or "-"
         applies = ", ".join(control.applies_to)
-        lines.append(f"| [{control.id}]({control.id}.md) | {control.title} | {applies} | {control.severity.value} | {asi} | {ast} |")
+        lines.append(
+            f"| [{control.id}]({control.id}.md) | {control.title} | {applies} | {control.severity.value} "
+            f"| {asi} | {ast} |"
+        )
     lines.append("")
     return "\n".join(lines)
 
 
-def asi_url(asi_id: str) -> str:
+def asi_url(_asi_id: str) -> str:
+    """Return the OWASP Agentic Top 10 page, which has no per-item anchors."""
     return ASI_URL
 
 
 def ast_url(ast_id: str) -> str:
+    """Return the OWASP Agentic Skills Top 10 page for an AST identifier."""
     return f"{AST_URL_BASE}{ast_id.lower()}.html"
 
 
 def risk_url(area: str) -> str:
+    """Return the Five Eyes guidance URL for a risk area, failing if its page is unknown."""
     if area not in FIVE_EYES_PAGES:
-        raise SystemExit(f"risk area {area} is not in FIVE_EYES_PAGES; find its page first")
+        msg = f"risk area {area} is not in FIVE_EYES_PAGES; find its page first"
+        raise SystemExit(msg)
     return f"{FIVE_EYES_URL}#page={FIVE_EYES_PAGES[area]}"
 
 
 def csf_url(csf_id: str) -> str:
+    """Return the NIST CSF URL for a subcategory, failing if its page is unknown."""
     if csf_id not in CSF_PAGES:
-        raise SystemExit(f"NIST CSF ID {csf_id} is not in CSF_PAGES; find its page first")
+        msg = f"NIST CSF ID {csf_id} is not in CSF_PAGES; find its page first"
+        raise SystemExit(msg)
     return f"{CSF_URL}#page={CSF_PAGES[csf_id]}"
 
 
-def md_links(ids: list[str], url_for) -> str:
+def md_links(ids: list[str], url_for: Callable[[str], str]) -> str:
+    """Join identifiers as Markdown links built with url_for."""
     return ", ".join(f"[{i}]({url_for(i)})" for i in ids)
 
 
-def html_links(ids: list[str], url_for) -> str:
+def html_links(ids: list[str], url_for: Callable[[str], str]) -> str:
+    """Join identifiers as HTML links built with url_for."""
     return ", ".join(f'<a href="{esc(url_for(i))}">{esc(i)}</a>' for i in ids)
 
 
 def mcp_entry(mcp_id: str) -> tuple[str, str]:
+    """Return the verified OWASP MCP entry for an identifier, failing if it is unknown."""
     if mcp_id not in OWASP_MCP:
-        raise SystemExit(f"OWASP MCP ID {mcp_id} is not in OWASP_MCP; verify it first")
+        msg = f"OWASP MCP ID {mcp_id} is not in OWASP_MCP; verify it first"
+        raise SystemExit(msg)
     return OWASP_MCP[mcp_id]
 
 
 def mcp_map(controls: list[Control]) -> dict[str, list[str]]:
+    """Map each referenced OWASP MCP identifier to the controls that cite it."""
     result: dict[str, list[str]] = {}
     for control in sorted(controls, key=lambda c: c.id):
         for mcp_id in control.references.get("owasp_mcp", []):
@@ -248,6 +315,7 @@ def mcp_map(controls: list[Control]) -> dict[str, list[str]]:
 
 
 def framework_maps(controls: list[Control]) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    """Map Five Eyes risk areas and NIST CSF subcategories to the controls that cite them."""
     risk_map: dict[str, list[str]] = {}
     csf_map: dict[str, list[str]] = {}
     for control in sorted(controls, key=lambda c: c.id):
@@ -255,12 +323,14 @@ def framework_maps(controls: list[Control]) -> tuple[dict[str, list[str]], dict[
             risk_map.setdefault(area, []).append(control.id)
         for csf in control.references.get("nist_csf", []):
             if csf not in CSF_SUBCATEGORIES:
-                raise SystemExit(f"{control.id}: NIST CSF ID {csf} is not in CSF_SUBCATEGORIES; verify it first")
+                msg = f"{control.id}: NIST CSF ID {csf} is not in CSF_SUBCATEGORIES; verify it first"
+                raise SystemExit(msg)
             csf_map.setdefault(csf, []).append(control.id)
     return risk_map, csf_map
 
 
 def mapping_data(controls: list[Control]) -> tuple[dict[str, list[str]], dict[str, list[str]], list[tuple[str, str]]]:
+    """Collect the ASI, AST and unverified-AST mapping data for the mappings page."""
     asi_map: dict[str, list[str]] = {}
     ast_map: dict[str, list[str]] = {}
     todo_ast: list[tuple[str, str]] = []
@@ -276,6 +346,7 @@ def mapping_data(controls: list[Control]) -> tuple[dict[str, list[str]], dict[st
 
 
 def render_mappings(controls: list[Control]) -> str:
+    """Render the Markdown page of framework mappings."""
     asi_map, ast_map, todo_ast = mapping_data(controls)
     risk_map, csf_map = framework_maps(controls)
     mcp = mcp_map(controls)
@@ -294,8 +365,7 @@ def render_mappings(controls: list[Control]) -> str:
         "| ASI ID | Controls |",
         "| --- | --- |",
     ]
-    for asi_id in sorted(asi_map):
-        lines.append(f"| [{asi_id}]({asi_url(asi_id)}) | {', '.join(asi_map[asi_id])} |")
+    lines.extend(f"| [{asi_id}]({asi_url(asi_id)}) | {', '.join(asi_map[asi_id])} |" for asi_id in sorted(asi_map))
 
     lines += ["", "## OWASP Agentic Skills Top 10 (AST)", "", "| AST ID | Controls | Verified |", "| --- | --- | --- |"]
     for ast_id in sorted(ast_map):
@@ -313,12 +383,28 @@ def render_mappings(controls: list[Control]) -> str:
     else:
         lines.append("None open: every `owasp_ast` reference currently in controls/ is verified.")
 
-    lines += ["", "## OWASP MCP Top 10", "", f"Source: {MCP_URL}", "", "| MCP ID | Title | Controls |", "| --- | --- | --- |"]
+    lines += [
+        "",
+        "## OWASP MCP Top 10",
+        "",
+        f"Source: {MCP_URL}",
+        "",
+        "| MCP ID | Title | Controls |",
+        "| --- | --- | --- |",
+    ]
     for mcp_id in sorted(mcp):
         title, url = mcp_entry(mcp_id)
         lines.append(f"| [{mcp_id}]({url}) | {title} | {', '.join(mcp[mcp_id])} |")
 
-    lines += ["", f"## {FIVE_EYES_TITLE}", "", f"Source: {FIVE_EYES_URL}", "", "| Risk area | Controls |", "| --- | --- |"]
+    lines += [
+        "",
+        f"## {FIVE_EYES_TITLE}",
+        "",
+        f"Source: {FIVE_EYES_URL}",
+        "",
+        "| Risk area | Controls |",
+        "| --- | --- |",
+    ]
     for area in sorted(risk_map):
         lines.append(f"| [{area}]({risk_url(area)}) | {', '.join(risk_map[area])} |")
 
@@ -339,20 +425,24 @@ def render_mappings(controls: list[Control]) -> str:
 
 
 def esc(text: str) -> str:
+    """Escape text for use in HTML."""
     return html.escape(text, quote=True)
 
 
 def code(text: str) -> str:
+    """Wrap escaped text in an HTML code element."""
     return f"<code>{esc(text)}</code>"
 
 
 def table(header: list[str], rows: list[list[str]]) -> str:
+    """Render an HTML table from a header and pre-escaped cell rows."""
     head = "".join(f"<th>{esc(h)}</th>" for h in header)
     body = "".join("<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>" for row in rows)
     return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
 
 
 def page(title: str, body: str, root: str) -> str:
+    """Wrap a page body in the site layout."""
     return (
         "<!doctype html>\n"
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
@@ -367,7 +457,28 @@ def page(title: str, body: str, root: str) -> str:
     )
 
 
+def _references_html(refs: dict) -> str:
+    """Render the references section of a control page as HTML."""
+    items = []
+    if refs.get("owasp_asi"):
+        items.append("OWASP Top 10 for Agentic Applications 2026: " + html_links(refs["owasp_asi"], asi_url))
+    if refs.get("owasp_ast"):
+        items.append("OWASP Agentic Skills Top 10: " + html_links(refs["owasp_ast"], ast_url))
+    if refs.get("owasp_mcp"):
+        items.append("OWASP MCP Top 10: " + html_links(refs["owasp_mcp"], lambda i: mcp_entry(i)[1]))
+    if refs.get("five_eyes_risk_areas"):
+        items.append(
+            "Careful Adoption of Agentic AI Services risk areas: " + html_links(refs["five_eyes_risk_areas"], risk_url)
+        )
+    if refs.get("nist_csf"):
+        items.append("NIST CSF 2.0: " + html_links(refs["nist_csf"], csf_url))
+    items += [f"Specification: {esc(spec)}" for spec in refs.get("specifications", [])]
+    items += [esc(other) for other in refs.get("other", [])]
+    return "<h2>References</h2><ul>" + "".join(f"<li>{i}</li>" for i in items) + "</ul>"
+
+
 def render_control_html(control: Control, notes: Sequence[tuple[str, dict]] = ()) -> str:
+    """Render one control as an HTML page."""
     rows = [
         ["Status", code(control.status)],
         ["Severity", code(control.severity.value)],
@@ -392,30 +503,22 @@ def render_control_html(control: Control, notes: Sequence[tuple[str, dict]] = ()
             out.append(f"<p>Illustrative failing indicators (non-exhaustive):</p><ul>{items}</ul>")
     out.append(f"<h2>Remediation</h2><p>{esc(control.remediation.strip())}</p>")
     if notes:
-        out.append("<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>")
+        out.append(
+            "<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; "
+            "the control above is the requirement.</p>"
+        )
         for client, note in notes:
             sources = "".join(f'<li><a href="{esc(s)}">{esc(s)}</a></li>' for s in note["sources"])
-            out.append(f"<h3>{esc(client)}: {code(note['audit'])}</h3><p>{esc(note['note'].strip())}</p><ul>{sources}</ul>")
-    refs = control.references
-    if refs:
-        items = []
-        if refs.get("owasp_asi"):
-            items.append("OWASP Top 10 for Agentic Applications 2026: " + html_links(refs["owasp_asi"], asi_url))
-        if refs.get("owasp_ast"):
-            items.append("OWASP Agentic Skills Top 10: " + html_links(refs["owasp_ast"], ast_url))
-        if refs.get("owasp_mcp"):
-            items.append("OWASP MCP Top 10: " + html_links(refs["owasp_mcp"], lambda i: mcp_entry(i)[1]))
-        if refs.get("five_eyes_risk_areas"):
-            items.append("Careful Adoption of Agentic AI Services risk areas: " + html_links(refs["five_eyes_risk_areas"], risk_url))
-        if refs.get("nist_csf"):
-            items.append("NIST CSF 2.0: " + html_links(refs["nist_csf"], csf_url))
-        items += [f"Specification: {esc(spec)}" for spec in refs.get("specifications", [])]
-        items += [esc(other) for other in refs.get("other", [])]
-        out.append("<h2>References</h2><ul>" + "".join(f"<li>{i}</li>" for i in items) + "</ul>")
+            out.append(
+                f"<h3>{esc(client)}: {code(note['audit'])}</h3><p>{esc(note['note'].strip())}</p><ul>{sources}</ul>"
+            )
+    if control.references:
+        out.append(_references_html(control.references))
     return page(f"{control.id}: {control.title}", "\n".join(out) + "\n", "../")
 
 
 def render_index_html(controls: list[Control]) -> str:
+    """Render the HTML index of all controls."""
     rows = [
         [
             f'<a href="{esc(c.id)}.html">{esc(c.id)}</a>',
@@ -432,6 +535,7 @@ def render_index_html(controls: list[Control]) -> str:
 
 
 def render_mappings_html(controls: list[Control]) -> str:
+    """Render the HTML page of framework mappings."""
     asi_map, ast_map, todo_ast = mapping_data(controls)
     risk_map, csf_map = framework_maps(controls)
     mcp = mcp_map(controls)
@@ -441,32 +545,47 @@ def render_mappings_html(controls: list[Control]) -> str:
     ]
     asi_rows = [[html_links([i], asi_url), esc(", ".join(asi_map[i]))] for i in sorted(asi_map)]
     ast_rows = [
-        [html_links([i], ast_url), esc(", ".join(ast_map[i])), "yes" if i in VERIFIED_AST_IDS else "<strong>TODO</strong>"]
+        [
+            html_links([i], ast_url),
+            esc(", ".join(ast_map[i])),
+            "yes" if i in VERIFIED_AST_IDS else "<strong>TODO</strong>",
+        ]
         for i in sorted(ast_map)
     ]
     if todo_ast:
-        todo = "<ul>" + "".join(f"<li>{esc(c)} references {esc(a)}, which is not yet verified.</li>" for a, c in todo_ast) + "</ul>"
+        todo = (
+            "<ul>"
+            + "".join(f"<li>{esc(c)} references {esc(a)}, which is not yet verified.</li>" for a, c in todo_ast)
+            + "</ul>"
+        )
     else:
         todo = "<p>None open: every <code>owasp_ast</code> reference currently in controls/ is verified.</p>"
     risk_rows = [[html_links([a], risk_url), esc(", ".join(risk_map[a]))] for a in sorted(risk_map)]
-    csf_rows = [[html_links([i], csf_url), esc(CSF_SUBCATEGORIES[i]), esc(", ".join(csf_map[i]))] for i in sorted(csf_map)]
+    csf_rows = [
+        [html_links([i], csf_url), esc(CSF_SUBCATEGORIES[i]), esc(", ".join(csf_map[i]))] for i in sorted(csf_map)
+    ]
     body = (
         "<h1>Coverage mappings</h1>"
         "<p>Mapping is by ID only; control text does not reproduce OWASP prose.</p>"
-        f'<h2>OWASP Top 10 for Agentic Applications 2026 (ASI)</h2><p>Source: <a href="{ASI_URL}">{esc(ASI_URL)}</a></p>' + table(["ASI ID", "Controls"], asi_rows) +
-        "<h2>OWASP Agentic Skills Top 10 (AST)</h2>" + table(["AST ID", "Controls", "Verified"], ast_rows) +
-        "<h2>Unverified AST mappings</h2>" + todo +
-        f'<h2>OWASP MCP Top 10</h2><p>Source: <a href="{MCP_URL}">{esc(MCP_URL)}</a></p>'
-        + table(["MCP ID", "Title", "Controls"], mcp_rows) +
-        f'<h2>{esc(FIVE_EYES_TITLE)}</h2><p>Source: <a href="{FIVE_EYES_URL}">{esc(FIVE_EYES_URL)}</a></p>'
-        + table(["Risk area", "Controls"], risk_rows) +
-        f'<h2>{esc(CSF_TITLE)}</h2><p>Source: <a href="{CSF_URL}">{esc(CSF_URL)}</a>. Each subcategory\'s text was '
+        "<h2>OWASP Top 10 for Agentic Applications 2026 (ASI)</h2>"
+        f'<p>Source: <a href="{ASI_URL}">{esc(ASI_URL)}</a></p>'
+        + table(["ASI ID", "Controls"], asi_rows)
+        + "<h2>OWASP Agentic Skills Top 10 (AST)</h2>"
+        + table(["AST ID", "Controls", "Verified"], ast_rows)
+        + "<h2>Unverified AST mappings</h2>"
+        + todo
+        + f'<h2>OWASP MCP Top 10</h2><p>Source: <a href="{MCP_URL}">{esc(MCP_URL)}</a></p>'
+        + table(["MCP ID", "Title", "Controls"], mcp_rows)
+        + f'<h2>{esc(FIVE_EYES_TITLE)}</h2><p>Source: <a href="{FIVE_EYES_URL}">{esc(FIVE_EYES_URL)}</a></p>'
+        + table(["Risk area", "Controls"], risk_rows)
+        + f'<h2>{esc(CSF_TITLE)}</h2><p>Source: <a href="{CSF_URL}">{esc(CSF_URL)}</a>. Each subcategory\'s text was '
         "checked against that publication.</p>" + table(["Subcategory", "Outcome", "Controls"], csf_rows)
     )
     return page("Coverage mappings", body + "\n", "")
 
 
 def render_landing_html() -> str:
+    """Render the HTML landing page."""
     body = (
         "<h1>agent-config-baseline</h1>"
         "<p>A strict, vendor-neutral security baseline for the files that configure AI agents: Agent Skills "
@@ -481,6 +600,7 @@ def render_landing_html() -> str:
 
 
 def render_all(controls: list[Control], notes: dict[str, list[tuple[str, dict]]]) -> dict[Path, str]:
+    """Render every generated file, keyed by its path."""
     docs = {DOCS_CONTROLS_DIR / f"{c.id}.md": render_control(c, notes.get(c.id, [])) for c in controls}
     docs[DOCS_CONTROLS_DIR / "index.md"] = render_index(controls)
     docs[MAPPINGS_PATH] = render_mappings(controls)
@@ -494,11 +614,13 @@ def render_all(controls: list[Control], notes: dict[str, list[tuple[str, dict]]]
 
 
 def generated_files_on_disk() -> set[Path]:
+    """Return the generated files currently present on disk."""
     on_disk = set(DOCS_CONTROLS_DIR.glob("*.md")) | {MAPPINGS_PATH}
     return on_disk | {p for p in SITE_DIR.rglob("*") if p.is_file()}
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Generate the documentation, or check it is current with --check."""
     check = "--check" in (sys.argv[1:] if argv is None else argv)
     controls = load_controls(REPO_ROOT / "controls", REPO_ROOT / "schema" / "control.schema.json")
     notes = client_notes(load_clients(REPO_ROOT / "clients"))
@@ -506,7 +628,8 @@ def main(argv: list[str] | None = None) -> int:
     for control_id, entries in notes.items():
         for client, note in entries:
             if (control_id, note["audit"]) not in audits:
-                raise SystemExit(f"clients/{client}: audit note names unknown {control_id}/{note['audit']}")
+                msg = f"clients/{client}: audit note names unknown {control_id}/{note['audit']}"
+                raise SystemExit(msg)
     docs = render_all(controls, notes)
 
     if check:

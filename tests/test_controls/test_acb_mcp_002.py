@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -6,8 +9,12 @@ from acb.controls.acb_mcp_002 import AUDITS
 from tests._harness import context_for
 from tests.test_controls._shared import check_pass_and_fail
 
+if TYPE_CHECKING:
+    from pathlib import Path
+    from typing import Any
 
-def test_acb_mcp_002_fixtures():
+
+def test_acb_mcp_002_fixtures() -> None:
     check_pass_and_fail("ACB-MCP-002", AUDITS)
 
 
@@ -25,7 +32,7 @@ def test_acb_mcp_002_fixtures():
         {"command": "nohup", "args": ["env", "zsh", "-c", "run"]},
     ],
 )
-def test_shell_forms_fail(tmp_path, server):
+def test_shell_forms_fail(tmp_path: Path, server: dict[str, Any]) -> None:
     (tmp_path / "mcp.json").write_text(json.dumps({"mcpServers": {"a": server}}))
     assert AUDITS["no-shell-interpretation"](context_for(tmp_path))
 
@@ -40,11 +47,11 @@ def test_shell_forms_fail(tmp_path, server):
         {"command": "bash", "args": ["--norc", "run.sh"]},
     ],
 )
-def test_wrapper_without_a_string_evaluating_shell_passes(tmp_path, server):
+def test_wrapper_without_a_string_evaluating_shell_passes(tmp_path: Path, server: dict[str, Any]) -> None:
     (tmp_path / "mcp.json").write_text(json.dumps({"mcpServers": {"a": server}}))
     assert AUDITS["no-shell-interpretation"](context_for(tmp_path)) == []
 
 
-def test_shell_running_a_script_file_passes(tmp_path):
+def test_shell_running_a_script_file_passes(tmp_path: Path) -> None:
     (tmp_path / "mcp.json").write_text(json.dumps({"mcpServers": {"a": {"command": "bash", "args": ["run.sh"]}}}))
     assert AUDITS["no-shell-interpretation"](context_for(tmp_path)) == []

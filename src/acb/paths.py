@@ -12,26 +12,31 @@ from functools import lru_cache
 
 
 class PatternError(ValueError):
-    pass
+    """Raised for an invalid path pattern."""
 
 
 def normalize_pattern(pattern: str) -> str:
+    """Normalize a path pattern, rejecting one that becomes empty."""
     normalized = pattern.strip()
     while normalized.startswith("./"):
         normalized = normalized[2:]
     normalized = normalized.strip("/")
     if not normalized:
-        raise PatternError(f"pattern {pattern!r} is empty after normalization")
+        msg = f"pattern {pattern!r} is empty after normalization"
+        raise PatternError(msg)
     if not re.sub(r"[*?/\[\]!]", "", normalized):
-        raise PatternError(f"pattern {pattern!r} has no literal characters and would match everything")
+        msg = f"pattern {pattern!r} has no literal characters and would match everything"
+        raise PatternError(msg)
     first = normalized.split("/", 1)[0]
-    if "/" in normalized and (not re.sub(r"[*?\[\]!]", "", first) or "**" in first) or normalized in ("**", "*"):
-        raise PatternError(
+    if ("/" in normalized and (not re.sub(r"[*?\[\]!]", "", first) or "**" in first)) or normalized in ("**", "*"):
+        msg = (
             f"pattern {pattern!r} starts with a wildcard segment; anchor it with a literal directory "
             "so it cannot match across the whole tree"
         )
+        raise PatternError(msg)
     if "\\" in normalized or ".." in normalized.split("/"):
-        raise PatternError(f"pattern {pattern!r} must use '/' separators and no '..' segments")
+        msg = f"pattern {pattern!r} must use '/' separators and no '..' segments"
+        raise PatternError(msg)
     return normalized
 
 
@@ -80,16 +85,17 @@ def _compile(pattern: str) -> re.Pattern[str]:
     try:
         return re.compile(_translate(normalize_pattern(pattern)))
     except re.error as exc:
-        raise PatternError(f"pattern {pattern!r} is not a valid glob: {exc}") from exc
+        msg = f"pattern {pattern!r} is not a valid glob: {exc}"
+        raise PatternError(msg) from exc
 
 
 def matches(relative_posix: str, pattern: str) -> bool:
-    """True if the path itself matches the pattern."""
+    """Report whether the path itself matches the pattern."""
     return _compile(pattern).fullmatch(relative_posix) is not None
 
 
 def matches_or_under(relative_posix: str, pattern: str) -> bool:
-    """True if the path or one of its ancestor directories matches the pattern."""
+    """Report whether the path or one of its ancestor directories matches the pattern."""
     regex = _compile(pattern)
     if regex.fullmatch(relative_posix):
         return True

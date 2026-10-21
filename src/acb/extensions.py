@@ -1,5 +1,4 @@
-"""Shared analysis of extension packages and agent settings files for the EXT
-and CFG controls.
+"""Analyse extension packages and agent settings files for the EXT and CFG controls.
 
 Everything product-specific (file layout, key paths, event names, the
 validator command) comes from the package's or settings file's client
@@ -17,9 +16,14 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from acb.discovery import ExtensionPackage, SettingsFile
 from acb.scan import safe_read_text
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from acb.discovery import ExtensionPackage, SettingsFile
 
 CAPABILITY_RECORD = "extension-capabilities.txt"
 _README_NAMES = ("readme.md", "readme", "readme.txt")
@@ -28,7 +32,7 @@ _VALIDATOR_TIMEOUT_SECONDS = 120
 _CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 
 
-def mentions(text: str, name: str, after_directory: bool = False) -> bool:
+def mentions(text: str, name: str, *, after_directory: bool = False) -> bool:
     """Whether text names `name` as a whole token, not as part of a longer name.
 
     With after_directory, a leading path such as `hooks/` or `./` still counts.
@@ -43,7 +47,7 @@ def _same(a: object, b: object) -> bool:
 
 
 def get_key(data: object, key_path: list[str]) -> object:
-    """The value at key_path, or _MISSING."""
+    """Return the value at key_path, or _MISSING."""
     node = data
     for part in key_path:
         if not isinstance(node, dict) or part not in node:
@@ -53,10 +57,12 @@ def get_key(data: object, key_path: list[str]) -> object:
 
 
 def has_key(data: object, key_path: list[str]) -> bool:
+    """Report whether the key path exists in the data."""
     return get_key(data, key_path) is not _MISSING
 
 
 def rule_list(settings: SettingsFile, profile: dict, which: str) -> list[str]:
+    """Return the string rules found at the profile's key in a settings file."""
     value = get_key(settings.data, profile.get("agent_settings", {}).get(which, []) or ["\0"])
     return [r for r in value if isinstance(r, str)] if isinstance(value, list) else []
 
@@ -104,11 +110,9 @@ def _manifest_paths(value: object) -> list[str]:
     return [v for v in items if isinstance(v, str)]
 
 
-def analyse_package(package: ExtensionPackage, profile: dict) -> PackageAnalysis:
-    ext = profile.get("extension_packages", {})
+def _collect_content(package: ExtensionPackage, ext: dict, result: PackageAnalysis) -> None:
+    """Record the content and components a package declares by path or manifest key."""
     root = package.root
-    result = PackageAnalysis()
-
     for rel in ext.get("content_paths", []):
         if (root / rel).exists():
             result.content.append(rel)
@@ -123,6 +127,10 @@ def analyse_package(package: ExtensionPackage, profile: dict) -> PackageAnalysis
         if has_key(package.manifest_data, comp["key"]):
             result.components.append((comp["kind"], f"manifest `{'.'.join(comp['key'])}`", package.manifest))
 
+
+def _hook_files(package: ExtensionPackage, ext: dict, result: PackageAnalysis) -> list[tuple[Path, bool]]:
+    """Return (hook file, declared by the manifest) pairs, recording inline manifest hooks."""
+    root = package.root
     # Default hook files are optional; a hook file the manifest names must exist.
     hook_files = [(root / rel, False) for rel in ext.get("hook_files", [])]
     manifest_hooks = get_key(package.manifest_data, ext.get("hook_files_manifest_key", ["\0"]))
@@ -131,36 +139,47 @@ def analyse_package(package: ExtensionPackage, profile: dict) -> PackageAnalysis
             if isinstance(item, dict):
                 result.hook_configs.append(("manifest", {"hooks": item}))
         hook_files += [(root / p, True) for p in _manifest_paths(manifest_hooks) if p.endswith(".json")]
+    return hook_files
 
+
+def _read_hook_file(
+    hook_file: Path, *, declared: bool, root: Path, list_key: list[str] | None, result: PackageAnalysis
+) -> list[Path]:
+    """Read one hook file into the analysis and return the module files it lists."""
+    if not _inside(hook_file, root):
+        result.unreadable.append(f"hook file {hook_file.relative_to(root).as_posix()} resolves outside the package")
+        return []
+    if not hook_file.exists():
+        if declared:
+            result.unreadable.append(
+                f"manifest names hook file {hook_file.relative_to(root).as_posix()}, which does not exist"
+            )
+        return []
+    rel = hook_file.relative_to(root).as_posix()
+    text = safe_read_text(hook_file)
+    try:
+        data = json.loads(text) if text is not None else None
+    except (json.JSONDecodeError, RecursionError):
+        data = None
+    if not isinstance(data, dict):
+        result.unreadable.append(rel)
+        return []
+    result.hook_configs.append((rel, data))
     modules: list[Path] = []
-    list_key = ext.get("module_list_key")
-    for hook_file, declared in hook_files:
-        if not _inside(hook_file, root):
-            result.unreadable.append(f"hook file {hook_file.relative_to(root).as_posix()} resolves outside the package")
-            continue
-        if not hook_file.exists():
-            if declared:
-                result.unreadable.append(f"manifest names hook file {hook_file.relative_to(root).as_posix()}, which does not exist")
-            continue
-        rel = hook_file.relative_to(root).as_posix()
-        text = safe_read_text(hook_file)
-        try:
-            data = json.loads(text) if text is not None else None
-        except (json.JSONDecodeError, RecursionError):
-            data = None
-        if not isinstance(data, dict):
-            result.unreadable.append(rel)
-            continue
-        result.hook_configs.append((rel, data))
-        listed = get_key(data, list_key) if list_key else _MISSING
-        for entry in listed if isinstance(listed, list) else []:
-            if isinstance(entry, str):
-                candidate = Path(os.path.normpath(hook_file.parent / entry))
-                if _inside(candidate, root):
-                    modules.append(candidate)
-                else:
-                    result.unreadable.append(f"{rel} lists module {entry!r} outside the package")
+    listed = get_key(data, list_key) if list_key else _MISSING
+    for entry in listed if isinstance(listed, list) else []:
+        if isinstance(entry, str):
+            candidate = Path(os.path.normpath(hook_file.parent / entry))
+            if _inside(candidate, root):
+                modules.append(candidate)
+            else:
+                result.unreadable.append(f"{rel} lists module {entry!r} outside the package")
+    return modules
 
+
+def _modules_in_dirs(root: Path, ext: dict, result: PackageAnalysis) -> list[Path]:
+    """Return the module files under the profile's module directories, recording symlinked directories."""
+    modules: list[Path] = []
     suffixes = tuple(ext.get("module_suffixes", []))
     test_suffixes = tuple(ext.get("module_test_suffixes", []))
     for rel_dir in ext.get("module_dirs", []):
@@ -170,10 +189,30 @@ def analyse_package(package: ExtensionPackage, profile: dict) -> PackageAnalysis
         for dirpath, dirnames, filenames in os.walk(directory):
             for name in sorted(dirnames):
                 if (Path(dirpath) / name).is_symlink():
-                    result.unreadable.append(f"{(Path(dirpath) / name).relative_to(root).as_posix()} is a symlinked directory; not followed")
-            for name in sorted(filenames):
-                if name.endswith(suffixes) and not name.endswith(test_suffixes):
-                    modules.append(Path(dirpath) / name)
+                    result.unreadable.append(
+                        f"{(Path(dirpath) / name).relative_to(root).as_posix()} is a symlinked directory; not followed"
+                    )
+            modules.extend(
+                Path(dirpath) / name
+                for name in sorted(filenames)
+                if name.endswith(suffixes) and not name.endswith(test_suffixes)
+            )
+    return modules
+
+
+def analyse_package(package: ExtensionPackage, profile: dict) -> PackageAnalysis:
+    """Analyse an extension package's manifest, hooks and modules."""
+    ext = profile.get("extension_packages", {})
+    root = package.root
+    result = PackageAnalysis()
+
+    _collect_content(package, ext, result)
+
+    modules: list[Path] = []
+    list_key = ext.get("module_list_key")
+    for hook_file, declared in _hook_files(package, ext, result):
+        modules.extend(_read_hook_file(hook_file, declared=declared, root=root, list_key=list_key, result=result))
+    modules.extend(_modules_in_dirs(root, ext, result))
 
     result.modules = list(dict.fromkeys(modules))
     for module in result.modules:
@@ -187,14 +226,20 @@ def module_capabilities(module: Path, profile: dict) -> tuple[set[str], set[str]
     if text is None:
         return None
     ext = profile.get("extension_packages", {})
-    events = {m.group(1) for m in re.finditer(ext["module_event_pattern"], text)} if ext.get("module_event_pattern") else set()
-    calls = {m.group(1) for m in re.finditer(ext["module_call_pattern"], text)} if ext.get("module_call_pattern") else set()
+    events = (
+        {m.group(1) for m in re.finditer(ext["module_event_pattern"], text)}
+        if ext.get("module_event_pattern")
+        else set()
+    )
+    calls = (
+        {m.group(1) for m in re.finditer(ext["module_call_pattern"], text)} if ext.get("module_call_pattern") else set()
+    )
     # Patterns may tolerate whitespace and optional chaining; report the plain spelling.
     return events, {re.sub(r"[\s?]", "", call) for call in calls}
 
 
 def readme_text(package: ExtensionPackage) -> str | None:
-    """The package README's text, '' when there is none, None when it exists but cannot be read."""
+    """Return the package README's text, '' when there is none, None when it exists but cannot be read."""
     for path in sorted(package.root.iterdir()):
         if path.is_file() and path.name.lower() in _README_NAMES:
             return safe_read_text(path)
@@ -202,7 +247,7 @@ def readme_text(package: ExtensionPackage) -> str | None:
 
 
 def parse_capability_lines(text: str, profile: dict) -> set[tuple[str, str, tuple[str, ...]]]:
-    """(module file name, kind, sorted items) for every validator-format line in text."""
+    """Return (module file name, kind, sorted items) for every validator-format line in text."""
     validator = profile.get("extension_packages", {}).get("validator", {})
     pattern = validator.get("line_pattern")
     if not pattern:
@@ -218,14 +263,18 @@ def parse_capability_lines(text: str, profile: dict) -> set[tuple[str, str, tupl
 
 @dataclass(frozen=True)
 class ValidatorResult:
+    """The outcome of running a client's validator."""
+
     lines: set[tuple[str, str, tuple[str, ...]]] | None
     problem: str | None = None
 
 
 def run_validator(package: ExtensionPackage, profile: dict) -> ValidatorResult:
-    """Run the client's validator on the package without a shell, from an empty
-    working directory and home, with only PATH inherited, so neither project nor
-    user configuration nor credentials in the environment reach it."""
+    """Run the client's validator on the package without a shell.
+
+    It runs from an empty working directory and home, with only PATH inherited, so neither project
+    nor user configuration nor credentials in the environment reach it.
+    """
     validator = profile.get("extension_packages", {}).get("validator")
     if not validator:
         return ValidatorResult(None, f"client {package.client} declares no capability validator")
@@ -235,7 +284,8 @@ def run_validator(package: ExtensionPackage, profile: dict) -> ValidatorResult:
         return ValidatorResult(None, f"validator `{' '.join(command)}` is not installed")
     with tempfile.TemporaryDirectory(prefix="acb-validate-") as cwd:
         try:
-            proc = subprocess.run(
+            # The argv comes from operator-supplied client data and is never shell-interpreted.
+            proc = subprocess.run(  # noqa: S603
                 [executable, *command[1:], str(package.root)],
                 cwd=cwd,
                 capture_output=True,
@@ -258,6 +308,8 @@ def run_validator(package: ExtensionPackage, profile: dict) -> ValidatorResult:
 
 @dataclass(frozen=True)
 class BlockingHook:
+    """A hook handler that can block a tool-approval event."""
+
     source: str
     event: str
     handler: dict
@@ -274,9 +326,11 @@ def blocking_hooks(config: dict, source: str, profile: dict) -> list[BlockingHoo
         groups = events.get(event)
         for group in groups if isinstance(groups, list) else []:
             handlers = group.get("hooks") if isinstance(group, dict) else None
-            for handler in handlers if isinstance(handlers, list) else []:
-                if isinstance(handler, dict):
-                    found.append(BlockingHook(source, event, handler))
+            found.extend(
+                BlockingHook(source, event, handler)
+                for handler in (handlers if isinstance(handlers, list) else [])
+                if isinstance(handler, dict)
+            )
     return found
 
 
@@ -296,14 +350,15 @@ def hook_script_files(handler: dict, variables: dict[str, Path], root: Path) -> 
         expanded = token
         for name, base in variables.items():
             expanded = expanded.replace("${" + name + "}", str(base)).replace("$" + name, str(base))
-        candidate = Path(expanded) if os.path.isabs(expanded) else root / expanded
+        candidate = Path(expanded) if Path(expanded).is_absolute() else root / expanded
         candidate = Path(os.path.normpath(candidate))
         if candidate.is_relative_to(root) and candidate.is_file():
             found.append(candidate)
     return found
 
 
-def settings_by_client(settings_files) -> dict[str, list[SettingsFile]]:
+def settings_by_client(settings_files: Iterable[SettingsFile]) -> dict[str, list[SettingsFile]]:
+    """Group settings files by client."""
     grouped: dict[str, list[SettingsFile]] = {}
     for settings in settings_files:
         grouped.setdefault(settings.client, []).append(settings)
@@ -311,8 +366,10 @@ def settings_by_client(settings_files) -> dict[str, list[SettingsFile]]:
 
 
 def missing_rule_groups(settings_files: list[SettingsFile], profile: dict, groups_key: str) -> list[dict] | None:
-    """Rule groups none of whose rules appear in the combined deny lists, or None
-    when the client defines no groups and the requirement cannot be checked."""
+    """Return the rule groups none of whose rules appear in the combined deny lists.
+
+    Return None when the client defines no groups and the requirement cannot be checked.
+    """
     groups = profile.get(groups_key)
     if not groups:
         return None

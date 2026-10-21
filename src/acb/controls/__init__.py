@@ -22,30 +22,7 @@ import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-
-from acb.clients import ClientData
-from acb.discovery import Inventory
-from acb.model import Finding
-
-
-@dataclass(frozen=True)
-class CheckContext:
-    inventory: Inventory
-    clients: ClientData
-    root: Path
-    # Running a client's validator executes a third-party binary, so the operator opts in.
-    run_validators: bool = False
-
-    def relative(self, path: Path) -> str:
-        # abspath, not resolve: report the path discovery found, which for an
-        # in-root symlinked directory is the alias, not the target.
-        try:
-            return Path(os.path.abspath(path)).relative_to(self.root).as_posix()
-        except ValueError:
-            return Path(path).name
-
-
-AuditFunc = Callable[[CheckContext], list[Finding]]
+from typing import TYPE_CHECKING
 
 from acb.controls import (
     acb_cfg_001,
@@ -71,6 +48,34 @@ from acb.controls import (
     acb_skill_002,
     acb_skill_003,
 )
+from acb.model import Finding
+
+if TYPE_CHECKING:
+    from acb.clients import ClientData
+    from acb.discovery import Inventory
+
+
+@dataclass(frozen=True)
+class CheckContext:
+    """Inputs shared by every audit function in one run."""
+
+    inventory: Inventory
+    clients: ClientData
+    root: Path
+    # Running a client's validator executes a third-party binary, so the operator opts in.
+    run_validators: bool = False
+
+    def relative(self, path: Path) -> str:
+        """Return a path relative to the root, or its name when it lies outside."""
+        # Normalize without resolving: report the path discovery found, which for an
+        # in-root symlinked directory is the alias, not the target.
+        try:
+            return Path(os.path.normpath(Path(path).absolute())).relative_to(self.root).as_posix()
+        except ValueError:
+            return Path(path).name
+
+
+AuditFunc = Callable[[CheckContext], list[Finding]]
 
 _MODULES = (
     acb_gen_001,
@@ -100,5 +105,6 @@ _MODULES = (
 REGISTRY: dict[str, dict[str, AuditFunc]] = {}
 for _module in _MODULES:
     if _module.CONTROL_ID in REGISTRY:
-        raise ImportError(f"{_module.__name__}: CONTROL_ID {_module.CONTROL_ID} is already registered")
+        msg = f"{_module.__name__}: CONTROL_ID {_module.CONTROL_ID} is already registered"
+        raise ImportError(msg)
     REGISTRY[_module.CONTROL_ID] = dict(_module.AUDITS)

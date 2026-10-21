@@ -4,11 +4,11 @@ from tests.test_controls._bundled import BUNDLED
 from tests.test_controls._shared import FIXTURES_ROOT, check_pass_and_fail
 
 
-def test_acb_cfg_003_fixtures():
+def test_acb_cfg_003_fixtures() -> None:
     check_pass_and_fail("ACB-CFG-003", AUDITS, clients=BUNDLED)
 
 
-def test_each_requirement_is_reported():
+def test_each_requirement_is_reported() -> None:
     fixture = FIXTURES_ROOT / "ACB-CFG-003" / "managed-extension-restriction" / "fail"
     messages = [f.message for f in AUDITS["managed-extension-restriction"](context_for(fixture, BUNDLED))]
     assert len(messages) == 3

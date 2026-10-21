@@ -1,4 +1,6 @@
-"""Every `indicators` string in every control's YAML must appear in at least
+"""Every control indicator must appear in at least one failing fixture.
+
+Every `indicators` string in every control's YAML must appear in at least
 one failing fixture (PROMPT.md deliverable 5). This is a repo-wide
 invariant, not a per-control test, so it lives on its own rather than in
 tests/test_controls/.
@@ -6,12 +8,17 @@ tests/test_controls/.
 
 from __future__ import annotations
 
+import contextlib
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from acb.loader import default_controls_dir, default_schema_path, load_controls
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 FIXTURES_ROOT = Path(__file__).resolve().parent / "fixtures"
 
@@ -41,14 +48,12 @@ def _fail_fixture_text(fail_dir: Path) -> str:
     chunks = []
     for path in fail_dir.rglob("*"):
         if path.is_file():
-            try:
+            with contextlib.suppress(UnicodeDecodeError, OSError):
                 chunks.append(path.read_text(encoding="utf-8"))
-            except (UnicodeDecodeError, OSError):
-                pass
     return "\n".join(chunks)
 
 
-def _cases():
+def _cases() -> Iterator[tuple[str, str, str]]:
     controls = load_controls(default_controls_dir(), default_schema_path())
     for control in controls:
         for audit in control.audit:
@@ -56,8 +61,8 @@ def _cases():
                 yield control.id, audit.id, indicator
 
 
-@pytest.mark.parametrize("control_id,audit_id,indicator", list(_cases()))
-def test_indicator_present_in_a_failing_fixture(control_id: str, audit_id: str, indicator: str):
+@pytest.mark.parametrize(("control_id", "audit_id", "indicator"), list(_cases()))
+def test_indicator_present_in_a_failing_fixture(control_id: str, audit_id: str, indicator: str) -> None:
     fail_dir = _fail_fixture_dir(control_id, audit_id)
 
     path_match = _PATH_WITH_DESCRIPTION_RE.match(indicator)

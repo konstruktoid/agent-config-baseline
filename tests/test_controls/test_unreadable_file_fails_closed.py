@@ -1,6 +1,6 @@
-"""A symlinked (or otherwise unreadable) artifact must be reported as
-NOT_EVALUATED, not silently skipped, for every ACB-GEN-00[1-4] audit that
-reads file text.
+"""An unreadable artifact must be reported as NOT_EVALUATED, not silently skipped.
+
+This covers every ACB-GEN-00[1-4] audit that reads file text, including symlinked files.
 
 This pins the fail-closed convention across the four ACB-GEN control
 modules: `safe_read_text` returns None for a symlink (scan.py refuses to
@@ -11,7 +11,7 @@ NOT_EVALUATED finding, which no exception can waive, rather than
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -21,6 +21,11 @@ from acb.controls.acb_gen_003 import AUDITS as GEN_003_AUDITS
 from acb.controls.acb_gen_004 import AUDITS as GEN_004_AUDITS
 from acb.model import Outcome
 from tests._harness import context_for
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from acb.controls import AuditFunc
 
 
 def _make_symlinked_agents_md(tmp_path: Path) -> Path:
@@ -32,7 +37,7 @@ def _make_symlinked_agents_md(tmp_path: Path) -> Path:
 
 
 @pytest.mark.parametrize(
-    "audits,audit_id",
+    ("audits", "audit_id"),
     [
         (GEN_001_AUDITS, "pipe-to-interpreter"),
         (GEN_002_AUDITS, "package-runners-pinned"),
@@ -44,7 +49,7 @@ def _make_symlinked_agents_md(tmp_path: Path) -> Path:
         (GEN_004_AUDITS, "confusable-identifiers"),
     ],
 )
-def test_symlinked_instruction_file_fails_closed(tmp_path: Path, audits, audit_id):
+def test_symlinked_instruction_file_fails_closed(tmp_path: Path, audits: dict[str, AuditFunc], audit_id: str) -> None:
     root = _make_symlinked_agents_md(tmp_path)
     ctx = context_for(root)
     findings = audits[audit_id](ctx)

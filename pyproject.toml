@@ -37,3 +37,27 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # Formatter conflicts, as listed in ruff's formatter documentation.
+    "COM812",
+    "ISC001",
+    # Mutually exclusive docstring layouts; D211 and D212 are kept.
+    "D203",
+    "D213",
+    # Licensing is declared by LICENSE and LICENSE-CONTENT, not per-file headers.
+    "CPY001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Writing to the terminal is what a command-line entry point is for.
+"src/acb/cli.py" = ["T201"]
+"scripts/*.py" = ["T201"]
+# pytest reports failures through assert, and test names document the test.
+"tests/**" = ["S101", "D100", "D101", "D102", "D103", "D104", "PLR2004"]
+
+[tool.ruff.format]
+docstring-code-format = true

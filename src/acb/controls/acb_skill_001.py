@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -10,14 +11,22 @@ from acb.model import Finding, Outcome
 from acb.scan import safe_read_text, split_frontmatter
 from acb.yamlsafe import safe_load_strict
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from acb.controls import CheckContext
+
 CONTROL_ID = "ACB-SKILL-001"
+_NAME_MAX_LENGTH = 64
+_DESCRIPTION_MAX_LENGTH = 1024
+_COMPATIBILITY_MAX_LENGTH = 500
 
 _NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 _KNOWN_OPTIONAL_KEYS = {"license", "compatibility", "metadata", "allowed-tools"}
 _KNOWN_KEYS = {"name", "description"} | _KNOWN_OPTIONAL_KEYS
 
 
-def _parse_frontmatter(skill_md_path) -> dict | None:
+def _parse_frontmatter(skill_md_path: Path) -> dict | None:
     """Return the parsed frontmatter mapping, or None if it does not parse."""
     text = safe_read_text(skill_md_path)
     if text is None:
@@ -38,7 +47,7 @@ def _parse_frontmatter(skill_md_path) -> dict | None:
     return data
 
 
-def _check_frontmatter_parses(ctx) -> list[Finding]:
+def _check_frontmatter_parses(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for skill in ctx.inventory.skills:
         text = safe_read_text(skill.skill_md)
@@ -94,7 +103,7 @@ def _check_frontmatter_parses(ctx) -> list[Finding]:
     return findings
 
 
-def _check_required_fields(ctx) -> list[Finding]:
+def _check_required_fields(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for skill in ctx.inventory.skills:
         data = _parse_frontmatter(skill.skill_md)
@@ -104,7 +113,7 @@ def _check_required_fields(ctx) -> list[Finding]:
         rel = ctx.relative(skill.skill_md)
 
         name = data.get("name")
-        if not isinstance(name, str) or not (1 <= len(name) <= 64) or not _NAME_RE.match(name):
+        if not isinstance(name, str) or not (1 <= len(name) <= _NAME_MAX_LENGTH) or not _NAME_RE.match(name):
             findings.append(
                 Finding(
                     control_id=CONTROL_ID,
@@ -126,7 +135,7 @@ def _check_required_fields(ctx) -> list[Finding]:
             )
 
         description = data.get("description")
-        if not isinstance(description, str) or not description or len(description) > 1024:
+        if not isinstance(description, str) or not description or len(description) > _DESCRIPTION_MAX_LENGTH:
             findings.append(
                 Finding(
                     control_id=CONTROL_ID,
@@ -139,7 +148,7 @@ def _check_required_fields(ctx) -> list[Finding]:
     return findings
 
 
-def _check_optional_fields(ctx) -> list[Finding]:
+def _check_optional_fields(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for skill in ctx.inventory.skills:
         data = _parse_frontmatter(skill.skill_md)
@@ -148,17 +157,17 @@ def _check_optional_fields(ctx) -> list[Finding]:
 
         rel = ctx.relative(skill.skill_md)
 
-        for key in data:
-            if key not in _KNOWN_KEYS:
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="optional-fields",
-                        outcome=Outcome.FAIL,
-                        message=f"unknown top-level frontmatter key {key!r}",
-                        path=rel,
-                    )
-                )
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="optional-fields",
+                outcome=Outcome.FAIL,
+                message=f"unknown top-level frontmatter key {key!r}",
+                path=rel,
+            )
+            for key in data
+            if key not in _KNOWN_KEYS
+        )
 
         if "license" in data and not isinstance(data["license"], str):
             findings.append(
@@ -173,7 +182,7 @@ def _check_optional_fields(ctx) -> list[Finding]:
 
         if "compatibility" in data:
             compatibility = data["compatibility"]
-            if not isinstance(compatibility, str) or not (1 <= len(compatibility) <= 500):
+            if not isinstance(compatibility, str) or not (1 <= len(compatibility) <= _COMPATIBILITY_MAX_LENGTH):
                 findings.append(
                     Finding(
                         control_id=CONTROL_ID,

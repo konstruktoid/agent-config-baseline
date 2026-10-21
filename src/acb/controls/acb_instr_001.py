@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from acb.model import Finding, Outcome
 from acb.scan import files_for, line_of, normalize_for_matching
+
+if TYPE_CHECKING:
+    from acb.controls import CheckContext
 
 CONTROL_ID = "ACB-INSTR-001"
 
@@ -49,17 +53,17 @@ _SAFETY_DISABLE_PATTERNS = (
     re.compile(r"\bwget\b[^\n]{0,40}?--no-check-certificate\b", re.IGNORECASE),
     # git commit --no-verify / -n, git push --no-verify
     re.compile(r"\bgit\s+(?:commit|push)\b[^\n]{0,40}?(?<!\S)(?:--no-verify|-n)\b", re.IGNORECASE),
-    # git -c http.sslVerify=false
+    # Matches git -c with http.sslVerify set to false.
     re.compile(r"\bgit\s+-c\s+http\.sslverify\s*=\s*false\b", re.IGNORECASE),
-    # NODE_TLS_REJECT_UNAUTHORIZED=0, with or without quotes around the value
+    # Matches NODE_TLS_REJECT_UNAUTHORIZED set to 0, with or without quotes around the value.
     re.compile(r"NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*['\"]?0['\"]?"),
-    # GIT_SSL_NO_VERIFY=1 / true / yes
+    # Matches GIT_SSL_NO_VERIFY set to 1, true or yes.
     re.compile(r"GIT_SSL_NO_VERIFY\s*=\s*['\"]?(?:1|true|yes)['\"]?", re.IGNORECASE),
-    # pip ... --trusted-host ...
+    # Matches pip invoked with --trusted-host.
     re.compile(r"\bpip[0-9.]*\b[^\n]{0,80}?--trusted-host\b", re.IGNORECASE),
-    # npm config set strict-ssl false
+    # Matches npm config set strict-ssl false.
     re.compile(r"\bnpm\s+config\s+set\s+strict-ssl\s+false\b", re.IGNORECASE),
-    # PYTHONHTTPSVERIFY=0
+    # Matches PYTHONHTTPSVERIFY set to 0.
     re.compile(r"PYTHONHTTPSVERIFY\s*=\s*['\"]?0['\"]?"),
     # HUSKY=0, a common way to disable git hooks installed via Husky
     re.compile(r"\bHUSKY\s*=\s*['\"]?0['\"]?\b"),
@@ -68,7 +72,7 @@ _SAFETY_DISABLE_PATTERNS = (
 )
 
 
-def _check_oversight_bypass_directives(ctx) -> list[Finding]:
+def _check_oversight_bypass_directives(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file")):
         if f.text is None:
@@ -112,7 +116,7 @@ def _check_oversight_bypass_directives(ctx) -> list[Finding]:
     return findings
 
 
-def _check_bypass_flags(ctx) -> list[Finding]:
+def _check_bypass_flags(ctx: CheckContext) -> list[Finding]:
     """Fail if scanned text invokes an agent with a client-declared bypass flag.
 
     The flag list is per-client data (``ctx.clients.permission_bypass_flags``),
@@ -161,7 +165,7 @@ def _check_bypass_flags(ctx) -> list[Finding]:
     return findings
 
 
-def _check_safety_disable(ctx) -> list[Finding]:
+def _check_safety_disable(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file")):
         if f.text is None:
