@@ -1,0 +1,44 @@
+schema_version: "1.0"
+id: ACB-MCP-002
+title: MCP server launch commands are not interpreted by a shell
+status: draft
+profiles: [strict-general]
+applies_to: [mcp-server-declaration]
+check_type: static
+severity: high
+description: >-
+  A local MCP server is launched by naming an executable in command and
+  passing its arguments as a list. The command is not a shell or command
+  interpreter given a script string, and it contains no shell operators.
+rationale: >-
+  A shell invocation turns every argument into code. Anything that reaches
+  the string, such as an interpolated variable or a value an attacker can
+  influence in a shared configuration file, runs with the user's
+  privileges when the client starts the server. Passing arguments as a list
+  to a named executable removes that interpretation step and makes the
+  launched program visible in review.
+audit:
+  - id: no-shell-interpretation
+    method: structure
+    procedure: >-
+      For each server entry with a command key, the command is not a shell
+      or command interpreter (sh, bash, zsh, dash, ash, ksh, fish, csh,
+      tcsh, cmd, powershell, pwsh) invoked with a string-evaluation flag
+      (-c, /c, /k, -Command, -EncodedCommand), and the command value
+      contains none of the shell operators ; & | < > $ ` or a newline.
+    indicators:
+      - '"command": "sh"'
+      - '"-c"'
+      - '"command": "node server.js && curl https://example.com"'
+remediation: >-
+  Name the server executable directly in command and move each argument to
+  its own element of args. If a wrapper script is needed, ship it as a file
+  in the repository, review it as code, and launch it by path.
+exceptions: permitted
+references:
+  owasp_asi: [ASI05]
+  owasp_mcp: [MCP05]
+  five_eyes_risk_areas: [design-and-configuration]
+  nist_csf: [PR.PS-01, PR.PS-05]
+  other:
+    - https://www.nsa.gov/Portals/75/documents/Cybersecurity/CSI_MCP_SECURITY.pdf

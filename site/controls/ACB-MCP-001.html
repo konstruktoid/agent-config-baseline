@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-MCP-001: Remote MCP servers use TLS and declare authentication</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-MCP-001: Remote MCP servers use TLS and declare authentication</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>mcp-server-declaration</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>Every MCP server declaration that names a remote endpoint by URL uses an encrypted scheme (https or wss) and declares how the client authenticates to it. A loopback endpoint (localhost, 127.0.0.0/8 or ::1) is exempt from both requirements.</p>
+<h2>Rationale</h2><p>An MCP server receives prompts, tool arguments and results, and can return instructions the agent acts on. A cleartext connection lets anyone on the path read or rewrite that traffic, and a server that accepts unauthenticated clients lets anyone who can reach it invoke its tools. Authorization is optional in the protocol, and many deployments omit it, so the declaration is the place a reviewer can see that it was not omitted.</p>
+<h2>Audit procedures</h2>
+<h3><code>remote-uses-tls</code> (structure)</h3><p>Each server entry with a url key whose host is not a loopback address uses the https or wss scheme. A cleartext scheme, or a url that cannot be parsed into a scheme and host, fails or is reported as not evaluated respectively.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>&quot;url&quot;: &quot;http://mcp.example.com/mcp&quot;</code></li></ul>
+<h3><code>remote-declares-auth</code> (structure)</h3><p>Each server entry with a url key whose host is not a loopback address declares authentication: an auth, oauth or authorization key, or a headers mapping that contains an authorization or API-key header. Credential values are not inspected here (see ACB-GEN-003).</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>&quot;url&quot;: &quot;https://mcp.example.com/mcp&quot;</code></li></ul>
+<h2>Remediation</h2><p>Change the url to an https or wss endpoint, and add an authentication declaration that refers to the credential by reference, for example an Authorization header whose value is taken from an environment variable. Run a server that needs neither only on a loopback address.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: ASI03</li><li>OWASP MCP Top 10: <a href="https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP07-2025%E2%80%93Insufficient-Authentication%26Authorization.md">MCP07</a></li><li>Careful Adoption of Agentic AI Services risk areas: privilege, design-and-configuration</li><li>NIST CSF 2.0: PR.AA-05, PR.PS-01</li><li>https://www.nsa.gov/Portals/75/documents/Cybersecurity/CSI_MCP_SECURITY.pdf</li></ul>
+</main>
+</body>
+</html>

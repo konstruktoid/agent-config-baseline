@@ -136,6 +136,11 @@
           "type": "array",
           "items": { "type": "string", "pattern": "^AST(0[1-9]|10)$" }
         },
+        "owasp_mcp": {
+          "description": "OWASP MCP Top 10 IDs.",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^MCP(0[1-9]|10)$" }
+        },
         "five_eyes_risk_areas": {
           "description": "Risk areas from Careful Adoption of Agentic AI Services (ASD's ACSC, CISA, NSA, Canadian Centre for Cyber Security, NCSC-NZ, NCSC-UK; May 2026).",
           "type": "array",

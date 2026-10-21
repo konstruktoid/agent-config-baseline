@@ -44,8 +44,11 @@ client data describes where they live.
 
 ## Control families
 
-- `SKILL`, `INSTR`, `MCP`, `GEN`: skills, instruction files, MCP server
-  declarations, and requirements common to all three.
+- `SKILL`, `INSTR`, `GEN`: skills, instruction files, and requirements
+  common to skills, instruction files and MCP server declarations.
+- `MCP`: MCP server declarations. Remote servers use TLS and declare
+  authentication (ACB-MCP-001), and local servers are launched as a named
+  executable, not through a shell (ACB-MCP-002).
 - `EXT`: extension packages, the plugin or extension bundles an agent host
   installs. Some hosts load extension code into their own process with the
   user's privileges, outside the sandbox that isolates the agent's commands,
