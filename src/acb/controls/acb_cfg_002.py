@@ -12,7 +12,7 @@ def _check_install_commands_denied(ctx) -> list[Finding]:
     audit = "install-commands-denied"
     findings: list[Finding] = []
     for client, files in settings_by_client(ctx.inventory.agent_settings).items():
-        anchor = ctx.relative(sorted(files, key=lambda s: s.scope != "project")[0].path)
+        anchor = ctx.relative(min(files, key=lambda s: s.scope != "project").path)
         missing = missing_rule_groups(files, ctx.clients.profile(client), "extension_install_rules")
         if missing is None:
             findings.append(

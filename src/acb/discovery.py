@@ -13,9 +13,9 @@ import json
 import os
 import re
 from collections import Counter
-from urllib.parse import unquote
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import unquote
 
 import yaml
 

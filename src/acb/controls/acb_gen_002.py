@@ -31,7 +31,7 @@ _DOCKER_VALUE_FLAGS = frozenset(
         "--entrypoint", "--add-host", "--dns", "--group-add", "-m", "--memory",
         "--cpus", "--restart", "--tmpfs", "--device", "--security-opt", "--ulimit", "--cap-add",
         "--cap-drop", "--pid", "--ipc", "--hostname", "-h", "--platform", "--pull", "--cgroupns", "--shm-size",
-        "--gpus", "--log-driver", "--log-opt", "--stop-signal", "--user", "--userns", "--uts", "--volumes-from",
+        "--gpus", "--log-driver", "--log-opt", "--stop-signal", "--userns", "--uts", "--volumes-from",
         "--env-file", "--cidfile", "--link", "--ip", "--mac-address", "--runtime", "--domainname",
     }
 )

@@ -7,7 +7,13 @@ import re
 from pathlib import Path
 
 from acb.model import Finding, Outcome
-from acb.scan import line_of, safe_read_bytes, safe_read_text, skill_files, split_frontmatter
+from acb.scan import (
+    line_of,
+    safe_read_bytes,
+    safe_read_text,
+    skill_files,
+    split_frontmatter,
+)
 
 CONTROL_ID = "ACB-SKILL-003"
 
@@ -34,11 +40,9 @@ def _looks_like_image(raw: bytes) -> bool:
         return True
     if raw.startswith(b"\xff\xd8\xff"):
         return True
-    if raw.startswith(b"GIF87a") or raw.startswith(b"GIF89a"):
+    if raw.startswith((b"GIF87a", b"GIF89a")):
         return True
-    if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
-        return True
-    return False
+    return raw[:4] == b"RIFF" and raw[8:12] == b"WEBP"
 
 
 def _looks_like_archive(raw: bytes) -> bool:
@@ -54,9 +58,8 @@ def _looks_like_archive(raw: bytes) -> bool:
         return True
     if raw.startswith(b"\x1f\x8b"):  # gzip
         return True
-    if len(raw) >= 262 and raw[257:262] == b"ustar":  # POSIX/GNU tar
-        return True
-    return False
+    # POSIX/GNU tar
+    return len(raw) >= 262 and raw[257:262] == b"ustar"
 
 
 def _find_multiline_encoded_blocks(text: str) -> list[int]:
@@ -355,7 +358,7 @@ def _check_references_contained(ctx) -> list[Finding]:
             # A file:// URI is a real local path wearing a scheme prefix;
             # strip it so the rest of the checks (absolute, `..`, resolve)
             # apply to the path it actually names.
-            check_token = token[len("file://") :] if token.startswith("file://") else token
+            check_token = token.removeprefix("file://")
 
             if check_token.startswith("/"):
                 findings.append(

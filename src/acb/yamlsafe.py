@@ -7,6 +7,7 @@ ordinary (safe) aliasing, but it silently accepts duplicate mapping keys
 from __future__ import annotations
 
 import yaml
+import yaml.resolver
 
 
 class DuplicateKeyError(yaml.YAMLError, ValueError):
