@@ -44,8 +44,12 @@ client data describes where they live.
 
 ## Control families
 
-- `SKILL`, `INSTR`, `MCP`, `GEN`: skills, instruction files, MCP server
-  declarations, and requirements common to all three.
+- `SKILL`, `INSTR`, `GEN`: skills, instruction files, and requirements
+  common to skills, instruction files and MCP server declarations.
+- `MCP`: MCP server declarations. Remote servers use TLS and declare
+  authentication (ACB-MCP-001), and local servers are launched as a named
+  executable, not through a shell (ACB-MCP-002), with no process-startup
+  hijack variables in the server's environment (ACB-MCP-003).
 - `EXT`: extension packages, the plugin or extension bundles an agent host
   installs. Some hosts load extension code into their own process with the
   user's privileges, outside the sandbox that isolates the agent's commands,
@@ -69,7 +73,9 @@ client data describes where they live.
 Every control maps to the risk areas of *Careful Adoption of Agentic AI
 Services* (ASD's ACSC, CISA, NSA, Canadian Centre for Cyber Security,
 NCSC-NZ, NCSC-UK, May 2026) and to NIST Cybersecurity Framework 2.0
-subcategories; `docs/mappings.md` has both matrices. ACB-CFG-001 follows
+subcategories, and to OWASP Top 10 lists by ID; `docs/mappings.md` has every
+matrix, each ID linking to its source (a page of the PDF, or the OWASP
+entry). ACB-CFG-001 follows
 the incident-readiness practice that agents cannot access or interfere with
 their own monitoring (NIST CAISSI, NSA SISC and CISA, October 2026).
 
@@ -92,8 +98,8 @@ pass. Severity only affects how a finding is reported (it maps to SARIF
 - `tests/fixtures/<CONTROL-ID>/<audit-id>/{pass,fail}/` — minimal artifacts
   exercising each audit procedure.
 - `docs/controls/` — generated per-control documentation and index.
-- `docs/mappings.md` — generated OWASP, risk-area and NIST CSF 2.0 coverage
-  matrices and the list of unverified mappings.
+- `docs/mappings.md` — generated OWASP (ASI, AST, MCP), risk-area and NIST CSF 2.0
+  coverage matrices and the list of unverified mappings.
 - `scripts/gen_docs.py` — generates `docs/`; `--check` fails if it is stale.
 - `reports/` — audit reports of third-party repositories, published as found.
 - `.github/workflows/` — CI for this repository (`ci.yml`) and the reusable
@@ -160,6 +166,38 @@ exception can waive that.
 
 `pyproject.toml` pins exact versions of `PyYAML` and `jsonschema`; `uv.lock`
 records the hashes, and CI installs with `uv sync --locked`.
+
+## FAQ
+
+### How does this relate to Agent Threat Rules (ATR)?
+
+[ATR](https://github.com/Agent-Threat-Rule/agent-threat-rules) is an
+MIT-licensed set of detection rules, mostly regular expressions, that match
+attack content in prompts, tool calls and tool responses, with a scanner
+that also reads skill and MCP files. This baseline is a set of pass/fail
+configuration controls that the checker evaluates without model calls or
+heuristics. The two answer different questions (is this content an attack, and
+is this configuration safe to ship), so they are meant to run side by side.
+
+### Are ATR rules part of this baseline?
+
+No. A control is added only when it is a structural check on a configuration
+artifact and cites an established source: an advisory, a CVE or a published
+standard. Most ATR rules match exploit payloads for one product at run time,
+which is out of scope here. ACB-MCP-003 is the one control derived from an
+ATR rule (ATR-2026-02300); it cites the underlying OpenClaw advisory
+(GHSA-mj59-h3q9-ghfh) and the VulnCheck record (CVE-2026-44995), not ATR
+itself. The advisory says "No known CVE"; the CVE comes from VulnCheck only.
+
+### Where do the mappings come from, and how do I check them?
+
+Every OWASP, Five Eyes and NIST CSF ID in a control links to its source in
+`docs/mappings.md` and on each control page. OWASP MCP Top 10 links point to
+the entry files, Five Eyes and CSF links point to a PDF page, and OWASP AST
+links point to the entry page. The OWASP Agentic Applications (ASI) links
+point to the list page only, because it exposes no per-entry URLs, and ASI IDs
+are not yet verified entry by entry. Only AST02 is verified (see
+`docs/mappings.md`).
 
 ## Licensing
 

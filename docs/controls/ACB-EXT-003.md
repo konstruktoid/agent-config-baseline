@@ -48,8 +48,8 @@ Generate the record with `claude plugin validate <package-dir>` and keep its `ho
 
 ## References
 
-- OWASP Top 10 for Agentic Applications 2026: ASI02, ASI04
-- OWASP Agentic Skills Top 10: AST02
-- Careful Adoption of Agentic AI Services risk areas: privilege, accountability
-- NIST CSF 2.0: ID.AM-02, ID.RA-09
+- OWASP Top 10 for Agentic Applications 2026: [ASI02](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/), [ASI04](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- OWASP Agentic Skills Top 10: [AST02](https://owasp.org/www-project-agentic-skills-top-10/ast02.html)
+- Careful Adoption of Agentic AI Services risk areas: [privilege](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=7), [accountability](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=12)
+- NIST CSF 2.0: [ID.AM-02](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=23), [ID.RA-09](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=24)
 - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

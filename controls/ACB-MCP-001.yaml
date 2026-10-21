@@ -1,0 +1,53 @@
+schema_version: "1.0"
+id: ACB-MCP-001
+title: Remote MCP servers use TLS and declare authentication
+status: draft
+profiles: [strict-general]
+applies_to: [mcp-server-declaration]
+check_type: static
+severity: high
+description: >-
+  Every MCP server declaration that names a remote endpoint by URL uses an
+  encrypted scheme (https or wss) and declares how the client authenticates
+  to it. A loopback endpoint (localhost, 127.0.0.0/8 or ::1) is exempt from
+  both requirements.
+rationale: >-
+  An MCP server receives prompts, tool arguments and results, and can
+  return instructions the agent acts on. A cleartext connection lets anyone
+  on the path read or rewrite that traffic, and a server that accepts
+  unauthenticated clients lets anyone who can reach it invoke its tools.
+  Authorization is optional in the protocol, and many deployments omit it,
+  so the declaration is the place a reviewer can see that it was not
+  omitted.
+audit:
+  - id: remote-uses-tls
+    method: structure
+    procedure: >-
+      Each server entry with a url key whose host is not a loopback address
+      uses the https or wss scheme. A cleartext scheme, or a url that cannot
+      be parsed into a scheme and host, fails or is reported as not
+      evaluated respectively.
+    indicators:
+      - '"url": "http://mcp.example.com/mcp"'
+  - id: remote-declares-auth
+    method: structure
+    procedure: >-
+      Each server entry with a url key whose host is not a loopback address
+      declares authentication: an auth, oauth or authorization key, or a
+      headers mapping that contains an authorization or API-key header.
+      Credential values are not inspected here (see ACB-GEN-003).
+    indicators:
+      - '"url": "https://mcp.example.com/mcp"'
+remediation: >-
+  Change the url to an https or wss endpoint, and add an authentication
+  declaration that refers to the credential by reference, for example an
+  Authorization header whose value is taken from an environment variable.
+  Run a server that needs neither only on a loopback address.
+exceptions: permitted
+references:
+  owasp_asi: [ASI03]
+  owasp_mcp: [MCP07]
+  five_eyes_risk_areas: [privilege, design-and-configuration]
+  nist_csf: [PR.AA-05, PR.PS-01]
+  other:
+    - https://www.nsa.gov/Portals/75/documents/Cybersecurity/CSI_MCP_SECURITY.pdf

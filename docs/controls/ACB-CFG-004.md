@@ -44,7 +44,7 @@ A mod that handles tool.check gives its answer after permission rules and PreToo
 
 ## References
 
-- OWASP Top 10 for Agentic Applications 2026: ASI02, ASI09
-- Careful Adoption of Agentic AI Services risk areas: design-and-configuration, accountability
-- NIST CSF 2.0: PR.AA-05, GV.RR-02
+- OWASP Top 10 for Agentic Applications 2026: [ASI02](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/), [ASI09](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- Careful Adoption of Agentic AI Services risk areas: [design-and-configuration](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9), [accountability](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=12)
+- NIST CSF 2.0: [PR.AA-05](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25), [GV.RR-02](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=22)
 - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

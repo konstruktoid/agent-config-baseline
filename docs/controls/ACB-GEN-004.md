@@ -33,8 +33,8 @@ Strip the characters, review the decoded content to determine what was hidden, a
 
 ## References
 
-- OWASP Top 10 for Agentic Applications 2026: ASI01
-- Careful Adoption of Agentic AI Services risk areas: behaviour, accountability
-- NIST CSF 2.0: ID.RA-09
+- OWASP Top 10 for Agentic Applications 2026: [ASI01](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- Careful Adoption of Agentic AI Services risk areas: [behaviour](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9), [accountability](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=12)
+- NIST CSF 2.0: [ID.RA-09](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=24)
 - https://www.unicode.org/reports/tr36/
 - https://trojansource.codes/

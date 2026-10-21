@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "preload": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {"LD_PRELOAD": "/tmp/hook.so"}
+    },
+    "wrapped": {
+      "command": "env",
+      "args": ["LD_PRELOAD=/tmp/hook.so", "node", "server.js"]
+    },
+    "loader": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {"NODE_OPTIONS": "--require ./hook.js"}
+    }
+  }
+}

@@ -45,7 +45,7 @@ A PreToolUse command hook blocks only by exiting with code 2 or by printing a de
 
 ## References
 
-- OWASP Top 10 for Agentic Applications 2026: ASI02
-- Careful Adoption of Agentic AI Services risk areas: design-and-configuration, behaviour
-- NIST CSF 2.0: ID.IM-02, PR.PS-06
+- OWASP Top 10 for Agentic Applications 2026: [ASI02](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- Careful Adoption of Agentic AI Services risk areas: [design-and-configuration](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9), [behaviour](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9)
+- NIST CSF 2.0: [ID.IM-02](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=24), [PR.PS-06](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25)
 - https://www.nist.gov/system/files/documents/2026/10/16/Key_Practices_for_Incident_Readiness_and_Response_in_Super_Intelligence%20_Training_and_Evaluation.pdf

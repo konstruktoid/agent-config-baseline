@@ -40,8 +40,8 @@ Only Edit(path) and Read(path) rules govern file tools; a Write(path) rule is ac
 
 ## References
 
-- OWASP Top 10 for Agentic Applications 2026: ASI03, ASI10
-- Careful Adoption of Agentic AI Services risk areas: privilege, accountability
-- NIST CSF 2.0: PR.AA-05, PR.PS-01
+- OWASP Top 10 for Agentic Applications 2026: [ASI03](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/), [ASI10](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- Careful Adoption of Agentic AI Services risk areas: [privilege](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=7), [accountability](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=12)
+- NIST CSF 2.0: [PR.AA-05](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25), [PR.PS-01](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25)
 - https://www.nist.gov/system/files/documents/2026/10/16/Key_Practices_for_Incident_Readiness_and_Response_in_Super_Intelligence%20_Training_and_Evaluation.pdf
 - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

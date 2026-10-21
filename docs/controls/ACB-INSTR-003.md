@@ -53,6 +53,6 @@ Remove the directive. Where external content is part of the task, state explicit
 
 ## References
 
-- OWASP Top 10 for Agentic Applications 2026: ASI01, ASI06
-- Careful Adoption of Agentic AI Services risk areas: behaviour, structural
-- NIST CSF 2.0: PR.AA-05
+- OWASP Top 10 for Agentic Applications 2026: [ASI01](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/), [ASI06](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- Careful Adoption of Agentic AI Services risk areas: [behaviour](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9), [structural](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=11)
+- NIST CSF 2.0: [PR.AA-05](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25)

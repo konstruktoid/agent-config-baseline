@@ -26,12 +26,14 @@ A control's `status` field tracks its lifecycle:
 
 1. Write the YAML in `controls/`, validated against
    `schema/control.schema.json`.
-2. Every OWASP reference must be verified against the published source
-   before it is added — see ground rule 4 in `PROMPT.md`. Do not copy
-   OWASP prose; map by ID only. Every control also maps to at least one
+2. Every OWASP reference (`owasp_asi`, `owasp_ast`, `owasp_mcp`) must be
+   verified against the published source before it is added — see ground
+   rule 4 in `PROMPT.md`. Do not copy OWASP prose; map by ID only. A new
+   `owasp_mcp` ID needs its entry in `OWASP_MCP` in `scripts/gen_docs.py`,
+   with the link to the entry file. Every control also maps to at least one
    `five_eyes_risk_areas` value and one `nist_csf` subcategory; add a new
-   CSF ID to `CSF_SUBCATEGORIES` in `scripts/gen_docs.py` only after
-   checking its text in NIST CSWP 29.
+   CSF ID to `CSF_SUBCATEGORIES` and `CSF_PAGES` in `scripts/gen_docs.py`
+   only after checking its text, and its PDF page, in NIST CSWP 29.
 3. Every `audit[].id` needs an implementation in
    `src/acb/controls/<id_lowercased_with_underscores>.py`. A control with
    an unimplemented audit procedure is reported as `not-evaluated`, never
