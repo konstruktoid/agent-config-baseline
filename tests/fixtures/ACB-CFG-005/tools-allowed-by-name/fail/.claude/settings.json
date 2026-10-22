@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github",
+      "mcp__github__*",
+      "mcp__github__get_*"
+    ],
+    "deny": [
+      "Edit(.mcp.json)"
+    ]
+  }
+}

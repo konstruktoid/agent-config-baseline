@@ -16,6 +16,7 @@ agent_settings:
       source: https://code.claude.com/docs/en/plugins/mods/admin
   deny_rules_key: [permissions, deny]
   ask_rules_key: [permissions, ask]
+  allow_rules_key: [permissions, allow]
   hooks_key: [hooks]
   blocking_hook_events: [PreToolUse]
   hook_path_variables:
@@ -39,6 +40,12 @@ self_protection_rules:
   - target: project MCP server declarations (.mcp.json)
     any_of: [Edit, "Edit(.mcp.json)", "Edit(**/.mcp.json)", "Edit(/.mcp.json)", "Edit(./.mcp.json)"]
     source: https://code.claude.com/docs/en/permission-modes
+
+tool_server_allow_patterns:
+  patterns:
+    - "^mcp__(?:(?!__)[^*])+$"
+    - "^mcp__[^*]+__[^*]*\\*"
+  source: https://code.claude.com/docs/en/permissions
 
 extension_install_rules:
   - target: plugin install and management commands run through the shell tool
@@ -208,6 +215,18 @@ audit_notes:
       endpoint with `claude --debug` and the guard's refusal line.
     sources:
       - https://code.claude.com/docs/en/plugins/mods/admin
+      - https://code.claude.com/docs/en/permissions
+  - control: ACB-CFG-005
+    audit: tools-allowed-by-name
+    note: >-
+      MCP tools are named `mcp__<server>__<tool>`. As an allow rule,
+      `mcp__<server>` and `mcp__<server>__*` match every tool of the server,
+      and a glob after the `mcp__<server>__` prefix, such as
+      `mcp__github__get_*`, matches every tool whose name fits it.
+      Unanchored allow globs such as `mcp__*` are skipped and approve
+      nothing. Allow rules in a project's `.claude/settings.json` apply only
+      after the workspace trust dialog, which lists them, is accepted.
+    sources:
       - https://code.claude.com/docs/en/permissions
   - control: ACB-CFG-004
     audit: approval-not-delegated

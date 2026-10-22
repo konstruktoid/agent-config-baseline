@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-CFG-005: Tool server tools are pre-approved by name, never server-wide</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-CFG-005: Tool server tools are pre-approved by name, never server-wide</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>medium</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>agent-settings</code>, <code>managed-settings</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>An allow rule in the agent&#x27;s committed permission configuration that pre-approves a tool server&#x27;s tools names one tool exactly. No allow rule approves every tool a server offers, or every tool whose name matches a pattern.</p>
+<h2>Rationale</h2><p>A reviewer who approves a tool server approves the tools it offered at that moment. A server-wide or pattern allow rule also approves every tool the server adds later, so a server whose package, endpoint or operator is compromised after review can introduce a tool that runs without anyone being asked. Naming each tool keeps a new tool behind the host&#x27;s approval prompt and turns widening the approval into a reviewed change to the settings file. An exact-name rule still matches a tool whose description or behaviour changes after review, so this control does not cover redefinition of an approved tool.</p>
+<h2>Audit procedures</h2>
+<h3><code>tools-allowed-by-name</code> (structure)</h3><p>Collect the allow rules from every agent settings file in the repository. No allow rule matches a form the client defines as approving more than one named tool of a tool server: a rule naming only the server, or a rule with a wildcard in the tool name. Not evaluated when the client defines no such forms.</p>
+<p>Illustrative failing indicators (non-exhaustive):</p><ul><li><code>&quot;allow&quot;: [&quot;mcp__github&quot;]</code></li><li><code>&quot;allow&quot;: [&quot;mcp__github__*&quot;]</code></li><li><code>&quot;allow&quot;: [&quot;mcp__github__get_*&quot;]</code></li></ul>
+<h2>Remediation</h2><p>Replace each server-wide or pattern allow rule with one rule per tool the agent needs without a prompt, and leave every other tool of the server to the host&#x27;s approval prompt.</p>
+<h2>Implementation notes</h2><p>Client-specific facts from <code>clients/</code>; the control above is the requirement.</p>
+<h3>claude-code: <code>tools-allowed-by-name</code></h3><p>MCP tools are named `mcp__&lt;server&gt;__&lt;tool&gt;`. As an allow rule, `mcp__&lt;server&gt;` and `mcp__&lt;server&gt;__*` match every tool of the server, and a glob after the `mcp__&lt;server&gt;__` prefix, such as `mcp__github__get_*`, matches every tool whose name fits it. Unanchored allow globs such as `mcp__*` are skipped and approve nothing. Allow rules in a project&#x27;s `.claude/settings.json` apply only after the workspace trust dialog, which lists them, is accepted.</p><ul><li><a href="https://code.claude.com/docs/en/permissions">https://code.claude.com/docs/en/permissions</a></li></ul>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: <a href="https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/">ASI02</a></li><li>OWASP MCP Top 10: <a href="https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP02-2025%E2%80%93Privilege-Escalation-via-Scope-Creep.md">MCP02</a>, <a href="https://github.com/OWASP/www-project-mcp-top-10/blob/165fe0f78ef104459237b4a8e0f6e78db9b02391/2025/MCP03-2025%E2%80%93Tool-Poisoning.md">MCP03</a></li><li>Careful Adoption of Agentic AI Services risk areas: <a href="https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=7">privilege</a></li><li>NIST CSF 2.0: <a href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25">PR.AA-05</a></li><li>https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf</li></ul>
+</main>
+</body>
+</html>

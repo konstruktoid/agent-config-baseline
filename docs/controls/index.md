@@ -8,6 +8,7 @@ Generated from controls/*.yaml. Do not hand-edit.
 | [ACB-CFG-002](ACB-CFG-002.md) | The agent cannot install, enable or sideload extensions | agent-settings, managed-settings | high | ASI03, ASI04 | AST02 |
 | [ACB-CFG-003](ACB-CFG-003.md) | Blocking policy is enforced in a layer user-installed extensions cannot override | managed-settings | high | ASI03, ASI04 | - |
 | [ACB-CFG-004](ACB-CFG-004.md) | Human approval requirements are defined by configuration | agent-settings, managed-settings, extension-package | medium | ASI02, ASI09 | - |
+| [ACB-CFG-005](ACB-CFG-005.md) | Tool server tools are pre-approved by name, never server-wide | agent-settings, managed-settings | medium | ASI02 | - |
 | [ACB-EXT-001](ACB-EXT-001.md) | In-process extension code is declared in package documentation | extension-package | medium | ASI04 | AST02 |
 | [ACB-EXT-002](ACB-EXT-002.md) | Content packages contain no executable extension components | extension-package | high | ASI04 | AST02 |
 | [ACB-EXT-003](ACB-EXT-003.md) | Extension capabilities are recorded and high-risk ones are justified | extension-package | medium | ASI02, ASI04 | AST02 |

@@ -1,0 +1,48 @@
+schema_version: "1.0"
+id: ACB-CFG-005
+title: Tool server tools are pre-approved by name, never server-wide
+status: draft
+profiles: [strict-general]
+applies_to: [agent-settings, managed-settings]
+check_type: static
+severity: medium
+description: >-
+  An allow rule in the agent's committed permission configuration that
+  pre-approves a tool server's tools names one tool exactly. No allow rule
+  approves every tool a server offers, or every tool whose name matches a
+  pattern.
+rationale: >-
+  A reviewer who approves a tool server approves the tools it offered at
+  that moment. A server-wide or pattern allow rule also approves every tool
+  the server adds later, so a server whose package, endpoint or operator is
+  compromised after review can introduce a tool that runs without anyone
+  being asked. Naming each tool keeps a new tool behind the host's approval
+  prompt and turns widening the approval into a reviewed change to the
+  settings file. An exact-name rule still matches a tool whose description
+  or behaviour changes after review, so this control does not cover
+  redefinition of an approved tool.
+audit:
+  - id: tools-allowed-by-name
+    method: structure
+    procedure: >-
+      Collect the allow rules from every agent settings file in the
+      repository. No allow rule matches a form the client defines as
+      approving more than one named tool of a tool server: a rule naming
+      only the server, or a rule with a wildcard in the tool name. Not
+      evaluated when the client defines no such forms.
+    indicators:
+      - '"allow": ["mcp__github"]'
+      - '"allow": ["mcp__github__*"]'
+      - '"allow": ["mcp__github__get_*"]'
+remediation: >-
+  Replace each server-wide or pattern allow rule with one rule per tool the
+  agent needs without a prompt, and leave every other tool of the server to
+  the host's approval prompt.
+exceptions: permitted
+references:
+  owasp_asi: [ASI02]
+  owasp_mcp: [MCP02, MCP03]
+  five_eyes_risk_areas: [privilege]
+  nist_csf: [PR.AA-05]
+  other:
+    - https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf

@@ -65,7 +65,9 @@ client data describes where they live.
   (ACB-CFG-002), blocking policy lives in a
   managed layer user-installed extensions cannot override (ACB-CFG-003);
   and the actions that need human approval are defined by configuration,
-  not by instructions or extension code (ACB-CFG-004). ACB-CFG-003 applies
+  not by instructions or extension code (ACB-CFG-004), and allow rules
+  name tool server tools one by one, never a whole server (ACB-CFG-005).
+  ACB-CFG-003 applies
   to managed settings files only: a repository that cannot carry managed
   policy is not its subject, and an organization audits it by running
   `acb check` on the directory that holds its deployed managed settings.
@@ -78,6 +80,47 @@ matrix, each ID linking to its source (a page of the PDF, or the OWASP
 entry). ACB-CFG-001 follows
 the incident-readiness practice that agents cannot access or interfere with
 their own monitoring (NIST CAISSI, NSA SISC and CISA, October 2026).
+
+## Compromised tool servers
+
+A tool server that was benign when it was declared and reviewed can later
+come under an attacker's control: its package publishes a malicious release,
+its endpoint or domain changes hands, or its operator's credentials are
+stolen. The declaration in the repository does not change, so every control
+that reads it still passes. The baseline narrows what such a server can do:
+
+- ACB-GEN-002 pins a local server's package, so a malicious release is not
+  picked up without a reviewed version change.
+- ACB-MCP-001 requires an encrypted endpoint and a declared authentication
+  method. It checks the declaration, not whether the server enforces it.
+- ACB-MCP-002 and ACB-MCP-003 keep the declaration itself from running
+  code the reviewer did not see.
+- ACB-CFG-005 keeps allow rules from approving tools the server adds after
+  review. A tool approved by name stays approved if the server redefines it.
+
+A static check of configuration files cannot detect the following, and
+the baseline does not claim to:
+
+- A change to a server's tool names, descriptions or input schemas after
+  approval. Detecting it means starting the server and listing its tools,
+  which would make the checker run the code it audits. Review the tool list
+  whenever a server's pinned version changes.
+- Instructions in a tool description or tool result that steer the agent
+  towards another server's tools. Whether the agent follows them is model
+  behaviour.
+- What a remote server does with the arguments it receives, including
+  file contents the agent read earlier in the session.
+- What a local server process can reach. It runs with the user's
+  privileges unless the host sandboxes it.
+- Which servers share a session. A server that reads untrusted content
+  (web pages, feeds, email, issues) in the same session as tools that write
+  files, run commands or send data gives injected instructions a path to act
+  and to exfiltrate; that combination is decided at run time.
+
+Those risks need runtime defences: a sandbox with no network access and a
+read-only filesystem for local servers, egress filtering on the host, and
+sessions that keep servers reading untrusted content apart from tools that
+write, execute or send.
 
 ## Profile
 
