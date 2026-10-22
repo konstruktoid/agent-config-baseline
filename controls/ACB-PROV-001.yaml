@@ -53,3 +53,4 @@ references:
   nist_csf: [ID.RA-09]
   other:
     - https://slsa.dev/
+    - https://github.com/konstruktoid/agent-config-baseline/blob/main/docs/provenance-design.md

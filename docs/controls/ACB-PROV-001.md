@@ -45,3 +45,4 @@ Add `.acb-provenance.yaml` at the repository root with one `artifacts` entry per
 - Careful Adoption of Agentic AI Services risk areas: [design-and-configuration](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9)
 - NIST CSF 2.0: [ID.RA-09](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=24)
 - https://slsa.dev/
+- https://github.com/konstruktoid/agent-config-baseline/blob/main/docs/provenance-design.md
