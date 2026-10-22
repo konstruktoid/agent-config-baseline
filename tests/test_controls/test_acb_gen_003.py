@@ -95,3 +95,23 @@ def test_secret_shapes_the_filter_must_not_lose(tmp_path: Path, text: str) -> No
 def test_structure_is_not_a_secret(tmp_path: Path, text: str) -> None:
     (tmp_path / "AGENTS.md").write_text(text + "\n")
     assert AUDITS["secret-scan"](context_for(tmp_path)) == []
+
+
+def test_named_list_entries_keep_their_other_fields(tmp_path: Path) -> None:
+    payload = {"mcpServers": {"a": {"command": "x", "headers": [{"name": "primary", "password": "literalvalue123"}]}}}
+    findings = _mcp(tmp_path, json.dumps(payload), "mcp.json")
+    assert [f.message.split("'")[3] for f in findings] == ["password"]
+
+
+def test_env_list_value_is_reported_once_under_its_name(tmp_path: Path) -> None:
+    payload = {"mcpServers": {"a": {"command": "x", "env": [{"name": "API_KEY", "value": "literalvalue123"}]}}}
+    findings = _mcp(tmp_path, json.dumps(payload), "mcp.json")
+    assert [f.message.split("'")[3] for f in findings] == ["API_KEY"]
+
+
+@pytest.mark.parametrize("secret", [1234, "pw12", "abcd1234efgh"])
+def test_short_credential_reveals_no_characters(tmp_path: Path, secret: int | str) -> None:
+    payload = {"mcpServers": {"a": {"command": "x", "env": {"PASSWORD": secret}}}}
+    findings = _mcp(tmp_path, json.dumps(payload), "mcp.json")
+    assert findings
+    assert str(secret)[:4] not in findings[0].message
