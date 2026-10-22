@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import re
 from pathlib import PurePosixPath, PureWindowsPath
+from typing import TYPE_CHECKING
 
 from acb.controls.acb_mcp_002 import WRAPPERS
 from acb.model import Finding, Outcome
+
+if TYPE_CHECKING:
+    from acb.controls import CheckContext
 
 CONTROL_ID = "ACB-MCP-003"
 
@@ -53,7 +57,7 @@ def _hijacks(name: str, value: str) -> bool:
     return upper == "NODE_OPTIONS" and bool(_NODE_LOADING_OPTION_RE.search(value))
 
 
-def _check_no_hijack_env(ctx) -> list[Finding]:
+def _check_no_hijack_env(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for decl in ctx.inventory.mcp_declarations:
         for name, server in decl.servers.items():

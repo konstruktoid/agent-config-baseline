@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from acb.extensions import rule_list, settings_by_client
 from acb.model import Finding, Outcome
+
+if TYPE_CHECKING:
+    from acb.controls import CheckContext
 
 CONTROL_ID = "ACB-CFG-005"
 _AUDIT = "tools-allowed-by-name"
 
 
-def _check_tools_allowed_by_name(ctx) -> list[Finding]:
+def _check_tools_allowed_by_name(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for client, files in settings_by_client(ctx.inventory.agent_settings).items():
         profile = ctx.clients.profile(client)
@@ -29,17 +33,17 @@ def _check_tools_allowed_by_name(ctx) -> list[Finding]:
             )
             continue
         for settings in files:
-            for rule in rule_list(settings, profile, "allow_rules_key"):
-                if any(p.search(rule.strip()) for p in patterns):
-                    findings.append(
-                        Finding(
-                            CONTROL_ID,
-                            _AUDIT,
-                            Outcome.FAIL,
-                            f"allow rule {rule.strip()!r} approves tools the server adds later; name each tool",
-                            ctx.relative(settings.path),
-                        )
-                    )
+            findings.extend(
+                Finding(
+                    CONTROL_ID,
+                    _AUDIT,
+                    Outcome.FAIL,
+                    f"allow rule {rule.strip()!r} approves tools the server adds later; name each tool",
+                    ctx.relative(settings.path),
+                )
+                for rule in rule_list(settings, profile, "allow_rules_key")
+                if any(p.search(rule.strip()) for p in patterns)
+            )
     return findings
 
 

@@ -44,6 +44,9 @@ jobs:
       - name: Check generated docs are up to date
         run: uv run python scripts/gen_docs.py --check
 
+      - name: Check formatting with ruff
+        run: uv run ruff format --check .
+
       - name: Lint with ruff
         run: uv run ruff check .
 

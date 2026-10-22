@@ -1,6 +1,7 @@
-"""Find the artifacts a baseline run evaluates under PATH: skills, instruction
-files, MCP server declarations, and the extension packages and agent settings
-files that client data describes.
+"""Find the artifacts a baseline run evaluates under PATH.
+
+Those are skills, instruction files, MCP server declarations, and the extension packages and
+agent settings files that client data describes.
 
 Discovery errs toward finding too much rather than too little: anything it
 cannot inspect but might be an artifact is recorded as unscanned, which makes
@@ -15,14 +16,19 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 
 import yaml
 
-from acb.clients import ClientData
 from acb.config import CheckerConfig, matching_exclusion
 from acb.paths import matches
 from acb.scan import safe_read_bytes, safe_read_text
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from acb.clients import ClientData
 
 ALWAYS_IGNORED_DIRS = {".git"}
 AGENTS_MD = "AGENTS.md"
@@ -40,18 +46,24 @@ _REFERENCED_DOC_SUFFIXES = {".md", ".markdown", ".txt"}
 
 @dataclass(frozen=True)
 class Skill:
+    """A discovered skill directory."""
+
     directory: Path
     skill_md: Path
 
 
 @dataclass(frozen=True)
 class InstructionFile:
+    """A discovered instruction file."""
+
     path: Path
     source: str
 
 
 @dataclass(frozen=True)
 class McpDeclaration:
+    """A discovered MCP server declaration file."""
+
     path: Path
     key: str
     servers: dict[str, dict]
@@ -59,6 +71,8 @@ class McpDeclaration:
 
 @dataclass(frozen=True)
 class ExtensionPackage:
+    """A discovered extension package."""
+
     root: Path
     manifest: Path
     manifest_data: dict
@@ -67,6 +81,8 @@ class ExtensionPackage:
 
 @dataclass(frozen=True)
 class SettingsFile:
+    """A discovered agent settings file."""
+
     path: Path
     scope: str
     data: dict
@@ -75,12 +91,16 @@ class SettingsFile:
 
 @dataclass(frozen=True)
 class Unscanned:
+    """A path that could not be scanned, with the reason."""
+
     path: str
     reason: str
 
 
 @dataclass(frozen=True)
 class Inventory:
+    """Everything discovered under the scanned path."""
+
     root: Path
     skills: tuple[Skill, ...]
     instruction_files: tuple[InstructionFile, ...]
@@ -93,6 +113,7 @@ class Inventory:
     notes: tuple[str, ...] = ()
 
     def has_artifacts(self, artifact_type: str) -> bool:
+        """Report whether any artifact of the given type was discovered."""
         return bool(
             {
                 "skill": self.skills,
@@ -105,7 +126,9 @@ class Inventory:
         )
 
 
-def _walk(root: Path, config: CheckerConfig, unscanned: list[Unscanned], excluded: Counter):
+def _walk(
+    root: Path, config: CheckerConfig, unscanned: list[Unscanned], excluded: Counter
+) -> Iterator[tuple[Path, str]]:
     """Yield (path, relative posix) for every file under root that is not excluded.
 
     Directory symlinks are followed only when they resolve inside root (a
@@ -159,8 +182,8 @@ def _relative(path: Path, root: Path) -> str:
         return str(path)
 
 
-def _strip_jsonc(text: str) -> str:
-    """Remove // and /* */ comments and trailing commas outside JSON strings."""
+def _strip_comments(text: str) -> str:
+    """Remove // and /* */ comments outside JSON strings."""
     out: list[str] = []
     i, n, in_string = 0, len(text), False
     while i < n:
@@ -188,7 +211,11 @@ def _strip_jsonc(text: str) -> str:
             out.append(ch)
             i += 1
 
-    stripped = "".join(out)
+    return "".join(out)
+
+
+def _strip_trailing_commas(stripped: str) -> str:
+    """Remove commas that directly precede a closing brace or bracket, outside JSON strings."""
     result: list[str] = []
     i, n, in_string = 0, len(stripped), False
     while i < n:
@@ -214,6 +241,11 @@ def _strip_jsonc(text: str) -> str:
             result.append(ch)
         i += 1
     return "".join(result)
+
+
+def _strip_jsonc(text: str) -> str:
+    """Remove // and /* */ comments and trailing commas outside JSON strings."""
+    return _strip_trailing_commas(_strip_comments(text))
 
 
 def _parse_structured(suffix: str, text: str) -> object:
@@ -245,9 +277,11 @@ def _server_entries(key: str, value: object) -> dict[str, dict]:
 
 
 def _server_mapping(data: object, key_paths: tuple[str, ...]) -> tuple[str, dict[str, dict]] | None:
-    """Merge every server mapping in the file that has at least one entry with
-    a `command` or `url`. One such entry is enough: requiring it of every
-    entry let a single dummy entry hide the whole file."""
+    """Merge every server mapping that has at least one entry with a `command` or `url`.
+
+    One such entry is enough: requiring it of every
+    entry let a single dummy entry hide the whole file.
+    """
     if not isinstance(data, dict):
         return None
     candidates: list[tuple[str, object]] = [(key, data[key]) for key in _MCP_BASE_KEYS if key in data]
@@ -276,7 +310,9 @@ def _classify_mcp(path: Path, rel: str, clients: ClientData) -> McpDeclaration |
     mcp_named = "mcp" in path.name.lower()
     raw = safe_read_bytes(path)
     if raw is None:
-        return Unscanned(rel, "possible MCP declaration is a symlink or unreadable; not inspected") if mcp_named else None
+        return (
+            Unscanned(rel, "possible MCP declaration is a symlink or unreadable; not inspected") if mcp_named else None
+        )
 
     # No byte pre-filter: JSON and YAML can spell a key with escapes
     # ("\u006dcpServers"), so only parsing tells whether a file is a declaration.
@@ -291,9 +327,11 @@ def _classify_mcp(path: Path, rel: str, clients: ClientData) -> McpDeclaration |
 
     data = _parse_structured(path.suffix.lower(), text)
     if data is _UNPARSEABLE:
-        if suspicious:
-            return Unscanned(rel, "possible MCP declaration could not be parsed as JSON, JSONC or YAML")
-        return None
+        return (
+            Unscanned(rel, "possible MCP declaration could not be parsed as JSON, JSONC or YAML")
+            if suspicious
+            else None
+        )
 
     found = _server_mapping(data, clients.mcp_key_paths)
     if found is None:
@@ -330,17 +368,15 @@ def _parse_json_object(path: Path, rel: str, what: str) -> dict | Unscanned:
 
 
 def _classify_client_files(
-    path: Path, rel: str, root: Path, clients: ClientData
+    path: Path, rel: str, clients: ClientData
 ) -> list[ExtensionPackage | SettingsFile | Unscanned]:
-    """Settings files and extension package manifests exist only in client data."""
+    """Return the settings files and extension package manifests that client data describes."""
     found: list[ExtensionPackage | SettingsFile | Unscanned] = []
     for client, profile in clients.profiles:
         for spec in profile.get("agent_settings", {}).get("files", []):
             if _suffix_matches(rel, spec["match"]):
                 data = _parse_json_object(path, rel, f"{client} {spec['scope']} settings file")
-                found.append(
-                    data if isinstance(data, Unscanned) else SettingsFile(path, spec["scope"], data, client)
-                )
+                found.append(data if isinstance(data, Unscanned) else SettingsFile(path, spec["scope"], data, client))
         for manifest in profile.get("extension_packages", {}).get("manifest_paths", []):
             if _suffix_matches(rel, manifest):
                 package_root = path
@@ -353,6 +389,23 @@ def _classify_client_files(
     return found
 
 
+def _link_candidate(
+    instruction: InstructionFile, target: str, root: Path, origin: str, notes: list[str]
+) -> Path | None:
+    """Return the path a local link names, or None (with a note) when it cannot be followed."""
+    if target.startswith("/"):
+        notes.append(f"{origin} links to absolute path {target}; not scanned")
+        return None
+    candidate = Path(os.path.normpath(instruction.path.parent / target))
+    if not candidate.is_relative_to(root):
+        notes.append(f"{origin} links to {target}, which is outside the scanned root; not scanned")
+        return None
+    if candidate.is_dir():
+        notes.append(f"{origin} links to directory {target}; its contents are not scanned as instructions")
+        return None
+    return candidate
+
+
 def _referenced_docs(
     instruction: InstructionFile,
     root: Path,
@@ -360,8 +413,10 @@ def _referenced_docs(
     known: set[Path],
     notes: list[str],
 ) -> list[InstructionFile]:
-    """Documents an instruction file links to are instructions too: "follow
-    docs/rules.md" must not move the payload out of scope. One level deep."""
+    """Return the documents an instruction file links to, one level deep.
+
+    They are instructions too: "follow docs/rules.md" must not move the payload out of scope.
+    """
     text = safe_read_text(instruction.path)
     if text is None:
         return []
@@ -373,17 +428,8 @@ def _referenced_docs(
         target = unquote(raw_target.split("#", 1)[0].split("?", 1)[0])
         if not target or "://" in target or target.startswith("mailto:"):
             continue
-        if target.startswith("/"):
-            notes.append(f"{origin} links to absolute path {target}; not scanned")
-            continue
-        candidate = Path(os.path.normpath(instruction.path.parent / target))
-        if not candidate.is_relative_to(root):
-            notes.append(f"{origin} links to {target}, which is outside the scanned root; not scanned")
-            continue
-        if candidate.is_dir():
-            notes.append(f"{origin} links to directory {target}; its contents are not scanned as instructions")
-            continue
-        if Path(target).suffix.lower() not in _REFERENCED_DOC_SUFFIXES:
+        candidate = _link_candidate(instruction, target, root, origin, notes)
+        if candidate is None or Path(target).suffix.lower() not in _REFERENCED_DOC_SUFFIXES:
             continue
         rel = candidate.relative_to(root).as_posix()
         if matching_exclusion(rel, config) is not None:
@@ -399,65 +445,71 @@ def _referenced_docs(
     return found
 
 
-def discover(root: Path, clients: ClientData, config: CheckerConfig) -> Inventory:
-    root = Path(root).resolve()
-    skills: list[Skill] = []
-    instruction_files: list[InstructionFile] = []
-    mcp_declarations: list[McpDeclaration] = []
-    extension_packages: list[ExtensionPackage] = []
-    agent_settings: list[SettingsFile] = []
-    test_files: list[Path] = []
-    unscanned: list[Unscanned] = []
-    notes: list[str] = []
-    excluded: Counter = Counter()
+@dataclass
+class _Found:
+    """The artifacts collected so far during discovery."""
 
-    # Matched case-insensitively: a client on a case-insensitive filesystem
-    # loads agents.md when it asks for AGENTS.md, so treating them as
-    # different files would be an evasion.
-    instruction_names = {AGENTS_MD.lower(): AGENTS_MD}
-    for name in clients.instruction_file_names:
-        instruction_names.setdefault(name.lower(), name)
+    skills: list[Skill] = field(default_factory=list)
+    instruction_files: list[InstructionFile] = field(default_factory=list)
+    mcp_declarations: list[McpDeclaration] = field(default_factory=list)
+    extension_packages: list[ExtensionPackage] = field(default_factory=list)
+    agent_settings: list[SettingsFile] = field(default_factory=list)
+    test_files: list[Path] = field(default_factory=list)
+    unscanned: list[Unscanned] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+    instruction_names: dict[str, str] = field(default_factory=dict)
+    matched_patterns: set[str] = field(default_factory=set)
 
-    known_instructions: set[Path] = set()
-    matched_patterns: set[str] = set()
+    def add_mcp(self, classified: McpDeclaration | Unscanned | None) -> None:
+        """Record a classified MCP candidate under the matching list."""
+        if isinstance(classified, McpDeclaration):
+            self.mcp_declarations.append(classified)
+        elif isinstance(classified, Unscanned):
+            self.unscanned.append(classified)
 
-    for path, rel in _walk(root, config, unscanned, excluded):
-        lower = path.name.lower()
-        if lower == SKILL_MD.lower():
-            skills.append(Skill(directory=path.parent, skill_md=path))
+    def add_client_item(self, item: ExtensionPackage | SettingsFile | Unscanned) -> None:
+        """Record a client-data artifact under the matching list."""
+        if isinstance(item, ExtensionPackage):
+            self.extension_packages.append(item)
+        elif isinstance(item, SettingsFile):
+            self.agent_settings.append(item)
+        else:
+            self.unscanned.append(item)
 
-        source = instruction_names.get(lower)
-        for pattern in config.instruction_files:
-            if matches(rel, pattern):
-                matched_patterns.add(pattern)
-                source = source or "operator config"
-        if source is not None:
-            instruction_files.append(InstructionFile(path=path, source=source))
-            known_instructions.add(path)
 
-        if path.suffix.lower() in _MCP_SUFFIXES:
-            classified = _classify_mcp(path, rel, clients)
-            if isinstance(classified, McpDeclaration):
-                mcp_declarations.append(classified)
-            elif isinstance(classified, Unscanned):
-                unscanned.append(classified)
+def _visit_file(
+    found: _Found,
+    path: Path,
+    rel: str,
+    clients: ClientData,
+    config: CheckerConfig,
+) -> None:
+    """Classify one file and record every artifact it is."""
+    lower = path.name.lower()
+    if lower == SKILL_MD.lower():
+        found.skills.append(Skill(directory=path.parent, skill_md=path))
 
-        if is_test_file(rel):
-            test_files.append(path)
-
-        for item in _classify_client_files(path, rel, root, clients):
-            if isinstance(item, ExtensionPackage):
-                extension_packages.append(item)
-            elif isinstance(item, SettingsFile):
-                agent_settings.append(item)
-            else:
-                unscanned.append(item)
-
+    source = found.instruction_names.get(lower)
     for pattern in config.instruction_files:
-        if pattern not in matched_patterns:
-            notes.append(f"instruction_files pattern {pattern!r} matched no file")
+        if matches(rel, pattern):
+            found.matched_patterns.add(pattern)
+            source = source or "operator config"
+    if source is not None:
+        found.instruction_files.append(InstructionFile(path=path, source=source))
 
-    known_mcp = {d.path for d in mcp_declarations}
+    if path.suffix.lower() in _MCP_SUFFIXES:
+        found.add_mcp(_classify_mcp(path, rel, clients))
+
+    if is_test_file(rel):
+        found.test_files.append(path)
+
+    for item in _classify_client_files(path, rel, clients):
+        found.add_client_item(item)
+
+
+def _add_declared_mcp(found: _Found, root: Path, clients: ClientData, config: CheckerConfig) -> None:
+    """Inspect the MCP locations client data declares, when discovery did not already find them."""
+    known_mcp = {d.path for d in found.mcp_declarations}
     for declared in clients.mcp_declaration_paths:
         candidate = Path(os.path.normpath(root / declared))
         if not candidate.is_relative_to(root) or candidate in known_mcp or not candidate.is_file():
@@ -466,25 +518,51 @@ def discover(root: Path, clients: ClientData, config: CheckerConfig) -> Inventor
         if matching_exclusion(rel, config) is not None:
             continue
         classified = _classify_mcp(candidate, rel, clients)
-        if isinstance(classified, McpDeclaration):
-            mcp_declarations.append(classified)
-        elif isinstance(classified, Unscanned):
-            unscanned.append(classified)
+        if classified is None:
+            found.unscanned.append(
+                Unscanned(rel, "declared by client data as an MCP location, but no server mapping was understood")
+            )
         else:
-            unscanned.append(Unscanned(rel, "declared by client data as an MCP location, but no server mapping was understood"))
+            found.add_mcp(classified)
 
-    for instruction in list(instruction_files):
-        instruction_files.extend(_referenced_docs(instruction, root, config, known_instructions, notes))
+
+def discover(root: Path, clients: ClientData, config: CheckerConfig) -> Inventory:
+    """Discover skills, instructions, MCP declarations and extensions under a root."""
+    root = Path(root).resolve()
+    excluded: Counter = Counter()
+
+    # Matched case-insensitively: a client on a case-insensitive filesystem
+    # loads agents.md when it asks for AGENTS.md, so treating them as
+    # different files would be an evasion.
+    instruction_names = {AGENTS_MD.lower(): AGENTS_MD}
+    for name in clients.instruction_file_names:
+        instruction_names.setdefault(name.lower(), name)
+    found = _Found(instruction_names=instruction_names)
+
+    for path, rel in _walk(root, config, found.unscanned, excluded):
+        _visit_file(found, path, rel, clients, config)
+
+    found.notes.extend(
+        f"instruction_files pattern {pattern!r} matched no file"
+        for pattern in config.instruction_files
+        if pattern not in found.matched_patterns
+    )
+
+    _add_declared_mcp(found, root, clients, config)
+
+    known_instructions = {i.path for i in found.instruction_files}
+    for instruction in list(found.instruction_files):
+        found.instruction_files.extend(_referenced_docs(instruction, root, config, known_instructions, found.notes))
 
     return Inventory(
         root=root,
-        skills=tuple(skills),
-        instruction_files=tuple(instruction_files),
-        mcp_declarations=tuple(mcp_declarations),
-        extension_packages=tuple(extension_packages),
-        agent_settings=tuple(agent_settings),
-        test_files=tuple(test_files),
-        unscanned=tuple(unscanned),
+        skills=tuple(found.skills),
+        instruction_files=tuple(found.instruction_files),
+        mcp_declarations=tuple(found.mcp_declarations),
+        extension_packages=tuple(found.extension_packages),
+        agent_settings=tuple(found.agent_settings),
+        test_files=tuple(found.test_files),
+        unscanned=tuple(found.unscanned),
         excluded=dict(excluded),
-        notes=tuple(notes),
+        notes=tuple(found.notes),
     )

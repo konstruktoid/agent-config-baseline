@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from acb.clients import ClientData
 from acb.config import CheckerConfig
 from acb.controls import CheckContext
 from acb.discovery import discover
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def context_for(root: Path, clients: ClientData | None = None) -> CheckContext:

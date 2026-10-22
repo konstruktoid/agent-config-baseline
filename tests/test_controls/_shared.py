@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from acb.clients import ClientData
 from acb.model import Outcome
 from tests._harness import context_for
+
+if TYPE_CHECKING:
+    from acb.clients import ClientData
 
 FIXTURES_ROOT = Path(__file__).resolve().parent.parent / "fixtures"
 
@@ -30,8 +33,7 @@ def check_pass_and_fail(
     audit_ids = audit_ids_for(control_id)
     assert audit_ids, f"no fixtures found for {control_id}"
     assert set(audit_ids) <= set(audits), (
-        f"{control_id}: fixtures exist for audit id(s) with no AUDITS entry: "
-        f"{sorted(set(audit_ids) - set(audits))}"
+        f"{control_id}: fixtures exist for audit id(s) with no AUDITS entry: {sorted(set(audit_ids) - set(audits))}"
     )
 
     for audit_id in audit_ids:

@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import yaml
 
 from acb.model import Finding, Outcome
 from acb.scan import safe_read_text, split_frontmatter
 from acb.yamlsafe import safe_load_strict
+
+if TYPE_CHECKING:
+    from acb.controls import CheckContext
 
 CONTROL_ID = "ACB-SKILL-002"
 
@@ -21,7 +26,7 @@ def _allowed_tools_keys(data: dict) -> set:
     return _ALLOWED_TOOLS_KEYS & data.keys()
 
 
-def _check_no_allowed_tools(ctx) -> list[Finding]:
+def _check_no_allowed_tools(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for skill in ctx.inventory.skills:
         text = safe_read_text(skill.skill_md)
@@ -54,29 +59,29 @@ def _check_no_allowed_tools(ctx) -> list[Finding]:
 
         rel = ctx.relative(skill.skill_md)
 
-        for key in sorted(_allowed_tools_keys(data)):
-            findings.append(
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="no-allowed-tools",
+                outcome=Outcome.FAIL,
+                message=f"top-level `{key}` key is present in frontmatter",
+                path=rel,
+            )
+            for key in sorted(_allowed_tools_keys(data))
+        )
+
+        metadata = data.get("metadata")
+        if isinstance(metadata, dict):
+            findings.extend(
                 Finding(
                     control_id=CONTROL_ID,
                     audit_id="no-allowed-tools",
                     outcome=Outcome.FAIL,
-                    message=f"top-level `{key}` key is present in frontmatter",
+                    message=f"`{key}` key is present nested under `metadata`",
                     path=rel,
                 )
+                for key in sorted(_allowed_tools_keys(metadata))
             )
-
-        metadata = data.get("metadata")
-        if isinstance(metadata, dict):
-            for key in sorted(_allowed_tools_keys(metadata)):
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="no-allowed-tools",
-                        outcome=Outcome.FAIL,
-                        message=f"`{key}` key is present nested under `metadata`",
-                        path=rel,
-                    )
-                )
     return findings
 
 

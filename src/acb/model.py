@@ -3,19 +3,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
-from typing import Any
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
+    """Severity of a control."""
+
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
-class Outcome(str, Enum):
-    PASS = "pass"
+class Outcome(StrEnum):
+    """Result of an audit or a control."""
+
+    PASS = "pass"  # noqa: S105
     FAIL = "fail"
     NOT_EVALUATED = "not-evaluated"
     EXCEPTION = "exception"
@@ -42,6 +48,8 @@ class Finding:
 
 @dataclass(frozen=True)
 class AuditProcedure:
+    """One audit procedure of a control."""
+
     id: str
     method: str
     procedure: str
@@ -50,6 +58,8 @@ class AuditProcedure:
 
 @dataclass(frozen=True)
 class Control:
+    """A security control loaded from a control file."""
+
     id: str
     title: str
     status: str
@@ -69,10 +79,12 @@ class Control:
 
     @property
     def audit_ids(self) -> tuple[str, ...]:
+        """Return the identifiers of the control's audit procedures."""
         return tuple(a.id for a in self.audit)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any], source_path: Path) -> Control:
+        """Build a control from parsed control data."""
         audits = tuple(
             AuditProcedure(
                 id=a["id"],

@@ -4,9 +4,16 @@ from __future__ import annotations
 
 import json
 import re
+from typing import TYPE_CHECKING
 
 from acb.model import Finding, Outcome
 from acb.scan import files_for, line_of
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from acb.controls import CheckContext
+    from acb.scan import TextFile
 
 CONTROL_ID = "ACB-GEN-001"
 
@@ -72,7 +79,7 @@ _PATTERNS = [
 
 
 def _dejoin_continuations(text: str) -> str:
-    """Turn shell line-continuations (`\\` + newline) into same-length whitespace.
+    r"""Turn shell line-continuations (`\` + newline) into same-length whitespace.
 
     Keeps every character offset identical to the original text (2 chars in,
     2 spaces out; 3 in for CRLF, 3 spaces out) so `line_of` and substring
@@ -82,7 +89,7 @@ def _dejoin_continuations(text: str) -> str:
     return _CONTINUATION_RE.sub(lambda m: " " * len(m.group(0)), text)
 
 
-def _json_leaf_strings(data):
+def _json_leaf_strings(data: object) -> Iterator[str]:
     if isinstance(data, str):
         yield data
     elif isinstance(data, dict):
@@ -93,7 +100,7 @@ def _json_leaf_strings(data):
             yield from _json_leaf_strings(value)
 
 
-def _scan_json_strings(f) -> list[Finding]:
+def _scan_json_strings(f: TextFile) -> list[Finding]:
     """Decode a .json file and scan each string leaf value with the same patterns.
 
     Belt-and-suspenders alongside the raw-text scan below: raw-text matching
@@ -130,7 +137,7 @@ def _scan_json_strings(f) -> list[Finding]:
     return findings
 
 
-def _check_pipe_to_interpreter(ctx) -> list[Finding]:
+def _check_pipe_to_interpreter(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file", "mcp-server-declaration")):
         if f.text is None:

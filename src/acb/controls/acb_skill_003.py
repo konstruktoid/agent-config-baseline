@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
+from urllib.parse import unquote, urlsplit
 
 from acb.model import Finding, Outcome
 from acb.scan import (
@@ -15,7 +17,16 @@ from acb.scan import (
     split_frontmatter,
 )
 
+if TYPE_CHECKING:
+    from acb.controls import CheckContext
+    from acb.discovery import Skill
+
 CONTROL_ID = "ACB-SKILL-003"
+_TAR_MAGIC_START = 257
+_TAR_MAGIC_END = 262
+_MIN_BLOCK_LINES = 2
+_MIN_BLOCK_CHARS = 256
+_MAX_SCRIPT_LINE_LENGTH = 500
 
 # "-_" added for base64url, alongside the standard base64 alphabet and hex
 # (a subset of the same character class).
@@ -46,7 +57,7 @@ def _looks_like_image(raw: bytes) -> bool:
 
 
 def _looks_like_archive(raw: bytes) -> bool:
-    """Common archive/compression container signatures.
+    """Signatures of common archive and compression containers.
 
     These are never permitted anywhere in a skill directory (unlike images,
     which get a narrow exception under `assets/`), so this is checked
@@ -59,13 +70,14 @@ def _looks_like_archive(raw: bytes) -> bool:
     if raw.startswith(b"\x1f\x8b"):  # gzip
         return True
     # POSIX/GNU tar
-    return len(raw) >= 262 and raw[257:262] == b"ustar"
+    return len(raw) >= _TAR_MAGIC_END and raw[_TAR_MAGIC_START:_TAR_MAGIC_END] == b"ustar"
 
 
 def _find_multiline_encoded_blocks(text: str) -> list[int]:
-    """1-based start line numbers of blocks of 2+ consecutive lines that are
-    each entirely base64/base64url/hex alphabet and total over 256
-    characters once joined.
+    """Return the 1-based start lines of blocks that look like an encoded payload.
+
+    A block is 2+ consecutive lines that are each entirely base64/base64url/hex alphabet
+    and total over 256 characters once joined.
 
     Trade-off: a line made solely of alphanumerics plus `+/=_-` is a fairly
     loose test (e.g. a line of hex-only identifiers could match), but a
@@ -90,12 +102,12 @@ def _find_multiline_encoded_blocks(text: str) -> list[int]:
                 i += 1
             else:
                 break
-        if (i - start) >= 2 and total > 256:
+        if (i - start) >= _MIN_BLOCK_LINES and total > _MIN_BLOCK_CHARS:
             starts.append(start + 1)
     return starts
 
 
-def _skill_for_file(ctx, path):
+def _skill_for_file(ctx: CheckContext, path: Path) -> Skill | None:
     best = None
     for skill in ctx.inventory.skills:
         skill_root = skill.directory.resolve()
@@ -108,7 +120,7 @@ def _skill_for_file(ctx, path):
     return best
 
 
-def _check_text_only(ctx) -> list[Finding]:
+def _check_text_only(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in skill_files(ctx):
         raw = safe_read_bytes(f.path)
@@ -163,47 +175,47 @@ def _check_text_only(ctx) -> list[Finding]:
     return findings
 
 
-def _check_no_encoded_payloads(ctx) -> list[Finding]:
+def _check_no_encoded_payloads(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in skill_files(ctx):
         if f.text is None:
             continue
 
-        for match in _ENCODED_RUN_RE.finditer(f.text):
-            findings.append(
-                Finding(
-                    control_id=CONTROL_ID,
-                    audit_id="no-encoded-payloads",
-                    outcome=Outcome.FAIL,
-                    message="contiguous base64/base64url/hex-looking run exceeds 256 characters",
-                    path=f.relative,
-                    line=line_of(f.text, match.start()),
-                )
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="no-encoded-payloads",
+                outcome=Outcome.FAIL,
+                message="contiguous base64/base64url/hex-looking run exceeds 256 characters",
+                path=f.relative,
+                line=line_of(f.text, match.start()),
             )
+            for match in _ENCODED_RUN_RE.finditer(f.text)
+        )
 
-        for match in _HEX_ESCAPE_RUN_RE.finditer(f.text):
-            findings.append(
-                Finding(
-                    control_id=CONTROL_ID,
-                    audit_id="no-encoded-payloads",
-                    outcome=Outcome.FAIL,
-                    message="contiguous `\\xHH` hex-escape run exceeds 256 characters",
-                    path=f.relative,
-                    line=line_of(f.text, match.start()),
-                )
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="no-encoded-payloads",
+                outcome=Outcome.FAIL,
+                message="contiguous `\\xHH` hex-escape run exceeds 256 characters",
+                path=f.relative,
+                line=line_of(f.text, match.start()),
             )
+            for match in _HEX_ESCAPE_RUN_RE.finditer(f.text)
+        )
 
-        for line_no in _find_multiline_encoded_blocks(f.text):
-            findings.append(
-                Finding(
-                    control_id=CONTROL_ID,
-                    audit_id="no-encoded-payloads",
-                    outcome=Outcome.FAIL,
-                    message="multi-line base64/base64url/hex-looking block exceeds 256 characters when joined",
-                    path=f.relative,
-                    line=line_no,
-                )
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="no-encoded-payloads",
+                outcome=Outcome.FAIL,
+                message="multi-line base64/base64url/hex-looking block exceeds 256 characters when joined",
+                path=f.relative,
+                line=line_no,
             )
+            for line_no in _find_multiline_encoded_blocks(f.text)
+        )
 
         lines = f.text.splitlines()
         has_shebang = bool(lines) and lines[0].startswith("#!")
@@ -219,7 +231,7 @@ def _check_no_encoded_payloads(ctx) -> list[Finding]:
         is_script = "scripts/" in f.relative or has_shebang or is_conventional_script
         if is_script:
             for i, line in enumerate(lines, start=1):
-                if len(line) > 500:
+                if len(line) > _MAX_SCRIPT_LINE_LENGTH:
                     findings.append(
                         Finding(
                             control_id=CONTROL_ID,
@@ -250,7 +262,7 @@ def _referenced_paths(text: str) -> set[str]:
     return {m.group(0).rstrip(_STRIP_TRAILING) for m in _TOKEN_RE.finditer(text)}
 
 
-def _check_executables_referenced(ctx) -> list[Finding]:
+def _check_executables_referenced(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for skill in ctx.inventory.skills:
         skill_text = safe_read_text(skill.skill_md) or ""
@@ -296,33 +308,76 @@ def _check_executables_referenced(ctx) -> list[Finding]:
     return findings
 
 
-def _looks_like_path_ref(token: str) -> bool:
+def _looks_like_path_ref(ref: str) -> bool:
     # file:// is a real local-filesystem reference, not a web reference like
     # http(s)://, so it does not get the URL exemption other schemes get.
-    if "://" in token and not token.startswith("file://"):
+    if "://" in ref and not ref.lower().startswith("file://"):
         return False
+    if ref.startswith(_HOME_PREFIXES):
+        return True
+    if ref == "..":
+        return True
+    return "/" in ref or "\\" in ref
+
+
+def _local_path(token: str) -> tuple[str, str | None]:
+    """Return the path a reference names, and why it leaves the skill directory when its form alone shows that."""
     if token.startswith(_HOME_PREFIXES):
-        return True
-    if token == "..":
-        return True
-    return "/" in token or "\\" in token
+        return token, "is a home-directory reference, outside the skill directory"
+    if not token.lower().startswith("file:"):
+        return token, None
+    try:
+        uri = urlsplit(token)
+    except ValueError:
+        return token, "is not a valid file URI"
+    # RFC 8089: an empty or localhost authority names a local file, and any other host a remote one.
+    if uri.netloc.lower() not in ("", "localhost"):
+        return token, "names a remote host, outside the skill directory"
+    return unquote(uri.path), None
 
 
-def _check_references_contained(ctx) -> list[Finding]:
+def _reference_problem(token: str, base: Path, skill_root: Path) -> str | None:
+    """Return why a reference leaves the skill directory, or None when it stays inside or cannot be resolved."""
+    check_token, problem = _local_path(token)
+    if problem is not None:
+        return problem
+
+    if check_token.startswith("/"):
+        return "is an absolute path"
+
+    # Checked on both `/` and `\` segments: a backslash-style
+    # traversal (`..\..\secret`) is just as real on a filesystem
+    # that accepts it as a separator as the forward-slash form.
+    if ".." in re.split(r"[/\\]", check_token):
+        return "contains a `..` path segment"
+
+    try:
+        resolved = (base / check_token).resolve()
+    except (OSError, ValueError):
+        return None
+
+    try:
+        resolved.relative_to(skill_root)
+    except ValueError:
+        return "resolves outside the skill directory"
+    return None
+
+
+def _check_references_contained(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
 
     for skill in ctx.inventory.skills:
-        for path in sorted(skill.directory.rglob("*")):
-            if path.is_symlink():
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="references-contained",
-                        outcome=Outcome.FAIL,
-                        message="skill directory contains a symlink",
-                        path=ctx.relative(path),
-                    )
-                )
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="references-contained",
+                outcome=Outcome.FAIL,
+                message="skill directory contains a symlink",
+                path=ctx.relative(path),
+            )
+            for path in sorted(skill.directory.rglob("*"))
+            if path.is_symlink()
+        )
 
     for f in skill_files(ctx):
         if f.text is None:
@@ -340,71 +395,16 @@ def _check_references_contained(ctx) -> list[Finding]:
             token = raw_token.rstrip(_STRIP_TRAILING) or raw_token
             if not token or not _looks_like_path_ref(token):
                 continue
-            line = line_of(f.text, match.start())
-
-            if token.startswith(_HOME_PREFIXES):
+            problem = _reference_problem(token, f.path.parent, skill_root)
+            if problem is not None:
                 findings.append(
                     Finding(
                         control_id=CONTROL_ID,
                         audit_id="references-contained",
                         outcome=Outcome.FAIL,
-                        message=f"reference {token!r} is a home-directory reference, outside the skill directory",
+                        message=f"reference {token!r} {problem}",
                         path=f.relative,
-                        line=line,
-                    )
-                )
-                continue
-
-            # A file:// URI is a real local path wearing a scheme prefix;
-            # strip it so the rest of the checks (absolute, `..`, resolve)
-            # apply to the path it actually names.
-            check_token = token.removeprefix("file://")
-
-            if check_token.startswith("/"):
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="references-contained",
-                        outcome=Outcome.FAIL,
-                        message=f"reference {token!r} is an absolute path",
-                        path=f.relative,
-                        line=line,
-                    )
-                )
-                continue
-
-            # Checked on both `/` and `\` segments: a backslash-style
-            # traversal (`..\..\secret`) is just as real on a filesystem
-            # that accepts it as a separator as the forward-slash form.
-            if ".." in re.split(r"[/\\]", check_token):
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="references-contained",
-                        outcome=Outcome.FAIL,
-                        message=f"reference {token!r} contains a `..` path segment",
-                        path=f.relative,
-                        line=line,
-                    )
-                )
-                continue
-
-            try:
-                resolved = (f.path.parent / check_token).resolve()
-            except (OSError, ValueError):
-                continue
-
-            try:
-                resolved.relative_to(skill_root)
-            except ValueError:
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="references-contained",
-                        outcome=Outcome.FAIL,
-                        message=f"reference {token!r} resolves outside the skill directory",
-                        path=f.relative,
-                        line=line,
+                        line=line_of(f.text, match.start()),
                     )
                 )
     return findings

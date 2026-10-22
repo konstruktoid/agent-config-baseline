@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from acb.model import Finding, Outcome
 from acb.scan import files_for, line_of
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from acb.controls import CheckContext
+    from acb.scan import TextFile
 
 CONTROL_ID = "ACB-GEN-002"
 
@@ -26,13 +33,57 @@ _CHAIN_OPERATOR_RE = re.compile(r"&&|\|\||;|\|")
 # the image to `evil:latest`, not to the -e flag's value).
 _DOCKER_VALUE_FLAGS = frozenset(
     {
-        "-e", "--env", "-v", "--volume", "-p", "--publish", "-w", "--workdir",
-        "-u", "--user", "--name", "-l", "--label", "--network", "--mount",
-        "--entrypoint", "--add-host", "--dns", "--group-add", "-m", "--memory",
-        "--cpus", "--restart", "--tmpfs", "--device", "--security-opt", "--ulimit", "--cap-add",
-        "--cap-drop", "--pid", "--ipc", "--hostname", "-h", "--platform", "--pull", "--cgroupns", "--shm-size",
-        "--gpus", "--log-driver", "--log-opt", "--stop-signal", "--userns", "--uts", "--volumes-from",
-        "--env-file", "--cidfile", "--link", "--ip", "--mac-address", "--runtime", "--domainname",
+        "-e",
+        "--env",
+        "-v",
+        "--volume",
+        "-p",
+        "--publish",
+        "-w",
+        "--workdir",
+        "-u",
+        "--user",
+        "--name",
+        "-l",
+        "--label",
+        "--network",
+        "--mount",
+        "--entrypoint",
+        "--add-host",
+        "--dns",
+        "--group-add",
+        "-m",
+        "--memory",
+        "--cpus",
+        "--restart",
+        "--tmpfs",
+        "--device",
+        "--security-opt",
+        "--ulimit",
+        "--cap-add",
+        "--cap-drop",
+        "--pid",
+        "--ipc",
+        "--hostname",
+        "-h",
+        "--platform",
+        "--pull",
+        "--cgroupns",
+        "--shm-size",
+        "--gpus",
+        "--log-driver",
+        "--log-opt",
+        "--stop-signal",
+        "--userns",
+        "--uts",
+        "--volumes-from",
+        "--env-file",
+        "--cidfile",
+        "--link",
+        "--ip",
+        "--mac-address",
+        "--runtime",
+        "--domainname",
     }
 )
 
@@ -67,8 +118,19 @@ _COMMAND_PATTERNS = [
 # (`--flag=value`), so a plain flag token is simply skipped for them.
 _PIP_VALUE_FLAGS = frozenset(
     {
-        "-r", "--requirement", "-c", "--constraint", "-f", "--find-links",
-        "-i", "--index-url", "--extra-index-url", "-t", "--target", "--prefix", "--root",
+        "-r",
+        "--requirement",
+        "-c",
+        "--constraint",
+        "-f",
+        "--find-links",
+        "-i",
+        "--index-url",
+        "--extra-index-url",
+        "-t",
+        "--target",
+        "--prefix",
+        "--root",
     }
 )
 _VALUE_FLAGS_BY_KIND: dict[str, frozenset[str]] = {
@@ -171,9 +233,20 @@ _PINNED_CHECK = {
 }
 
 
-def _iter_runner_invocations(text: str):
-    """Yield (cmd_match, token, kind, pinned, abs_start) for every package-runner,
-    installer or docker-family invocation found.
+def _command_tail(text: str, cmd_match: re.Match[str]) -> str:
+    """Return the rest of the command's line, up to the first chain operator."""
+    line_end = text.find("\n", cmd_match.end())
+    if line_end == -1:
+        line_end = len(text)
+    tail = text[cmd_match.end() : line_end]
+    op_match = _CHAIN_OPERATOR_RE.search(tail)
+    if op_match:
+        tail = tail[: op_match.start()]
+    return tail
+
+
+def _iter_runner_invocations(text: str) -> Iterator[tuple[re.Match[str], str, str, bool, int]]:
+    """Yield (cmd_match, token, kind, pinned, abs_start) for each runner, installer or docker invocation.
 
     For each command-prefix match, the rest of its line is tokenized; flag
     tokens (leading `-`) are skipped (along with their value token, for a
@@ -188,13 +261,7 @@ def _iter_runner_invocations(text: str):
     for cmd_re, kind, check_all in _COMMAND_PATTERNS:
         value_flags = _VALUE_FLAGS_BY_KIND.get(kind, frozenset())
         for cmd_match in cmd_re.finditer(text):
-            line_end = text.find("\n", cmd_match.end())
-            if line_end == -1:
-                line_end = len(text)
-            tail = text[cmd_match.end() : line_end]
-            op_match = _CHAIN_OPERATOR_RE.search(tail)
-            if op_match:
-                tail = tail[: op_match.start()]
+            tail = _command_tail(text, cmd_match)
             tokens = list(re.finditer(r"\S+", tail))
             i = 0
             while i < len(tokens):
@@ -223,7 +290,7 @@ def _iter_runner_invocations(text: str):
                 i += 1
 
 
-def _unreadable_finding(audit_id: str, f) -> Finding:
+def _unreadable_finding(audit_id: str, f: TextFile) -> Finding:
     return Finding(
         control_id=CONTROL_ID,
         audit_id=audit_id,
@@ -244,7 +311,7 @@ def _mcp_command_line(server: dict) -> str | None:
     return " ".join(parts)
 
 
-def _check_mcp_package_runners(ctx) -> list[Finding]:
+def _check_mcp_package_runners(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for decl in ctx.inventory.mcp_declarations:
         for name, server in decl.servers.items():
@@ -271,7 +338,7 @@ def _check_mcp_package_runners(ctx) -> list[Finding]:
     return findings
 
 
-def _check_package_runners_pinned(ctx) -> list[Finding]:
+def _check_package_runners_pinned(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file", "mcp-server-declaration")):
         if f.text is None:
@@ -294,7 +361,7 @@ def _check_package_runners_pinned(ctx) -> list[Finding]:
     return findings
 
 
-def _check_lockfile_or_hash(ctx) -> list[Finding]:
+def _check_lockfile_or_hash(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file", "mcp-server-declaration")):
         if f.text is None:
@@ -327,7 +394,7 @@ def _check_lockfile_or_hash(ctx) -> list[Finding]:
     return findings
 
 
-def _iter_image_refs(text: str, structured: bool = False):
+def _iter_image_refs(text: str, *, structured: bool = False) -> Iterator[tuple[int, str]]:
     """Yield (position, raw_spec) for every container image reference found.
 
     Reuses `_iter_runner_invocations`'s flag-and-value-aware tokenizer for
@@ -358,7 +425,7 @@ def _iter_image_refs(text: str, structured: bool = False):
             yield match.start(1), spec
 
 
-def _check_images_by_digest(ctx) -> list[Finding]:
+def _check_images_by_digest(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file", "mcp-server-declaration")):
         if f.text is None:
@@ -367,7 +434,7 @@ def _check_images_by_digest(ctx) -> list[Finding]:
         structured = f.path.suffix.lower() in {".yaml", ".yml", ".json", ".jsonc"} or f.path.name.lower().startswith(
             ("dockerfile", "containerfile")
         )
-        for pos, raw_spec in _iter_image_refs(f.text, structured):
+        for pos, raw_spec in _iter_image_refs(f.text, structured=structured):
             spec = _strip_trailing_punct(raw_spec)
             if not _IMAGE_DIGEST_RE.search(spec):
                 findings.append(
@@ -400,7 +467,7 @@ _DOWNLOAD_SUFFIX_RE = re.compile(
 )
 
 
-def _logical_lines(text: str):
+def _logical_lines(text: str) -> Iterator[tuple[int, str]]:
     """Yield (start offset, line) with backslash-continued lines joined."""
     start = 0
     pending_start = None
@@ -417,7 +484,7 @@ def _logical_lines(text: str):
         pending.append(line)
         yield pending_start, "".join(pending)
         pending, pending_start = [], None
-    if pending:
+    if pending and pending_start is not None:
         yield pending_start, "".join(pending)
 
 
@@ -428,7 +495,7 @@ def _fenced_ranges(text: str) -> list[tuple[int, int]]:
     return [(m.start(), m.end()) for m in _FENCE_RE.finditer(text)]
 
 
-def _iter_fetch_urls(text: str):
+def _iter_fetch_urls(text: str) -> Iterator[tuple[int, str]]:
     # Inside a fenced code block a URL is part of something to run, not a
     # citation; outside one, only a fetch command or a script/archive link counts.
     fences = _fenced_ranges(text)
@@ -444,7 +511,7 @@ def _iter_fetch_urls(text: str):
                 yield line_start + match.start(1), match.group(1)
 
 
-def _check_downloads_verified(ctx) -> list[Finding]:
+def _check_downloads_verified(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file", "mcp-server-declaration")):
         if f.text is None:

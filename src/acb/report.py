@@ -11,15 +11,17 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
-from acb.clients import ClientData
-from acb.config import CheckerConfig
-from acb.discovery import Inventory
-from acb.exceptions import ExceptionEntry
 from acb.model import Control, Finding, Outcome, Severity
 from acb.runner import control_outcome
+
+if TYPE_CHECKING:
+    from acb.clients import ClientData
+    from acb.config import CheckerConfig
+    from acb.discovery import Inventory
+    from acb.exceptions import ExceptionEntry
 
 DOCS_BASE_URL = "https://github.com/konstruktoid/agent-config-baseline/blob/main/docs/controls"
 SARIF_SCHEMA = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
@@ -33,6 +35,8 @@ _SARIF_LEVEL = {
 
 @dataclass(frozen=True)
 class RunInfo:
+    """Run metadata included in every report."""
+
     version: str
     target: str
     config: CheckerConfig
@@ -64,9 +68,7 @@ def _run_dict(info: RunInfo) -> dict[str, Any]:
         ],
         "exceptions_file": info.exceptions_file,
         "exception_entries": info.exception_count,
-        "stale_exceptions": [
-            {"entry": e.index, "control": e.control, "path": e.path} for e in info.stale_exceptions
-        ],
+        "stale_exceptions": [{"entry": e.index, "control": e.control, "path": e.path} for e in info.stale_exceptions],
         "client_data": str(info.clients.source) if info.clients.source else None,
         "clients": list(info.clients.clients),
         "unscanned": [{"path": u.path, "reason": u.reason} for u in inventory.unscanned],
@@ -76,13 +78,14 @@ def _run_dict(info: RunInfo) -> dict[str, Any]:
 
 
 def _counts(controls: list[Control], findings: list[Finding], inventory: Inventory) -> dict[Outcome, int]:
-    counts = {o: 0 for o in (Outcome.PASS, Outcome.FAIL, Outcome.NOT_EVALUATED, Outcome.NOT_APPLICABLE)}
+    counts = dict.fromkeys((Outcome.PASS, Outcome.FAIL, Outcome.NOT_EVALUATED, Outcome.NOT_APPLICABLE), 0)
     for control in controls:
         counts[control_outcome(control, findings, inventory)] += 1
     return counts
 
 
 def format_text(controls: list[Control], findings: list[Finding], info: RunInfo) -> str:
+    """Format findings as a human-readable report."""
     run = _run_dict(info)
     inv = run["inventory"]
     lines = [
@@ -94,25 +97,25 @@ def format_text(controls: list[Control], findings: list[Finding], info: RunInfo)
         ),
         f"config: {run['config'] or 'none'}",
     ]
-    for exclusion in run["exclusions"]:
-        lines.append(
-            f"  excluded: {exclusion['path']} ({exclusion['excluded_entries']} entries): {exclusion['reason']}"
-        )
+    lines.extend(
+        f"  excluded: {exclusion['path']} ({exclusion['excluded_entries']} entries): {exclusion['reason']}"
+        for exclusion in run["exclusions"]
+    )
     exceptions = f"{run['exceptions_file']} ({run['exception_entries']} entries)" if run["exceptions_file"] else "none"
     lines.append(f"exceptions: {exceptions}")
-    for stale in run["stale_exceptions"]:
-        lines.append(f"  stale: entry {stale['entry']} ({stale['control']} {stale['path']}) matched no finding")
+    lines.extend(
+        f"  stale: entry {stale['entry']} ({stale['control']} {stale['path']}) matched no finding"
+        for stale in run["stale_exceptions"]
+    )
     clients = ", ".join(run["clients"]) or "no clients declared"
     lines.append(f"client data: {run['client_data'] or 'none'} ({clients})")
-    for unscanned in run["unscanned"]:
-        lines.append(f"unscanned: {unscanned['path']}: {unscanned['reason']}")
-    for note in run["notes"]:
-        lines.append(f"note: {note}")
-    for inside in run["operator_files_inside_path"]:
-        lines.append(
-            f"warning: operator file {inside} is inside the scanned PATH, so the content being checked can "
-            "change how it is checked; protect that file with review"
-        )
+    lines.extend(f"unscanned: {unscanned['path']}: {unscanned['reason']}" for unscanned in run["unscanned"])
+    lines.extend(f"note: {note}" for note in run["notes"])
+    lines.extend(
+        f"warning: operator file {inside} is inside the scanned PATH, so the content being checked can "
+        "change how it is checked; protect that file with review"
+        for inside in run["operator_files_inside_path"]
+    )
     lines.append("")
 
     by_control: dict[str, list[Finding]] = {}
@@ -154,6 +157,7 @@ def _finding_dict(f: Finding) -> dict[str, Any]:
 
 
 def format_json(controls: list[Control], findings: list[Finding], info: RunInfo) -> str:
+    """Format findings as JSON."""
     summary = {c.id: control_outcome(c, findings, info.inventory).value for c in controls}
     payload = {
         "run": _run_dict(info),
@@ -176,6 +180,7 @@ def _uri(f: Finding, info: RunInfo) -> str:
 
 
 def format_sarif(controls: list[Control], findings: list[Finding], info: RunInfo) -> str:
+    """Format findings as SARIF."""
     rules = [
         {
             "id": c.id,
@@ -225,11 +230,15 @@ def format_sarif(controls: list[Control], findings: list[Finding], info: RunInfo
             result["suppressions"] = [{"kind": "external", "status": "accepted", "justification": f.justification}]
         results.append(result)
 
-    for unscanned in info.inventory.unscanned:
-        notifications.append({"level": "error", "message": {"text": f"unscanned {unscanned.path}: {unscanned.reason}"}})
-    for f in findings:
-        if f.outcome == Outcome.NOT_APPLICABLE:
-            notifications.append({"level": "note", "message": {"text": f"{f.control_id} ({f.audit_id}) not applicable: {f.message}"}})
+    notifications.extend(
+        {"level": "error", "message": {"text": f"unscanned {unscanned.path}: {unscanned.reason}"}}
+        for unscanned in info.inventory.unscanned
+    )
+    notifications.extend(
+        {"level": "note", "message": {"text": f"{f.control_id} ({f.audit_id}) not applicable: {f.message}"}}
+        for f in findings
+        if f.outcome == Outcome.NOT_APPLICABLE
+    )
     unchecked = bool(info.inventory.unscanned) or any(f.outcome == Outcome.NOT_EVALUATED for f in findings)
 
     sarif = {

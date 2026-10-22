@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 import ipaddress
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
 from acb.model import Finding, Outcome
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from acb.controls import CheckContext
+    from acb.discovery import McpDeclaration
 
 CONTROL_ID = "ACB-MCP-001"
 
@@ -24,7 +31,7 @@ def _is_loopback(host: str) -> bool:
         return False
 
 
-def _remote_servers(ctx):
+def _remote_servers(ctx: CheckContext) -> Iterator[tuple[McpDeclaration, str, dict, object]]:
     """Yield (declaration, server name, url) for every server with a non-loopback url."""
     for decl in ctx.inventory.mcp_declarations:
         for name, server in decl.servers.items():
@@ -40,7 +47,7 @@ def _remote_servers(ctx):
             yield decl, name, server, raw
 
 
-def _finding(ctx, decl, audit_id: str, outcome: Outcome, message: str) -> Finding:
+def _finding(ctx: CheckContext, decl: McpDeclaration, audit_id: str, outcome: Outcome, message: str) -> Finding:
     return Finding(
         control_id=CONTROL_ID,
         audit_id=audit_id,
@@ -50,7 +57,7 @@ def _finding(ctx, decl, audit_id: str, outcome: Outcome, message: str) -> Findin
     )
 
 
-def _check_tls(ctx) -> list[Finding]:
+def _check_tls(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for decl, name, _server, raw in _remote_servers(ctx):
         try:
@@ -81,7 +88,7 @@ def _declares_auth(server: dict) -> bool:
     return isinstance(headers, dict) and any(str(key).lower() in _AUTH_HEADERS for key in headers)
 
 
-def _check_auth(ctx) -> list[Finding]:
+def _check_auth(ctx: CheckContext) -> list[Finding]:
     return [
         _finding(ctx, decl, "remote-declares-auth", Outcome.FAIL, f"server {name!r} declares no authentication")
         for decl, name, server, _raw in _remote_servers(ctx)

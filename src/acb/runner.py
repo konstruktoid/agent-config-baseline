@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from acb.clients import ClientData
 from acb.controls import REGISTRY, CheckContext
-from acb.discovery import Inventory
 from acb.model import Control, Finding, Outcome
+
+if TYPE_CHECKING:
+    from acb.clients import ClientData
+    from acb.controls import AuditFunc
+    from acb.discovery import Inventory
 
 _AUDIT_OUTCOMES = {Outcome.FAIL, Outcome.NOT_EVALUATED, Outcome.NOT_APPLICABLE}
 
@@ -16,11 +20,13 @@ def _not_evaluated(control: Control, audit_id: str, message: str) -> Finding:
     return Finding(control_id=control.id, audit_id=audit_id, outcome=Outcome.NOT_EVALUATED, message=message)
 
 
-def _run_audit(control: Control, audit_id: str, check, ctx: CheckContext) -> list[Finding]:
-    """Run one audit, converting anything other than a well-formed result into
-    NOT_EVALUATED. A crash or a malformed finding must never read as a pass,
+def _run_audit(control: Control, audit_id: str, check: AuditFunc, ctx: CheckContext) -> list[Finding]:
+    """Run one audit and turn anything other than a well-formed result into NOT_EVALUATED.
+
+    A crash or a malformed finding must never read as a pass,
     and a finding filed under another control or audit would otherwise be
-    silently ignored when outcomes are tallied."""
+    silently ignored when outcomes are tallied.
+    """
     try:
         result = check(ctx)
     except Exception as exc:  # noqa: BLE001
@@ -39,8 +45,9 @@ def _run_audit(control: Control, audit_id: str, check, ctx: CheckContext) -> lis
 
 
 def run(
-    controls: list[Control], inventory: Inventory, clients: ClientData, root: Path, run_validators: bool = False
+    controls: list[Control], inventory: Inventory, clients: ClientData, root: Path, *, run_validators: bool = False
 ) -> list[Finding]:
+    """Run every audit of every control and collect the findings."""
     ctx = CheckContext(inventory=inventory, clients=clients, root=Path(root).resolve(), run_validators=run_validators)
     findings: list[Finding] = []
 
@@ -70,10 +77,12 @@ def run(
 
 
 def is_applicable(control: Control, inventory: Inventory) -> bool:
+    """Report whether the control applies to anything in the inventory."""
     return any(inventory.has_artifacts(kind) for kind in control.applies_to)
 
 
 def control_outcome(control: Control, findings: list[Finding], inventory: Inventory) -> Outcome:
+    """Reduce a control's findings to a single outcome."""
     relevant = [f for f in findings if f.control_id == control.id]
     if any(f.outcome == Outcome.NOT_EVALUATED and f.audit_id == "*" for f in relevant):
         return Outcome.NOT_EVALUATED
@@ -87,6 +96,5 @@ def control_outcome(control: Control, findings: list[Finding], inventory: Invent
 
 
 def all_pass(controls: list[Control], findings: list[Finding], inventory: Inventory) -> bool:
-    return all(
-        control_outcome(c, findings, inventory) in (Outcome.PASS, Outcome.NOT_APPLICABLE) for c in controls
-    )
+    """Report whether every control passed or is not applicable."""
+    return all(control_outcome(c, findings, inventory) in (Outcome.PASS, Outcome.NOT_APPLICABLE) for c in controls)

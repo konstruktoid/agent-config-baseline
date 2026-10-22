@@ -1,4 +1,4 @@
-"""`acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--run-validators]`
+"""`acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--run-validators]`.
 
 PATH is untrusted content. Configuration comes from the operator: the
 exceptions file and operator config default to files in the current working
@@ -36,10 +36,11 @@ from acb.runner import all_pass, run
 
 
 class UsageError(Exception):
-    pass
+    """Raised for invalid command-line usage."""
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the command-line argument parser."""
     parser = argparse.ArgumentParser(prog="acb")
     parser.add_argument("--version", action="version", version=f"acb {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -53,7 +54,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=f"reviewed exceptions file (default: ./{EXCEPTIONS_FILENAME} in the working directory, if present)",
     )
-    check.add_argument("--clients", type=Path, default=None, help="client data directory (default: acb's bundled clients/)")
+    check.add_argument(
+        "--clients", type=Path, default=None, help="client data directory (default: acb's bundled clients/)"
+    )
     check.add_argument(
         "--config",
         type=Path,
@@ -72,7 +75,8 @@ def build_parser() -> argparse.ArgumentParser:
 def _operator_file(explicit: Path | None, default_name: str) -> Path | None:
     if explicit is not None:
         if not explicit.is_file():
-            raise UsageError(f"{explicit}: no such file")
+            msg = f"{explicit}: no such file"
+            raise UsageError(msg)
         return explicit
     default = Path(default_name)
     return default if default.is_file() else None
@@ -85,7 +89,15 @@ def _uri_prefix(root: Path) -> str:
     return Path(relative).as_posix()
 
 
+def _require_directory(path: Path | None) -> None:
+    """Raise UsageError when an operator-supplied directory is not one."""
+    if path is not None and not path.is_dir():
+        msg = f"{path}: not a directory"
+        raise UsageError(msg)
+
+
 def main(argv: list[str] | None = None) -> int:
+    """Run the command-line interface and return the exit status."""
     args = build_parser().parse_args(argv)
 
     root = args.path.resolve()
@@ -97,8 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         all_controls = load_controls(default_controls_dir(), default_schema_path())
         controls = active_controls(all_controls)
 
-        if args.clients is not None and not args.clients.is_dir():
-            raise UsageError(f"{args.clients}: not a directory")
+        _require_directory(args.clients)
         clients = load_clients(args.clients if args.clients is not None else default_clients_dir())
 
         config = load_config(_operator_file(args.config, CONFIG_FILENAME))
