@@ -39,7 +39,7 @@ Every file under `scripts/`, and every file anywhere with an executable bit or a
 
 ### `references-contained` (pattern)
 
-A file reference is a Markdown link or reference-definition target, a file URI, a home-directory path, or a relative path. No file reference in SKILL.md or bundled files is absolute, names a home directory or another host, contains a `..` segment, or resolves (after symlink resolution) outside the skill directory. An absolute path outside a link, such as /dev/null in an example, describes the host rather than skill content and is not a file reference. The skill directory contains no symlinks.
+A file reference is a Markdown link or reference-definition target, a file URI, or a relative path. No file reference in SKILL.md or bundled files is absolute, names a home directory or another host, contains a `..` segment, or resolves (after symlink resolution) outside the skill directory. An absolute or home-directory path outside a link, such as /dev/null or ~/.bashrc in an example, describes the host rather than skill content and is not a file reference. The skill directory contains no symlinks.
 
 ## Remediation
 

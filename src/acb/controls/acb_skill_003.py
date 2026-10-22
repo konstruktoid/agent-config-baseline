@@ -404,16 +404,14 @@ def _link_problem(target: str, base: Path, skill_root: Path) -> str | None:
 def _token_problem(token: str, base: Path, skill_root: Path) -> str | None:
     """Return why a path token outside a link leaves the skill directory.
 
-    An absolute path outside a link (`/dev/null`, `/etc/profile`) describes the host, not skill content, so
-    only file URIs, home-directory paths and relative paths are references here.
+    An absolute or home-directory path outside a link (`/dev/null`, `~/.bashrc`) describes the host, not skill
+    content, so only file URIs and relative paths are references here.
     """
     if token.lower().startswith("file:"):
         return _reference_problem(token, base, skill_root)
     if "://" in token:
         return None
-    if _HOME_PATH_RE.match(token):
-        return "is a home-directory reference, outside the skill directory"
-    if token.startswith(("/", "\\")) or not re.search(r"[/\\]", token):
+    if _HOME_PATH_RE.match(token) or token.startswith(("/", "\\")) or not re.search(r"[/\\]", token):
         return None
     return _reference_problem(token, base, skill_root)
 
