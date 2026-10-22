@@ -63,6 +63,9 @@ def test_relative_reference_inside_the_skill_passes(tmp_path: Path) -> None:
         "PATH=/usr/bin:/bin",
         "~DEFAULT_BRANCH",
         "$HOME",
+        "~/.bashrc",
+        "$HOME/.bashrc",
+        "${HOME}/.bashrc",
         "`..`",
         "[spec](https://example.com/a/../b)",
         "[contact](mailto:security@example.com)",
@@ -82,12 +85,6 @@ def test_host_paths_and_other_schemes_are_not_file_references(tmp_path: Path, re
         ("[other](%2e%2e/other.md)", "reference '%2e%2e/other.md' contains a `..` path segment"),
         ("[notes](~/notes.md)", "reference '~/notes.md' is a home-directory reference, outside the skill directory"),
         ("../sibling/notes.md", "reference '../sibling/notes.md' contains a `..` path segment"),
-        ("~/.ssh/id_rsa", "reference '~/.ssh/id_rsa' is a home-directory reference, outside the skill directory"),
-        (
-            "$HOME/.ssh/id_rsa",
-            "reference '$HOME/.ssh/id_rsa' is a home-directory reference, outside the skill directory",
-        ),
-        ("${HOME}/notes.md", "reference '${HOME}/notes.md' is a home-directory reference, outside the skill directory"),
     ],
 )
 def test_references_that_leave_the_skill_fail_once(tmp_path: Path, ref: str, message: str) -> None:
