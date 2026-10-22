@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import os
 import re
+from bisect import bisect_right
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlsplit
 
+from acb.discovery import MD_LINK_RE, MD_REF_DEF_RE
 from acb.model import Finding, Outcome
 from acb.scan import (
     line_of,
@@ -42,7 +44,9 @@ _HEX_ESCAPE_RUN_RE = re.compile(r"(?:\\x[0-9A-Fa-f]{2}){65,}")
 _BASE64_LINE_RE = re.compile(r"^[A-Za-z0-9+/=_-]+$")
 _TOKEN_RE = re.compile(r"[^\s`'\"()\[\]<>]+")
 _STRIP_TRAILING = ".,;:"
-_HOME_PREFIXES = ("~", "$HOME", "${HOME}")
+# A home directory followed by a path: `~/x`, `~user/x`, `$HOME/x`, `${HOME}/x`; a bare `$HOME` names no file.
+_HOME_PATH_RE = re.compile(r"^(?:~[\w.-]*|\$HOME|\$\{HOME\})[/\\]")
+_URI_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 _SCRIPT_SUFFIXES = (".sh", ".py", ".js", ".rb", ".pl", ".ps1")
 
 
@@ -308,21 +312,9 @@ def _check_executables_referenced(ctx: CheckContext) -> list[Finding]:
     return findings
 
 
-def _looks_like_path_ref(ref: str) -> bool:
-    # file:// is a real local-filesystem reference, not a web reference like
-    # http(s)://, so it does not get the URL exemption other schemes get.
-    if "://" in ref and not ref.lower().startswith("file://"):
-        return False
-    if ref.startswith(_HOME_PREFIXES):
-        return True
-    if ref == "..":
-        return True
-    return "/" in ref or "\\" in ref
-
-
 def _local_path(token: str) -> tuple[str, str | None]:
     """Return the path a reference names, and why it leaves the skill directory when its form alone shows that."""
-    if token.startswith(_HOME_PREFIXES):
+    if _HOME_PATH_RE.match(token):
         return token, "is a home-directory reference, outside the skill directory"
     if not token.lower().startswith("file:"):
         return token, None
@@ -385,29 +377,72 @@ def _check_references_contained(ctx: CheckContext) -> list[Finding]:
         skill = _skill_for_file(ctx, f.path)
         if skill is None:
             continue
-        skill_root = skill.directory.resolve()
-
-        for match in _TOKEN_RE.finditer(f.text):
-            raw_token = match.group(0)
-            # A bare ".." is itself all trailing-strippable characters, so
-            # falling back to the unstripped token when stripping would
-            # erase it entirely keeps a bare "cd .." traversal token alive.
-            token = raw_token.rstrip(_STRIP_TRAILING) or raw_token
-            if not token or not _looks_like_path_ref(token):
-                continue
-            problem = _reference_problem(token, f.path.parent, skill_root)
-            if problem is not None:
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="references-contained",
-                        outcome=Outcome.FAIL,
-                        message=f"reference {token!r} {problem}",
-                        path=f.relative,
-                        line=line_of(f.text, match.start()),
-                    )
-                )
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="references-contained",
+                outcome=Outcome.FAIL,
+                message=f"reference {token!r} {problem}",
+                path=f.relative,
+                line=line_of(f.text, start),
+            )
+            for start, token, problem in _reference_problems(f.text, f.path.parent, skill.directory.resolve())
+        )
     return findings
+
+
+def _link_problem(target: str, base: Path, skill_root: Path) -> str | None:
+    """Return why a Markdown link target leaves the skill directory; links to other schemes are not files."""
+    if target.lower().startswith("file:"):
+        return _reference_problem(target, base, skill_root)
+    if _URI_SCHEME_RE.match(target):
+        return None
+    path = unquote(target.split("#", 1)[0].split("?", 1)[0])
+    return _reference_problem(path, base, skill_root) if path else None
+
+
+def _token_problem(token: str, base: Path, skill_root: Path) -> str | None:
+    """Return why a path token outside a link leaves the skill directory.
+
+    An absolute path outside a link (`/dev/null`, `/etc/profile`) describes the host, not skill content, so
+    only file URIs, home-directory paths and relative paths are references here.
+    """
+    if token.lower().startswith("file:"):
+        return _reference_problem(token, base, skill_root)
+    if "://" in token:
+        return None
+    if _HOME_PATH_RE.match(token):
+        return "is a home-directory reference, outside the skill directory"
+    if token.startswith(("/", "\\")) or not re.search(r"[/\\]", token):
+        return None
+    return _reference_problem(token, base, skill_root)
+
+
+def _reference_problems(text: str, base: Path, skill_root: Path) -> list[tuple[int, str, str]]:
+    """Return (offset, reference, problem) for every reference in text that leaves the skill directory."""
+    links: list[tuple[int, int, str]] = []
+    for match in (*MD_LINK_RE.finditer(text), *MD_REF_DEF_RE.finditer(text)):
+        group = 1 if match.group(1) is not None else 2
+        links.append((match.start(group), match.end(group), match.group(group)))
+    links.sort()
+    link_starts = [start for start, _end, _target in links]
+
+    problems: list[tuple[int, str, str]] = []
+    for start, _end, target in links:
+        problem = _link_problem(target, base, skill_root)
+        if problem is not None:
+            problems.append((start, target, problem))
+
+    for match in _TOKEN_RE.finditer(text):
+        # A token inside a link target was judged as that link; bisect keeps this linear in the number of links.
+        index = bisect_right(link_starts, match.start()) - 1
+        if index >= 0 and match.start() < links[index][1]:
+            continue
+        token = match.group(0).rstrip(_STRIP_TRAILING)
+        problem = _token_problem(token, base, skill_root) if token else None
+        if problem is not None:
+            problems.append((match.start(), token, problem))
+    return sorted(problems)
 
 
 AUDITS = {

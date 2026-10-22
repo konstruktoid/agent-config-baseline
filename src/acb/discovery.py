@@ -39,8 +39,9 @@ _MCP_BASE_KEYS = ("mcpServers", "servers")
 _UNPARSEABLE = object()
 _MAX_STRUCTURED_BYTES = 5_000_000
 
-_MD_LINK_RE = re.compile(r"\]\(\s*(?:<([^>\n]+)>|([^)\s]+))")
-_MD_REF_DEF_RE = re.compile(r"(?m)^[ ]{0,3}\[[^\]\n]+\]:\s*(?:<([^>\n]+)>|(\S+))")
+# A pointy destination stops at the next `<`, so a long line of unclosed `](<` is scanned in linear time.
+MD_LINK_RE = re.compile(r"\]\(\s*(?:<([^<>\n]+)>|([^)\s]+))")
+MD_REF_DEF_RE = re.compile(r"(?m)^[ ]{0,3}\[[^\]\n]+\]:\s*(?:<([^<>\n]+)>|(\S+))")
 _REFERENCED_DOC_SUFFIXES = {".md", ".markdown", ".txt"}
 
 
@@ -436,7 +437,7 @@ def _referenced_docs(
         return []
     origin = _relative(instruction.path, root)
     found: list[InstructionFile] = []
-    targets = [m.group(1) or m.group(2) for m in (*_MD_LINK_RE.finditer(text), *_MD_REF_DEF_RE.finditer(text))]
+    targets = [m.group(1) or m.group(2) for m in (*MD_LINK_RE.finditer(text), *MD_REF_DEF_RE.finditer(text))]
     real_root = Path(os.path.realpath(root))
     for raw_target in targets:
         target = unquote(raw_target.split("#", 1)[0].split("?", 1)[0])

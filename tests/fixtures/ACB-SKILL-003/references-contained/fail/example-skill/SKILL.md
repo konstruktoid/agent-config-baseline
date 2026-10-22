@@ -10,4 +10,4 @@ scripts/run.sh --flag
 ```
 
 This skill also reaches outside its own directory via ../outside_sibling/data.txt
-and references the absolute path /etc/passwd.
+and links to the absolute path [passwd](/etc/passwd).

@@ -43,9 +43,14 @@ audit:
   - id: references-contained
     method: pattern
     procedure: >-
-      No file reference in SKILL.md or bundled files is absolute, contains
-      `..` segments, or resolves (after symlink resolution) outside the
-      skill directory. The skill directory contains no symlinks.
+      A file reference is a Markdown link or reference-definition target,
+      a file URI, a home-directory path, or a relative path. No file
+      reference in SKILL.md or bundled files is absolute, names a home
+      directory or another host, contains a `..` segment, or resolves
+      (after symlink resolution) outside the skill directory. An absolute
+      path outside a link, such as /dev/null in an example, describes the
+      host rather than skill content and is not a file reference. The skill
+      directory contains no symlinks.
 remediation: >-
   Replace binaries and archives with source. Decode embedded payloads into
   reviewable files. Reference every script from SKILL.md or delete it.
