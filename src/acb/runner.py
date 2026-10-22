@@ -44,6 +44,7 @@ def _run_audit(control: Control, audit_id: str, check: AuditFunc, ctx: CheckCont
     return result
 
 
+# Each keyword-only option maps to one CLI flag, so bundling them into an object would only move the count.
 def run(  # noqa: PLR0913
     controls: list[Control],
     inventory: Inventory,
