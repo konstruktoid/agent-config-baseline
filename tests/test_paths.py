@@ -10,7 +10,7 @@ from acb.paths import (
 
 
 @pytest.mark.parametrize(
-    "path, pattern, expected",
+    ("path", "pattern", "expected"),
     [
         ("AGENTS.md", "*.md", True),
         ("docs/a.md", "*.md", False),
@@ -26,16 +26,16 @@ from acb.paths import (
         ("a/c.md", "a/[!ab].md", True),
     ],
 )
-def test_matches(path: str, pattern: str, expected: bool):
+def test_matches(path: str, pattern: str, *, expected: bool) -> None:
     assert matches(path, pattern) is expected
 
 
-def test_matches_or_under_covers_directory_contents():
+def test_matches_or_under_covers_directory_contents() -> None:
     assert matches_or_under("controls/ACB-GEN-001.yaml", "controls")
     assert not matches("controls/ACB-GEN-001.yaml", "controls")
 
 
-def test_normalization_strips_dot_and_slashes():
+def test_normalization_strips_dot_and_slashes() -> None:
     assert normalize_pattern("./docs/") == "docs"
 
 
@@ -43,6 +43,6 @@ def test_normalization_strips_dot_and_slashes():
     "pattern",
     ["", "/", "*", "**", "**/*", "./", "**/*.*", "**/*[A-Za-z]*", "*/x", "a/../b", "a\\b", "a[]b", "x[z-a]"],
 )
-def test_patterns_matching_everything_are_rejected(pattern: str):
+def test_patterns_matching_everything_are_rejected(pattern: str) -> None:
     with pytest.raises(PatternError):
         validate_pattern(pattern)

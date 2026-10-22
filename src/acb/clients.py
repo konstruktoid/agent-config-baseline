@@ -1,6 +1,7 @@
-"""Optional, per-client data: facts about one agent client that no open
-specification defines (extra instruction-file names, MCP declaration
-locations, permission-bypass flags, configuration locations).
+"""Load optional per-client data.
+
+Client data holds facts about one agent client that no open specification defines (extra
+instruction-file names, MCP declaration locations, permission-bypass flags, configuration locations).
 
 Client data belongs to acb, not to the repository being scanned. It is read
 from acb's bundled clients/ directory, or from --clients DIR, which replaces
@@ -11,21 +12,25 @@ A client file only adds things to look for; it never changes control logic.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
 from acb.loader import schema_errors
 from acb.yamlsafe import safe_load_strict
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 class ClientDataError(Exception):
-    pass
+    """Raised when client data cannot be loaded."""
 
 
 @dataclass(frozen=True)
 class ClientData:
+    """Per-client profiles describing where each agent keeps its configuration."""
+
     source: Path | None = None
     clients: tuple[str, ...] = ()
     instruction_file_names: tuple[str, ...] = ()
@@ -37,6 +42,7 @@ class ClientData:
     profiles: tuple[tuple[str, dict[str, Any]], ...] = ()
 
     def profile(self, client: str) -> dict[str, Any]:
+        """Return the profile for a client, or an empty one when it is unknown."""
         return dict(self.profiles).get(client, {})
 
 
@@ -50,10 +56,12 @@ _LIST_FIELDS = (
 
 
 def load_clients(clients_dir: Path | None) -> ClientData:
+    """Load and validate client data from a directory."""
     if clients_dir is None:
         return ClientData()
     if not clients_dir.is_dir():
-        raise ClientDataError(f"{clients_dir}: not a directory")
+        msg = f"{clients_dir}: not a directory"
+        raise ClientDataError(msg)
 
     names: list[str] = []
     merged: dict[str, list[str]] = {field: [] for field in _LIST_FIELDS}
@@ -62,14 +70,17 @@ def load_clients(clients_dir: Path | None) -> ClientData:
         try:
             data = safe_load_strict(path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError) as exc:
-            raise ClientDataError(f"{path}: cannot be read: {exc}") from exc
+            msg = f"{path}: cannot be read: {exc}"
+            raise ClientDataError(msg) from exc
         except (yaml.YAMLError, RecursionError, TypeError, ValueError) as exc:
-            raise ClientDataError(f"{path}: not valid YAML: {exc}") from exc
+            msg = f"{path}: not valid YAML: {exc}"
+            raise ClientDataError(msg) from exc
         errors = schema_errors("client.schema.json", data)
         if errors:
             raise ClientDataError(f"{path}: " + "; ".join(errors))
         if data["client"] in names:
-            raise ClientDataError(f"{path}: client {data['client']!r} is declared more than once")
+            msg = f"{path}: client {data['client']!r} is declared more than once"
+            raise ClientDataError(msg)
         names.append(data["client"])
         for field in _LIST_FIELDS:
             merged[field].extend(data.get(field, []))

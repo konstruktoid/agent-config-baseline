@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import re
 from pathlib import PurePosixPath, PureWindowsPath
+from typing import TYPE_CHECKING
 
 from acb.model import Finding, Outcome
+
+if TYPE_CHECKING:
+    from acb.controls import CheckContext
 
 CONTROL_ID = "ACB-MCP-002"
 
@@ -38,7 +42,7 @@ def _executable_name(command: str) -> str:
 
 
 def _interpreter_args(command: str, args: object) -> list | None:
-    """The arguments the interpreter receives, or None if no interpreter is launched.
+    """Return the arguments the interpreter receives, or None if no interpreter is launched.
 
     A wrapper such as env or sudo launches the first interpreter named in its
     arguments, so the string-evaluation flag is looked for after that name.
@@ -64,7 +68,7 @@ def _evaluates_string(args: list) -> bool:
     return False
 
 
-def _check_no_shell(ctx) -> list[Finding]:
+def _check_no_shell(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for decl in ctx.inventory.mcp_declarations:
         for name, server in decl.servers.items():

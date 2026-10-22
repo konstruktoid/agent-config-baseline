@@ -20,8 +20,8 @@ ignores any entry naming it and reports the attempt as a failure.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import date
-from pathlib import Path
+from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -30,15 +30,20 @@ from acb.model import Control, Finding, Outcome
 from acb.paths import PatternError, matches, validate_pattern
 from acb.yamlsafe import safe_load_strict
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 EXCEPTIONS_FILENAME = ".acb-exceptions.yaml"
 
 
 class ExceptionsFileError(Exception):
-    pass
+    """Raised when the exceptions file is invalid."""
 
 
 @dataclass(frozen=True)
 class ExceptionEntry:
+    """One accepted exception for a control and path."""
+
     index: int
     control: str
     path: str
@@ -49,20 +54,50 @@ class ExceptionEntry:
 
 @dataclass(frozen=True)
 class ExceptionsResult:
+    """The exceptions applied to a run."""
+
     findings: list[Finding]
     stale: tuple[ExceptionEntry, ...]
 
 
+def _parse_entry(path: Path, index: int, item: dict, known_control_ids: set[str]) -> ExceptionEntry:
+    """Validate one exceptions entry and build it."""
+    if item["control"] not in known_control_ids:
+        msg = f"{path}: entry {index} names unknown control {item['control']!r}"
+        raise ExceptionsFileError(msg)
+    try:
+        expires = date.fromisoformat(item["expires"])
+    except ValueError as exc:
+        msg = f"{path}: entry {index} has an invalid expires date: {exc}"
+        raise ExceptionsFileError(msg) from exc
+    try:
+        pattern = validate_pattern(item["path"])
+    except PatternError as exc:
+        msg = f"{path}: entry {index}: {exc}"
+        raise ExceptionsFileError(msg) from exc
+    return ExceptionEntry(
+        index=index,
+        control=item["control"],
+        path=pattern,
+        justification=item["justification"],
+        approver=item["approver"],
+        expires=expires,
+    )
+
+
 def load_exceptions(path: Path | None, known_control_ids: set[str]) -> list[ExceptionEntry]:
+    """Load and validate the operator's exceptions file."""
     if path is None:
         return []
     try:
         data = safe_load_strict(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError) as exc:
-        raise ExceptionsFileError(f"{path}: cannot be read: {exc}") from exc
+        msg = f"{path}: cannot be read: {exc}"
+        raise ExceptionsFileError(msg) from exc
     except (yaml.YAMLError, RecursionError, TypeError, ValueError) as exc:
         # ValueError: PyYAML rejects an unquoted impossible date such as 2999-02-30 itself.
-        raise ExceptionsFileError(f"{path}: not valid YAML (invalid expires date?): {exc}") from exc
+        msg = f"{path}: not valid YAML (invalid expires date?): {exc}"
+        raise ExceptionsFileError(msg) from exc
     if data is None:
         data = []
 
@@ -76,29 +111,7 @@ def load_exceptions(path: Path | None, known_control_ids: set[str]) -> list[Exce
     if errors:
         raise ExceptionsFileError(f"{path}: " + "; ".join(errors))
 
-    entries: list[ExceptionEntry] = []
-    for index, item in enumerate(data):
-        if item["control"] not in known_control_ids:
-            raise ExceptionsFileError(f"{path}: entry {index} names unknown control {item['control']!r}")
-        try:
-            expires = date.fromisoformat(item["expires"])
-        except ValueError as exc:
-            raise ExceptionsFileError(f"{path}: entry {index} has an invalid expires date: {exc}") from exc
-        try:
-            pattern = validate_pattern(item["path"])
-        except PatternError as exc:
-            raise ExceptionsFileError(f"{path}: entry {index}: {exc}") from exc
-        entries.append(
-            ExceptionEntry(
-                index=index,
-                control=item["control"],
-                path=pattern,
-                justification=item["justification"],
-                approver=item["approver"],
-                expires=expires,
-            )
-        )
-    return entries
+    return [_parse_entry(path, index, item, known_control_ids) for index, item in enumerate(data)]
 
 
 def apply_exceptions(
@@ -114,7 +127,7 @@ def apply_exceptions(
     (reported, e.g. as a SARIF suppression), with outcome EXCEPTION. Only
     FAIL findings anchored to a file can be waived; NOT_EVALUATED cannot.
     """
-    today = today or date.today()
+    today = today or datetime.now(tz=UTC).date()
     used: set[int] = set()
     result: list[Finding] = []
 
@@ -137,7 +150,9 @@ def apply_exceptions(
                 replace(
                     finding,
                     outcome=Outcome.EXCEPTION,
-                    justification=f"{waiver.justification} (approved by {waiver.approver}, expires {waiver.expires.isoformat()})",
+                    justification=(
+                        f"{waiver.justification} (approved by {waiver.approver}, expires {waiver.expires.isoformat()})"
+                    ),
                 )
             )
 
@@ -150,7 +165,10 @@ def apply_exceptions(
                     control_id=entry.control,
                     audit_id="exception-not-permitted",
                     outcome=Outcome.FAIL,
-                    message=f"exception entry {entry.index} for {entry.path!r} ignored: {entry.control} does not permit exceptions",
+                    message=(
+                        f"exception entry {entry.index} for {entry.path!r} ignored: "
+                        f"{entry.control} does not permit exceptions"
+                    ),
                     path=exceptions_file,
                 )
             )

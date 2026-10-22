@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from acb.model import Finding, Outcome
 from acb.scan import files_for, line_of, normalize_for_matching
+
+if TYPE_CHECKING:
+    from acb.controls import CheckContext
 
 CONTROL_ID = "ACB-INSTR-003"
 
@@ -93,9 +97,7 @@ _URL_RE = re.compile(r"https?://", re.IGNORECASE)
 
 def _is_suspicious_hidden_content(content: str) -> bool:
     return bool(
-        _HIDDEN_DIRECTIVE_KEYWORD_RE.search(content)
-        or _SENSITIVE_PATH_RE.search(content)
-        or _URL_RE.search(content)
+        _HIDDEN_DIRECTIVE_KEYWORD_RE.search(content) or _SENSITIVE_PATH_RE.search(content) or _URL_RE.search(content)
     )
 
 
@@ -120,7 +122,7 @@ def _unclosed_comment_blocks(text: str) -> list[tuple[int, str]]:
         search_start = end + 3
 
 
-def _check_follow_external_instructions(ctx) -> list[Finding]:
+def _check_follow_external_instructions(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file")):
         if f.text is None:
@@ -150,7 +152,7 @@ def _check_follow_external_instructions(ctx) -> list[Finding]:
     return findings
 
 
-def _check_authority_claims(ctx) -> list[Finding]:
+def _check_authority_claims(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file")):
         if f.text is None:
@@ -182,7 +184,7 @@ def _check_authority_claims(ctx) -> list[Finding]:
     return findings
 
 
-def _check_hidden_directives(ctx) -> list[Finding]:
+def _check_hidden_directives(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill", "instruction-file")):
         if f.text is None:
@@ -204,31 +206,31 @@ def _check_hidden_directives(ctx) -> list[Finding]:
             (_HIDDEN_ATTR_RE, "hidden element", 2),
             (_DISPLAY_NONE_RE, "display:none element", 3),
         ):
-            for match in regex.finditer(f.text):
-                if _is_suspicious_hidden_content(match.group(group)):
-                    findings.append(
-                        Finding(
-                            control_id=CONTROL_ID,
-                            audit_id="hidden-directives",
-                            outcome=Outcome.FAIL,
-                            message=f"directive-like content hidden in a {kind}",
-                            path=f.relative,
-                            line=line_of(f.text, match.start()),
-                        )
-                    )
-
-        for match in _LINK_TITLE_RE.finditer(f.text):
-            if _is_suspicious_hidden_content(match.group(2)):
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="hidden-directives",
-                        outcome=Outcome.FAIL,
-                        message="directive-like content hidden in a link title",
-                        path=f.relative,
-                        line=line_of(f.text, match.start()),
-                    )
+            findings.extend(
+                Finding(
+                    control_id=CONTROL_ID,
+                    audit_id="hidden-directives",
+                    outcome=Outcome.FAIL,
+                    message=f"directive-like content hidden in a {kind}",
+                    path=f.relative,
+                    line=line_of(f.text, match.start()),
                 )
+                for match in regex.finditer(f.text)
+                if _is_suspicious_hidden_content(match.group(group))
+            )
+
+        findings.extend(
+            Finding(
+                control_id=CONTROL_ID,
+                audit_id="hidden-directives",
+                outcome=Outcome.FAIL,
+                message="directive-like content hidden in a link title",
+                path=f.relative,
+                line=line_of(f.text, match.start()),
+            )
+            for match in _LINK_TITLE_RE.finditer(f.text)
+            if _is_suspicious_hidden_content(match.group(2))
+        )
 
         for start, content in _unclosed_comment_blocks(f.text):
             if _is_suspicious_hidden_content(content):

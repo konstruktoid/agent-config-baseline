@@ -9,17 +9,22 @@ check.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from acb.controls import CheckContext
 
 ApplesTo = tuple[str, ...]
 
 # Curly/typographic punctuation normalized to its straight-ASCII equivalent
 # before phrase matching, so a smart-quote variant of a trigger phrase
-# (e.g. "Don’t ask") is not missed.
+# (a right single quotation mark in "Don't ask", for example) is not missed.
 _TYPOGRAPHIC_PUNCT = {
-    "‘": "'",
-    "’": "'",
-    "‚": "'",
+    "\u2018": "'",
+    "\u2019": "'",
+    "\u201a": "'",
     "“": '"',
     "”": '"',
     "„": '"',
@@ -27,8 +32,7 @@ _TYPOGRAPHIC_PUNCT = {
 
 
 def normalize_for_matching(text: str) -> tuple[str, list[int]]:
-    """Return (normalized, index_map) for phrase matching that is robust to
-    whitespace and typographic-punctuation variance.
+    """Return (normalized, index_map) for phrase matching robust to whitespace and punctuation variance.
 
     Runs of whitespace (including newlines) collapse to a single space, and
     common curly quotes/apostrophes map to their straight-ASCII equivalent.
@@ -56,6 +60,8 @@ def normalize_for_matching(text: str) -> tuple[str, list[int]]:
 
 @dataclass(frozen=True)
 class TextFile:
+    """A file read as text, with its path relative to the root."""
+
     path: Path
     relative: str
     text: str | None  # None when the file is not valid UTF-8 text
@@ -92,29 +98,30 @@ def safe_read_bytes(path: Path) -> bytes | None:
         return None
 
 
-def _read(ctx, path: Path) -> TextFile:
+def _read(ctx: CheckContext, path: Path) -> TextFile:
     return TextFile(path=path, relative=ctx.relative(path), text=safe_read_text(path))
 
 
-def skill_files(ctx) -> list[TextFile]:
+def skill_files(ctx: CheckContext) -> list[TextFile]:
     """Every regular file under every discovered skill directory, recursively."""
     out: list[TextFile] = []
     for skill in ctx.inventory.skills:
-        for path in sorted(skill.directory.rglob("*")):
-            if path.is_file():
-                out.append(_read(ctx, path))
+        out.extend(_read(ctx, path) for path in sorted(skill.directory.rglob("*")) if path.is_file())
     return out
 
 
-def instruction_files(ctx) -> list[TextFile]:
+def instruction_files(ctx: CheckContext) -> list[TextFile]:
+    """Read every discovered instruction file."""
     return [_read(ctx, f.path) for f in ctx.inventory.instruction_files]
 
 
-def mcp_files(ctx) -> list[TextFile]:
+def mcp_files(ctx: CheckContext) -> list[TextFile]:
+    """Read every discovered MCP declaration file."""
     return [_read(ctx, d.path) for d in ctx.inventory.mcp_declarations]
 
 
-def files_for(ctx, applies_to: ApplesTo) -> list[TextFile]:
+def files_for(ctx: CheckContext, applies_to: ApplesTo) -> list[TextFile]:
+    """Read the files of the given artifact types."""
     out: list[TextFile] = []
     if "skill" in applies_to:
         out.extend(skill_files(ctx))

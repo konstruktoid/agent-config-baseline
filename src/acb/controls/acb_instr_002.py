@@ -3,19 +3,29 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from acb.model import Finding, Outcome
 from acb.scan import files_for, line_of
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from acb.controls import CheckContext
+    from acb.scan import TextFile
 
 CONTROL_ID = "ACB-INSTR-002"
 
 _NAME_END = r"(?![\w-])"
 
 
-def _instruction_names(ctx) -> list[str]:
-    """Instruction-file names: the AGENTS.md convention plus whatever client
-    data declares. No product's file name is built in."""
+def _instruction_names(ctx: CheckContext) -> list[str]:
+    """Return the instruction-file names to look for.
+
+    That is the AGENTS.md convention plus whatever client data declares. No product's file name is built in.
+    """
     return sorted({"AGENTS.md", *ctx.clients.instruction_file_names}, key=str.lower)
+
 
 _CONFIG_WRITE_PATTERNS = (
     re.compile(r"\binstall\b[\s\S]{0,40}\bskill\b[\s\S]{0,40}\bglobally\b", re.IGNORECASE),
@@ -74,7 +84,7 @@ def _path_variants(path_str: str) -> list[str]:
     return variants
 
 
-def _iter_occurrences(text: str, needle: str):
+def _iter_occurrences(text: str, needle: str) -> Iterator[int]:
     """Yield the start index of every (non-overlapping) occurrence of needle."""
     start = 0
     while True:
@@ -85,7 +95,7 @@ def _iter_occurrences(text: str, needle: str):
         start = idx + len(needle)
 
 
-def _directive_patterns(ctx) -> list[re.Pattern[str]]:
+def _directive_patterns(ctx: CheckContext) -> list[re.Pattern[str]]:
     # "Update AGENTS.md to include...", "Save the following rules into AGENTS.md":
     # a write-shaped verb followed by an instruction-file name.
     alternatives = "|".join(re.escape(n) for n in _instruction_names(ctx))
@@ -94,7 +104,7 @@ def _directive_patterns(ctx) -> list[re.Pattern[str]]:
     return [named, *_CONFIG_WRITE_PATTERNS]
 
 
-def _check_config_write_directives(ctx) -> list[Finding]:
+def _check_config_write_directives(ctx: CheckContext) -> list[Finding]:
     findings: list[Finding] = []
     patterns = _directive_patterns(ctx)
     for f in files_for(ctx, ("skill", "instruction-file")):
@@ -125,21 +135,36 @@ def _check_config_write_directives(ctx) -> list[Finding]:
     return findings
 
 
-_SCRIPT_SUFFIXES = {".sh", ".bash", ".zsh", ".ps1", ".psm1", ".py", ".js", ".mjs", ".cjs", ".ts", ".rb", ".pl", ".php", ".mk"}
+_SCRIPT_SUFFIXES = {
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".ps1",
+    ".psm1",
+    ".py",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".ts",
+    ".rb",
+    ".pl",
+    ".php",
+    ".mk",
+}
 
 
-def _is_script(f) -> bool:
+def _is_script(f: TextFile, text: str) -> bool:
     parts = f.relative.lower().split("/")
     return (
         "scripts" in parts[:-1]
         or f.path.suffix.lower() in _SCRIPT_SUFFIXES
         or f.path.name.lower() in {"makefile", "justfile"}
-        or (f.path.suffix == "" and f.text.startswith("#!"))
-        or f.text.startswith("#!")
+        or (f.path.suffix == "" and text.startswith("#!"))
+        or text.startswith("#!")
     )
 
 
-def _instruction_write_res(ctx) -> list[re.Pattern[str]]:
+def _instruction_write_res(ctx: CheckContext) -> list[re.Pattern[str]]:
     names = sorted({*_instruction_names(ctx), "SKILL.md"}, key=str.lower)
     name = r"[^\s\"'>|;&]*(?:" + "|".join(re.escape(n) for n in names) + rf"){_NAME_END}"
     end = r"[\"']?\s*(?:$|[;&|)])"
@@ -155,16 +180,20 @@ def _instruction_write_res(ctx) -> list[re.Pattern[str]]:
         re.compile(rf"\b(?:perl|ruby)\b[^\n;|]*\s-pi\b[^\n;|]*{name}", re.IGNORECASE),
         re.compile(rf"\bCopy-Item\b[^\n;|]*{name}", re.IGNORECASE),
         re.compile(rf"\bshutil\.(?:copy|copy2|copyfile|move)\([^)\n]*{name}", re.IGNORECASE),
-        re.compile(rf"\bfs\.(?:promises\.)?(?:writeFile|writeFileSync|appendFile|appendFileSync)\([^)\n]*{name}", re.IGNORECASE),
+        re.compile(
+            rf"\bfs\.(?:promises\.)?(?:writeFile|writeFileSync|appendFile|appendFileSync)\([^)\n]*{name}", re.IGNORECASE
+        ),
         re.compile(rf"\bFile\.(?:write|open)\([^)\n]*{name}", re.IGNORECASE),
         re.compile(rf"\[IO\.File\]::\w+\([^)\n]*{name}", re.IGNORECASE),
         re.compile(rf"\bopen\([^)\n]*{name}[^)\n]*,\s*(?:mode\s*=\s*)?[\"'][wax]", re.IGNORECASE),
     ]
 
 
-def _instruction_file_writes(ctx) -> list[Finding]:
-    """The client-independent half of the procedure: bundled scripts that
-    write to a file named like an agent instruction file or skill."""
+def _instruction_file_writes(ctx: CheckContext) -> list[Finding]:
+    """Fail if a bundled script writes to a file named like an agent instruction file or skill.
+
+    This is the client-independent half of the procedure.
+    """
     patterns = _instruction_write_res(ctx)
     findings: list[Finding] = []
     for f in files_for(ctx, ("skill",)):
@@ -180,26 +209,27 @@ def _instruction_file_writes(ctx) -> list[Finding]:
                 )
             )
             continue
-        if not _is_script(f):
+        if not _is_script(f, f.text):
             continue
         for pattern in patterns:
-            for match in pattern.finditer(f.text):
-                findings.append(
-                    Finding(
-                        control_id=CONTROL_ID,
-                        audit_id="config-write-scripts",
-                        outcome=Outcome.FAIL,
-                        message=f"script writes to an agent instruction file: {match.group(0).strip()!r}",
-                        path=f.relative,
-                        line=line_of(f.text, match.start()),
-                    )
+            findings.extend(
+                Finding(
+                    control_id=CONTROL_ID,
+                    audit_id="config-write-scripts",
+                    outcome=Outcome.FAIL,
+                    message=f"script writes to an agent instruction file: {match.group(0).strip()!r}",
+                    path=f.relative,
+                    line=line_of(f.text, match.start()),
                 )
+                for match in pattern.finditer(f.text)
+            )
     return findings
 
 
-def _check_config_write_scripts(ctx) -> list[Finding]:
-    """Fail if a bundled script writes to an instruction-file name (always
-    checked) or to a client-declared configuration location.
+def _check_config_write_scripts(ctx: CheckContext) -> list[Finding]:
+    """Fail if a bundled script writes to an instruction-file name or a client-declared location.
+
+    Instruction-file names are always checked.
 
     The location list is per-client data (``ctx.clients.config_write_paths``).
     With none loaded, that half has no scope and is reported as
