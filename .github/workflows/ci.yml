@@ -56,5 +56,22 @@ jobs:
       - name: Run test suite
         run: uv run pytest -q
 
+      - name: Checkout operator configuration from the base commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+          path: operator-config
+          sparse-checkout: |
+            .acb.yaml
+            .acb-exceptions.yaml
+          sparse-checkout-cone-mode: false
+
+      - name: Move operator configuration out of the scanned tree
+        run: mv operator-config "$RUNNER_TEMP/operator-config"
+
       - name: Self-check (acb check .)
-        run: uv run acb check . --format text
+        run: |
+          operator="$RUNNER_TEMP/operator-config"
+          uv run acb check . --format text --require-artifacts \
+            --config "$operator/.acb.yaml" --exceptions "$operator/.acb-exceptions.yaml"

@@ -44,8 +44,14 @@ def _run_audit(control: Control, audit_id: str, check: AuditFunc, ctx: CheckCont
     return result
 
 
-def run(
-    controls: list[Control], inventory: Inventory, clients: ClientData, root: Path, *, run_validators: bool = False
+def run(  # noqa: PLR0913
+    controls: list[Control],
+    inventory: Inventory,
+    clients: ClientData,
+    root: Path,
+    *,
+    run_validators: bool = False,
+    require_artifacts: bool = False,
 ) -> list[Finding]:
     """Run every audit of every control and collect the findings."""
     ctx = CheckContext(inventory=inventory, clients=clients, root=Path(root).resolve(), run_validators=run_validators)
@@ -60,6 +66,9 @@ def run(
                     f"inventory incomplete: {len(inventory.unscanned)} path(s) under PATH could not be scanned",
                 )
             )
+
+        if require_artifacts and inventory.is_empty():
+            findings.append(_not_evaluated(control, "*", "no artifact found under PATH and --require-artifacts is set"))
 
         module_audits = REGISTRY.get(control.id)
         if module_audits is None:
