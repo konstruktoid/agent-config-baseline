@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from acb.controls.acb_skill_003 import AUDITS
+from acb.model import Outcome
 from tests._harness import context_for
 from tests.test_controls._shared import check_pass_and_fail
 
@@ -40,6 +41,13 @@ def test_file_uri_naming_another_host_is_outside(tmp_path: Path) -> None:
     findings = _reference_findings(tmp_path, "file://fileserver/share/notes.md")
     assert [f.message for f in findings] == [
         "reference 'file://fileserver/share/notes.md' names a remote host, outside the skill directory"
+    ]
+
+
+def test_unparseable_file_uri_fails_only_that_reference(tmp_path: Path) -> None:
+    findings = _reference_findings(tmp_path, "file://host\uff1a80/path")
+    assert [(f.outcome, f.message) for f in findings] == [
+        (Outcome.FAIL, "reference 'file://host\uff1a80/path' is not a valid file URI")
     ]
 
 

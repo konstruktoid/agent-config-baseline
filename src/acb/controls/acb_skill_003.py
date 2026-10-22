@@ -326,7 +326,10 @@ def _local_path(token: str) -> tuple[str, str | None]:
         return token, "is a home-directory reference, outside the skill directory"
     if not token.lower().startswith("file:"):
         return token, None
-    uri = urlsplit(token)
+    try:
+        uri = urlsplit(token)
+    except ValueError:
+        return token, "is not a valid file URI"
     # RFC 8089: an empty or localhost authority names a local file, and any other host a remote one.
     if uri.netloc.lower() not in ("", "localhost"):
         return token, "names a remote host, outside the skill directory"
