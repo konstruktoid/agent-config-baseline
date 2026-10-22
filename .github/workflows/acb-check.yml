@@ -45,6 +45,11 @@ on:
         required: false
         type: boolean
         default: true
+      require-artifacts:
+        description: Fail the job if nothing under path is an artifact acb evaluates, so a wrong path cannot pass.
+        required: false
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -114,15 +119,18 @@ jobs:
         working-directory: target
         env:
           CHECK_PATH: ${{ inputs.path }}
+          REQUIRE_ARTIFACTS: ${{ inputs.require-artifacts }}
         run: |
           : > ../empty.yaml
+          args=()
+          if [ "$REQUIRE_ARTIFACTS" = "true" ]; then args+=(--require-artifacts); fi
           config=../operator-config/.acb.yaml
           exceptions=../operator-config/.acb-exceptions.yaml
           [ -f "$config" ] || config=../empty.yaml
           [ -f "$exceptions" ] || exceptions=../empty.yaml
           set +e
           uv run --project ../acb-src acb check "$CHECK_PATH" --format sarif \
-            --config "$config" --exceptions "$exceptions" > ../results.sarif
+            --config "$config" --exceptions "$exceptions" "${args[@]}" > ../results.sarif
           status=$?
           set -e
           echo "exit_code=${status}" >> "$GITHUB_OUTPUT"

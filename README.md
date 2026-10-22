@@ -128,6 +128,10 @@ There is one profile: `strict-general`. Every active control in it must
 pass. Severity only affects how a finding is reported (it maps to SARIF
 `level`); it does not create tiers of required vs. optional controls.
 
+A pass on the INSTR controls means no known phrase was found. Phrase lists
+are evaded by paraphrase or translation, so treat a pass as weak evidence and
+not as a review of the content.
+
 ## Layout
 
 - `controls/` — the controls themselves, as YAML, validated against
@@ -155,7 +159,7 @@ pass. Severity only affects how a finding is reported (it maps to SARIF
 ## Usage
 
 ```console
-$ uv run acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--run-validators]
+$ uv run acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--run-validators] [--require-artifacts]
 ```
 
 `--run-validators` lets acb run the capability validator that client data
@@ -168,6 +172,11 @@ Exit status is 0 only if every applicable control passes; a control with no
 artifact of the kind it applies to is reported as not applicable. Exit
 status 1 means a control failed or could not be evaluated, and 2 means acb
 could not run (invalid arguments, configuration or control data).
+
+A run that finds no artifact at all passes every control as not applicable.
+`--require-artifacts` turns that into exit status 1 (every control not
+evaluated), so a wrong PATH cannot pass. The reusable workflow sets it by
+default; its `require-artifacts` input turns it off.
 
 ## Trust model
 
