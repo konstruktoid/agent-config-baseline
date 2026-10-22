@@ -73,5 +73,9 @@ jobs:
       - name: Self-check (acb check .)
         run: |
           operator="$RUNNER_TEMP/operator-config"
-          uv run acb check . --format text --require-artifacts \
-            --config "$operator/.acb.yaml" --exceptions "$operator/.acb-exceptions.yaml"
+          : > "$RUNNER_TEMP/empty.yaml"
+          config="$operator/.acb.yaml"
+          exceptions="$operator/.acb-exceptions.yaml"
+          [ -f "$config" ] || config="$RUNNER_TEMP/empty.yaml"
+          [ -f "$exceptions" ] || exceptions="$RUNNER_TEMP/empty.yaml"
+          uv run acb check . --format text --require-artifacts --config "$config" --exceptions "$exceptions"
