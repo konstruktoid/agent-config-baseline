@@ -10,8 +10,10 @@ implemented.
 All 22 active controls are `check_type: static`. They judge the content of a
 file. None of them can say whether a skill, extension package or MCP server
 package is the artifact its publisher released, built from the source the
-publisher claims. `ACB-GEN-002` and `ACB-EXT-*` ask for pins and digests, but
-only that a digest is present, never that anything is bound to it. The schema
+publisher claims. `ACB-GEN-002` already requires exact pins with an integrity
+check, digest verification of fetched content, or a full commit hash, and
+`ACB-EXT-*` covers package contents. None of them binds the audited artifact
+itself to a claimed source or publisher. The schema
 already reserves `check_type: provenance` ("needs release/attestation
 metadata") and no control uses it.
 
@@ -64,16 +66,20 @@ IDs are placeholders. The existing prefixes are `CFG`, `EXT`, `GEN`, `INSTR`,
 
 - `ACB-PROV-001` — every inventoried skill and extension package has a
   provenance record with source repository, full commit hash and content
-  digest. Missing record fails; it is not `not-applicable`.
+  digest. Missing record fails; it is not `not-applicable`. MCP server
+  packages are deferred, see section 7.
 - `ACB-PROV-002` — each record's digest equals the digest computed from the
   artifact under the section 4 definition.
 - A signature control is deferred until the verifier question below is
   settled.
 
 The audit of `konstruktoid/agent-instructions-skills` at `db098c2` would fail
-`ACB-PROV-001` for all 10 skills. That is the intended result, and it is a
-finding about missing evidence rather than evidence of tampering; the report
-text would need to say so.
+`ACB-PROV-001` for all 10 skills if the record lives in the repository (a file
+in the skill or a repository-level lock file): by file name, that commit
+contains no such record. If the record is an operator file (section 6,
+question 1), the result depends on what the operator supplies. A failure here
+is a finding about missing evidence rather than evidence of tampering; the
+report text would need to say so.
 
 ## 6. Questions that need an answer before implementation
 
@@ -95,7 +101,13 @@ text would need to say so.
    specifications); whether the Agent Skills specification at agentskills.io
    defines any digest or provenance field (fetch and grep the specification).
 
-## 7. Out of scope
+## 7. Out of scope and deferred
+
+MCP server packages. Section 1 names them as artifacts the problem covers, but
+an MCP declaration names a launch command or a remote URL, not a directory, so
+there is no artifact path for a record to key on. `ACB-PROV-001` is limited to
+skills and extension packages until the record format can identify a package
+by registry coordinates or image digest.
 
 Reputation, vulnerability status of dependencies, and runtime attestation
 of the agent itself (README: agent identity is out of scope).
