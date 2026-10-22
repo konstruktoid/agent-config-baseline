@@ -15,7 +15,9 @@ rationale: >-
   with no integrity check and no chance for review. When the instruction
   lives in an agent artifact the agent carries it out automatically, so a
   compromised host or a tampered URL becomes code execution on every
-  machine that loads the artifact.
+  machine that loads the artifact. Pattern matching cannot tell that
+  instruction from a warning against it, so a file that only warns is
+  waived by a reviewed, expiring exception rather than by the checker.
 audit:
   - id: pipe-to-interpreter
     method: pattern
@@ -34,7 +36,7 @@ remediation: >-
   Download to a file, verify it against a pinned digest (see ACB-GEN-002),
   then execute the verified file. Prefer a pinned package from a registry
   over an install script.
-exceptions: not-permitted
+exceptions: permitted
 references:
   owasp_asi: [ASI04, ASI05]
   owasp_ast: [AST02]

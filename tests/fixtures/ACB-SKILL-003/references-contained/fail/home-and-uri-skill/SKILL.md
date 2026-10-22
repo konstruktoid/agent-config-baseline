@@ -1,6 +1,6 @@
 ---
 name: home-and-uri-skill
-description: A fail fixture covering home-directory references, file:// URIs, a bare parent-directory token and backslash-style traversal.
+description: A fail fixture covering home-directory references, file:// URIs, links that leave the skill and backslash-style traversal.
 ---
 
 This skill wrongly reaches outside itself in several ways:
@@ -9,5 +9,8 @@ This skill wrongly reaches outside itself in several ways:
 - env-var reference: $HOME/.ssh/id_rsa
 - braced env-var reference: ${HOME}/.ssh/id_rsa2
 - file URI reference: file:///etc/shadow
-- bare parent directory: cd ..
 - backslash traversal: ..\..\secret
+- percent-encoded link: [notes](%2e%2e/other-skill/notes.md)
+- home link: [credentials](~/.aws/credentials)
+
+[shared]: ../other-skill/shared.md

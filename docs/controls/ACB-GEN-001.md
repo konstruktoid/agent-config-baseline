@@ -7,7 +7,7 @@
 | Check type | `static` |
 | Applies to | `skill`, `instruction-file`, `mcp-server-declaration` |
 | Profiles | strict-general |
-| Exceptions | `not-permitted` |
+| Exceptions | `permitted` |
 
 ## Description
 
@@ -15,7 +15,7 @@ No artifact executes, or instructs the agent to execute, content fetched from a 
 
 ## Rationale
 
-Pipe-to-interpreter runs whatever the remote host serves at that moment, with no integrity check and no chance for review. When the instruction lives in an agent artifact the agent carries it out automatically, so a compromised host or a tampered URL becomes code execution on every machine that loads the artifact.
+Pipe-to-interpreter runs whatever the remote host serves at that moment, with no integrity check and no chance for review. When the instruction lives in an agent artifact the agent carries it out automatically, so a compromised host or a tampered URL becomes code execution on every machine that loads the artifact. Pattern matching cannot tell that instruction from a warning against it, so a file that only warns is waived by a reviewed, expiring exception rather than by the checker.
 
 ## Audit procedures
 

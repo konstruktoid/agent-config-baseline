@@ -53,3 +53,49 @@ def test_unparseable_file_uri_fails_only_that_reference(tmp_path: Path) -> None:
 
 def test_relative_reference_inside_the_skill_passes(tmp_path: Path) -> None:
     assert _reference_findings(tmp_path, "scripts/run.sh") == []
+
+
+@pytest.mark.parametrize(
+    "ref",
+    [
+        "/dev/null",
+        "/etc/profile",
+        "PATH=/usr/bin:/bin",
+        "~DEFAULT_BRANCH",
+        "$HOME",
+        "`..`",
+        "[spec](https://example.com/a/../b)",
+        "[contact](mailto:security@example.com)",
+        "[section](#intro)",
+        "[guide](references/guide.md#intro)",
+    ],
+)
+def test_host_paths_and_other_schemes_are_not_file_references(tmp_path: Path, ref: str) -> None:
+    assert _reference_findings(tmp_path, ref) == []
+
+
+@pytest.mark.parametrize(
+    ("ref", "message"),
+    [
+        ("[passwd](/etc/passwd)", "reference '/etc/passwd' is an absolute path"),
+        ("[other](../other/SKILL.md)", "reference '../other/SKILL.md' contains a `..` path segment"),
+        ("[other](%2e%2e/other.md)", "reference '%2e%2e/other.md' contains a `..` path segment"),
+        ("[notes](~/notes.md)", "reference '~/notes.md' is a home-directory reference, outside the skill directory"),
+        ("../sibling/notes.md", "reference '../sibling/notes.md' contains a `..` path segment"),
+        ("~/.ssh/id_rsa", "reference '~/.ssh/id_rsa' is a home-directory reference, outside the skill directory"),
+        (
+            "$HOME/.ssh/id_rsa",
+            "reference '$HOME/.ssh/id_rsa' is a home-directory reference, outside the skill directory",
+        ),
+        ("${HOME}/notes.md", "reference '${HOME}/notes.md' is a home-directory reference, outside the skill directory"),
+    ],
+)
+def test_references_that_leave_the_skill_fail_once(tmp_path: Path, ref: str, message: str) -> None:
+    assert [f.message for f in _reference_findings(tmp_path, ref)] == [message]
+
+
+def test_reference_definition_target_is_a_reference(tmp_path: Path) -> None:
+    findings = _reference_findings(tmp_path, "the notes.\n\n[notes]: ../other/notes.md")
+    assert [(f.message, f.line) for f in findings] == [
+        ("reference '../other/notes.md' contains a `..` path segment", 8)
+    ]
