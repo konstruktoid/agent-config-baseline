@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | https://github.com/konstruktoid/agent-instructions-skills |
 | Commit audited | `db098c2e039c6fc8f0bfc3c0ab5dc4352d31faa0` (2026-10-15T10:26:56+02:00) |
-| Checker | `acb` 0.1.0 at `ae50294fd7050b92c817c84c1b8e9239b7459158` of this repository, clean working tree |
+| Checker | `acb` 0.1.0 at `aa38db441714362c744e1c6268c0fb2fb481286e` of this repository, clean working tree |
 | Profile | `strict-general` |
 | Command | `acb check ../t --format json`, run from an empty directory: no `--config`, no `--exceptions`; the default bundled client data (`claude-code`) was loaded |
 | Target | `git archive db098c2` extracted to a fresh directory, so the audited clone was not touched and no `.git` directory was scanned |
@@ -37,7 +37,7 @@ the target gave them input to check.
 | ACB-SKILL-002 | pass |
 | ACB-SKILL-003 | fail |
 
-6 of 10 applicable controls failed; 24 individual findings in total. The other 12 controls are not applicable to this target. See Observations before reading this as a severity ranking.
+6 of 10 applicable controls failed; 23 individual findings in total. The other 12 controls are not applicable to this target. See Observations before reading this as a severity ranking.
 
 ## Findings
 
@@ -107,7 +107,6 @@ No findings.
 
 | Audit | File | Line | Message |
 | --- | --- | --- | --- |
-| `references-contained` | `skills/bash/bash-secure-scripting/references/environment.md` | 185 | reference '~/.bashrc' is a home-directory reference, outside the skill directory |
 | `references-contained` | `skills/github/github-repository-security/references/scorecard.md` | 58 | reference '../../github-actions-security/references/supply-chain.md' contains a `..` path segment |
 | `references-contained` | `skills/github/github-repository-security/references/scorecard.md` | 151 | reference '../../github-actions-security/references/supply-chain.md' contains a `..` path segment |
 
@@ -116,7 +115,7 @@ No findings.
 This target is a library of security-review skills, so its text discusses the
 very patterns the baseline looks for. Static pattern matching (PROMPT.md
 ground rule 5 forbids model calls) cannot tell an instruction from a warning
-against it. All 24 findings were checked against the source.
+against it. All 23 findings were checked against the source.
 
 **Genuine findings under the controls as written**
 
@@ -147,30 +146,18 @@ against it. All 24 findings were checked against the source.
   `references/untrusted-input.md:26`): `https://attacker.example/$(echo` is
   the payload in an injection example, not a fetch the skill performs.
 
-**Open question for the control's owner**
-
-- `ACB-SKILL-003` `references-contained` (1,
-  `skills/bash/bash-secure-scripting/references/environment.md:185`):
-  `~/.bashrc` appears in the sentence "Non-interactive shells do not read
-  `~/.bashrc` or `/etc/profile`". It describes the host, not a file the skill
-  reads. The procedure lists "a home-directory path" as a file reference and
-  exempts only absolute paths outside a link, so by its text this is a
-  finding, and `/etc/profile` in the same sentence is not. Either the
-  exemption should cover home-directory paths in prose too, or the finding
-  stands. It has not been reinterpreted.
-
 ## Changes since the previous report
 
 The previous report of this commit (2026-10-19) listed 121 findings; this one
-lists 24. The target is unchanged. Both differences are in the checker:
+lists 23. The target is unchanged. Both differences are in the checker:
 
-- `ACB-SKILL-003` fell from 100 findings to 3. The control's procedure now
+- `ACB-SKILL-003` fell from 100 findings to 2. The control's procedure now
   defines a file reference (a link or reference-definition target, a file URI,
-  a home-directory path or a relative path) and exempts absolute paths outside
+  or a relative path) and exempts absolute and home-directory paths outside
   links, so the 96 absolute-path examples in hardening prose
-  (`/dev/null`, `/etc/profile`, `/var/log`, `/proc/…`, PATH strings, `/tmp`) and
-  the two bare `..` tokens in prose about path validation are no longer
-  reported. The previous report's request for a decision on this control is
+  (`/dev/null`, `/etc/profile`, `/var/log`, `/proc/…`, PATH strings, `/tmp`),
+  the home-directory examples in prose (`~/.bashrc`, `$HOME`) and the two bare
+  `..` tokens in prose about path validation are no longer reported. The previous report's request for a decision on this control is
   resolved by that change.
 - The other controls report the same 21 findings as before, with the same
   files and lines.
