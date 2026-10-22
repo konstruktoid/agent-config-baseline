@@ -214,3 +214,22 @@ def test_sarif_marks_an_unchecked_run_as_unsuccessful_and_encodes_uris(
     assert run["automationDetails"]["id"].startswith("acb/strict-general/")
     notes = run["invocations"][0]["toolExecutionNotifications"]
     assert any("not applicable" in n["message"]["text"] for n in notes)
+
+
+@pytest.mark.usefixtures("operator_dir")
+def test_require_artifacts_fails_a_scan_that_found_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert main(["check", str(empty), "--format", "json", "--require-artifacts"]) == 1
+    assert set(_json(capsys)["summary"].values()) == {"not-evaluated"}
+
+
+@pytest.mark.usefixtures("operator_dir")
+def test_require_artifacts_leaves_a_scan_that_found_something_unchanged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "t"
+    root.mkdir()
+    (root / "AGENTS.md").write_text("fine\n")
+    assert main(["check", str(root), "--format", "json", "--require-artifacts"]) == 0
+    assert "not-evaluated" not in _json(capsys)["summary"].values()

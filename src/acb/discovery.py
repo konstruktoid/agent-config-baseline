@@ -126,6 +126,20 @@ class Inventory:
             }[artifact_type]
         )
 
+    def is_empty(self) -> bool:
+        """Report whether no artifact of any type was discovered."""
+        return not any(
+            self.has_artifacts(kind)
+            for kind in (
+                "skill",
+                "instruction-file",
+                "mcp-server-declaration",
+                "extension-package",
+                "agent-settings",
+                "managed-settings",
+            )
+        )
+
 
 def _walk(
     root: Path, config: CheckerConfig, unscanned: list[Unscanned], excluded: Counter

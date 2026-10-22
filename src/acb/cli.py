@@ -1,4 +1,4 @@
-"""`acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--run-validators]`.
+"""`acb check PATH [options]`; build_parser lists the options.
 
 PATH is untrusted content. Configuration comes from the operator: the
 exceptions file and operator config default to files in the current working
@@ -69,6 +69,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="run the capability validator client data names (a third-party binary) on extension packages; "
         "without it, validator-based audit procedures are not evaluated",
     )
+    check.add_argument(
+        "--require-artifacts",
+        action="store_true",
+        help="exit 1 when PATH holds no artifact to evaluate, instead of passing every control as not applicable",
+    )
     return parser
 
 
@@ -120,7 +125,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     inventory = discover(root, clients, config)
-    findings = run(controls, inventory, clients, root, run_validators=args.run_validators)
+    findings = run(
+        controls, inventory, clients, root, run_validators=args.run_validators, require_artifacts=args.require_artifacts
+    )
     exceptions_display = str(exceptions_path) if exceptions_path is not None else None
     applied = apply_exceptions(findings, entries, {c.id: c for c in controls}, exceptions_display)
 
