@@ -1,0 +1,9 @@
+artifacts:
+  - path: skills/branch-skill
+    source: git@github.com:example/skills.git
+    commit: main
+    digest: sha256:abababababababababababababababababababababababababababababababab
+  - path: skills/short-skill
+    source: https://github.com/example/skills
+    commit: 1a2b3c4
+    digest: md5:0123456789abcdef0123456789abcdef
