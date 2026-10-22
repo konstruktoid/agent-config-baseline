@@ -39,8 +39,9 @@ _MCP_BASE_KEYS = ("mcpServers", "servers")
 _UNPARSEABLE = object()
 _MAX_STRUCTURED_BYTES = 5_000_000
 
-MD_LINK_RE = re.compile(r"\]\(\s*(?:<([^>\n]+)>|([^)\s]+))")
-MD_REF_DEF_RE = re.compile(r"(?m)^[ ]{0,3}\[[^\]\n]+\]:\s*(?:<([^>\n]+)>|(\S+))")
+# A pointy destination stops at the next `<`, so a long line of unclosed `](<` is scanned in linear time.
+MD_LINK_RE = re.compile(r"\]\(\s*(?:<([^<>\n]+)>|([^)\s]+))")
+MD_REF_DEF_RE = re.compile(r"(?m)^[ ]{0,3}\[[^\]\n]+\]:\s*(?:<([^<>\n]+)>|(\S+))")
 _REFERENCED_DOC_SUFFIXES = {".md", ".markdown", ".txt"}
 
 

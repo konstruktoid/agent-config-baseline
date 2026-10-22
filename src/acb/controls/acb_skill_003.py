@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+from bisect import bisect_right
 from pathlib import Path
 from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlsplit
@@ -423,6 +424,8 @@ def _reference_problems(text: str, base: Path, skill_root: Path) -> list[tuple[i
     for match in (*MD_LINK_RE.finditer(text), *MD_REF_DEF_RE.finditer(text)):
         group = 1 if match.group(1) is not None else 2
         links.append((match.start(group), match.end(group), match.group(group)))
+    links.sort()
+    link_starts = [start for start, _end, _target in links]
 
     problems: list[tuple[int, str, str]] = []
     for start, _end, target in links:
@@ -431,7 +434,9 @@ def _reference_problems(text: str, base: Path, skill_root: Path) -> list[tuple[i
             problems.append((start, target, problem))
 
     for match in _TOKEN_RE.finditer(text):
-        if any(start <= match.start() < end for start, end, _target in links):
+        # A token inside a link target was judged as that link; bisect keeps this linear in the number of links.
+        index = bisect_right(link_starts, match.start()) - 1
+        if index >= 0 and match.start() < links[index][1]:
             continue
         token = match.group(0).rstrip(_STRIP_TRAILING)
         problem = _token_problem(token, base, skill_root) if token else None

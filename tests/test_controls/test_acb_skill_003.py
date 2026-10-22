@@ -94,6 +94,11 @@ def test_references_that_leave_the_skill_fail_once(tmp_path: Path, ref: str, mes
     assert [f.message for f in _reference_findings(tmp_path, ref)] == [message]
 
 
+def test_pointy_link_with_spaces_is_reported_once(tmp_path: Path) -> None:
+    findings = _reference_findings(tmp_path, "[other](<../other skill/notes.md>)")
+    assert [f.message for f in findings] == ["reference '../other skill/notes.md' contains a `..` path segment"]
+
+
 def test_reference_definition_target_is_a_reference(tmp_path: Path) -> None:
     findings = _reference_findings(tmp_path, "the notes.\n\n[notes]: ../other/notes.md")
     assert [(f.message, f.line) for f in findings] == [
