@@ -120,6 +120,8 @@ def _entry_problems(entry: object) -> list[str]:
 
 
 def _check_record_fields(ctx: CheckContext) -> list[Finding]:
+    if not _artifact_paths(ctx):
+        return []
     if not (ctx.root / RECORD_NAME).exists() and not (ctx.root / RECORD_NAME).is_symlink():
         return []
     data, problem = _load_record(ctx)
