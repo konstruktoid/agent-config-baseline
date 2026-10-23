@@ -32,6 +32,8 @@ def _valid_source(value: object) -> bool:
         return False
     try:
         parts = urlsplit(value)
+        # Reading the port raises ValueError for a non-numeric or out-of-range one.
+        _ = parts.port
     except ValueError:
         return False
     return parts.scheme == "https" and bool(parts.hostname) and bool(parts.path.strip("/"))

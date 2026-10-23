@@ -85,6 +85,9 @@ def test_duplicate_path_fails(tmp_path: Path) -> None:
         _entry("skills/a", source="http://github.com/example/s"),
         _entry("skills/a", source="https://@/repo"),
         _entry("skills/a", source="https:///repo"),
+        _entry("skills/a", source="https://example.com:invalid/repo"),
+        _entry("skills/a", source="https://example.com:99999/repo"),
+        _entry("skills/a", source="https://git.example.org/"),
         _entry("skills/a", commit=f'"{COMMIT}\\n"'),
         _entry("skills/a", digest=f'"{DIGEST}\\n"'),
         _entry("/skills/a"),
@@ -108,3 +111,10 @@ def test_non_string_path_does_not_stop_the_presence_audit(tmp_path: Path) -> Non
     (tmp_path / ".acb-provenance.yaml").write_text("artifacts:\n" + _entry("[]") + _entry("skills/a"))
     assert _messages(tmp_path, "record-present") == []
     assert any("`path` is missing or not a string" in m for m in _messages(tmp_path, "record-fields"))
+
+
+def test_source_with_a_valid_port_is_accepted(tmp_path: Path) -> None:
+    (tmp_path / ".acb-provenance.yaml").write_text(
+        "artifacts:\n" + _entry("skills/a", source="https://git.example.org:8443/org/repo")
+    )
+    assert _messages(tmp_path, "record-fields") == []
