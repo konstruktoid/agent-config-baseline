@@ -28,7 +28,7 @@
     "id": {
       "description": "Stable identifier. Never renumbered, never reused after retirement.",
       "type": "string",
-      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG)-[0-9]{3}$"
+      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG|PROV)-[0-9]{3}$"
     },
     "title": {
       "type": "string",
@@ -42,7 +42,7 @@
     "deprecated_by": {
       "description": "Replacement control ID when status is deprecated.",
       "type": "string",
-      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG)-[0-9]{3}$"
+      "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG|PROV)-[0-9]{3}$"
     },
     "profiles": {
       "description": "Profiles this control belongs to. Only strict-general exists today; the array keeps the schema stable if profiles are added.",

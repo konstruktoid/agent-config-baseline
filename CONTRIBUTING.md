@@ -13,7 +13,7 @@ A control's `status` field tracks its lifecycle:
 
 ## ID rules
 
-- IDs match `^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG)-[0-9]{3}$` and are
+- IDs match `^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG|PROV)-[0-9]{3}$` and are
   assigned sequentially within their family.
 - IDs are never renumbered and never reused, even after deprecation.
 - A retired control becomes `status: deprecated` with `deprecated_by`; it
