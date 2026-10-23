@@ -25,7 +25,7 @@ The scanned root contains `.acb-provenance.yaml`, and its `artifacts` list has a
 
 ### `record-fields` (structure)
 
-`.acb-provenance.yaml` parses as a YAML mapping with an `artifacts` list. Each entry has a `path` that is unique in the list, a `source` that is an `https://` URL, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` of the form `sha256:` followed by 64 lowercase hexadecimal characters.
+`.acb-provenance.yaml` parses as a YAML mapping with an `artifacts` list. Each entry has a `path` that is unique in the list, relative to the scanned root with `/` separators and no `..` segment, a `source` that is an `https://` URL with a hostname, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` of the form `sha256:` followed by 64 lowercase hexadecimal characters.
 
 Illustrative failing indicators (non-exhaustive):
 

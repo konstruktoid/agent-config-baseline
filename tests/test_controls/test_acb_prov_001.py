@@ -83,6 +83,14 @@ def test_duplicate_path_fails(tmp_path: Path) -> None:
         _entry("skills/a", digest="sha256:" + "ab" * 31),
         _entry("skills/a", digest="SHA256:" + "ab" * 32),
         _entry("skills/a", source="http://github.com/example/s"),
+        _entry("skills/a", source="https://@/repo"),
+        _entry("skills/a", source="https:///repo"),
+        _entry("skills/a", commit=f'"{COMMIT}\\n"'),
+        _entry("skills/a", digest=f'"{DIGEST}\\n"'),
+        _entry("/skills/a"),
+        _entry("../skills/a"),
+        _entry("skills/../a"),
+        _entry("skills\\a"),
     ],
 )
 def test_each_field_is_validated(tmp_path: Path, entry: str) -> None:
@@ -93,3 +101,10 @@ def test_each_field_is_validated(tmp_path: Path, entry: str) -> None:
 def test_sha256_length_commit_is_accepted(tmp_path: Path) -> None:
     (tmp_path / ".acb-provenance.yaml").write_text("artifacts:\n" + _entry("skills/a", commit="ab" * 32))
     assert _messages(tmp_path, "record-fields") == []
+
+
+def test_non_string_path_does_not_stop_the_presence_audit(tmp_path: Path) -> None:
+    _skill(tmp_path, "a")
+    (tmp_path / ".acb-provenance.yaml").write_text("artifacts:\n" + _entry("[]") + _entry("skills/a"))
+    assert _messages(tmp_path, "record-present") == []
+    assert any("`path` is missing or not a string" in m for m in _messages(tmp_path, "record-fields"))

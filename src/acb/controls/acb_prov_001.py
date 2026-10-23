@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 import yaml
 
@@ -19,11 +20,26 @@ if TYPE_CHECKING:
 CONTROL_ID = "ACB-PROV-001"
 RECORD_NAME = ".acb-provenance.yaml"
 
-_COMMIT_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
-_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-_SOURCE_RE = re.compile(r"^https://[^\s/]+/\S+$")
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+_DIGEST_RE = re.compile(r"sha256:[0-9a-f]{64}")
 
 _NOT_READABLE = "could not be read (not valid UTF-8 text, or is a symlink); cannot verify"
+
+
+def _valid_source(value: object) -> bool:
+    """Report whether value is an https URL with a hostname and a repository path."""
+    if not isinstance(value, str) or re.search(r"\s", value):
+        return False
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return False
+    return parts.scheme == "https" and bool(parts.hostname) and bool(parts.path.strip("/"))
+
+
+def _valid_path(value: str) -> bool:
+    """Report whether value is a root-relative path with `/` separators and no `..` segment."""
+    return not value.startswith("/") and "\\" not in value and ".." not in value.split("/")
 
 
 def _artifact_paths(ctx: CheckContext) -> list[str]:
@@ -69,7 +85,7 @@ def _check_record_present(ctx: CheckContext) -> list[Finding]:
             )
         ]
     entries = _entries(data) or []
-    listed = {entry.get("path") for entry in entries if isinstance(entry, dict)}
+    listed = {entry["path"] for entry in entries if isinstance(entry, dict) and isinstance(entry.get("path"), str)}
     missing_file = problem is not None
     return [
         Finding(
@@ -90,11 +106,13 @@ def _entry_problems(entry: object) -> list[str]:
     problems = []
     if not isinstance(entry.get("path"), str) or not entry["path"]:
         problems.append("`path` is missing or not a string")
-    if not isinstance(entry.get("source"), str) or not _SOURCE_RE.match(entry["source"]):
-        problems.append("`source` is not an https:// URL")
-    if not isinstance(entry.get("commit"), str) or not _COMMIT_RE.match(entry["commit"]):
+    elif not _valid_path(entry["path"]):
+        problems.append("`path` is not a relative path with `/` separators and no `..` segment")
+    if not _valid_source(entry.get("source")):
+        problems.append("`source` is not an https:// URL with a hostname")
+    if not isinstance(entry.get("commit"), str) or not _COMMIT_RE.fullmatch(entry["commit"]):
         problems.append("`commit` is not a full lowercase hexadecimal commit hash")
-    if not isinstance(entry.get("digest"), str) or not _DIGEST_RE.match(entry["digest"]):
+    if not isinstance(entry.get("digest"), str) or not _DIGEST_RE.fullmatch(entry["digest"]):
         problems.append("`digest` is not `sha256:` followed by 64 lowercase hexadecimal characters")
     return problems
 
