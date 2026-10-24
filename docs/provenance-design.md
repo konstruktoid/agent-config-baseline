@@ -53,10 +53,11 @@ cost no dependency, and make the later signature step a strict addition.
 A skill is a directory, so "its digest" needs a canonical definition: sorted
 relative paths, normalised separators, a per-file digest, a digest over that
 listing, and a rule for file modes, symlinks (SKILL-003 already forbids
-them) and the provenance record itself (it cannot be inside the thing it
-hashes). Without this the digest is not reproducible across tools. The
-Agent Skills specification does not define one as far as I know (unverified);
-if it does not, this baseline would be defining it, which should be a
+them) and the provenance record itself, which sits in the artifact
+directory (section 6, question 1) and so must be excluded from the digest
+it records. Without this the digest is not reproducible across tools. The
+Agent Skills specification does not define one (checked 2026-10-24, see
+section 6, question 5), so this baseline would be defining it, which should be a
 separate, versioned document rather than text inside a control.
 
 ## 5. Proposed draft controls
@@ -85,9 +86,14 @@ report text would need to say so.
 
 1. Where does a record live: a file in the skill directory (excluded from its
    own hash), a repository-level lock file, or an operator file passed on the
-   command line like `--exceptions`? Operator files are the only option that
-   an attacker who controls the skill cannot rewrite; the repository-level
-   file is the only one that travels with the artifact.
+   command line like `--exceptions`? Decided: a `.acb-provenance.yaml` in
+   each skill directory and extension package root, because it is the only
+   option that travels with a copied or vendored artifact; a
+   repository-level file is lost when one skill is copied out. The cost is
+   that whoever can change the artifact can change its record, so
+   `ACB-PROV-001` shows only that evidence exists. An operator file remains
+   the only option an attacker who controls the skill cannot rewrite, and
+   could be added later as an override rather than a replacement.
 2. Is the checker allowed a verifier dependency or an external verifier
    subprocess? If a subprocess, its result is a claim the checker relays, and
    the report must label it that way.
@@ -98,8 +104,11 @@ report text would need to say so.
    Sigstore bundle field names and offline verification support (read the
    current sigstore bundle specification); in-toto statement and SLSA
    provenance predicate versions (read the current in-toto and SLSA
-   specifications); whether the Agent Skills specification at agentskills.io
-   defines any digest or provenance field (fetch and grep the specification).
+   specifications). The Agent Skills specification at agentskills.io was
+   checked on 2026-10-24: it permits "any files and directories beyond the
+   required `SKILL.md`" and defines no digest, hash or provenance field; its
+   only extension point is the string-to-string `metadata` frontmatter map,
+   which would place the record inside the content it hashes.
 
 ## 7. Out of scope and deferred
 

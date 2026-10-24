@@ -1,0 +1,3 @@
+source: git@github.com:example/skills.git
+commit: main
+digest: sha256:abababababababababababababababababababababababababababababababab

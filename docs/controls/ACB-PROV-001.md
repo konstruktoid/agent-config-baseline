@@ -11,21 +11,21 @@
 
 ## Description
 
-Every skill and extension package has an entry in the repository's provenance record naming its source repository, the full commit hash it was taken from and a SHA-256 content digest.
+Every skill and extension package carries a provenance record in its own directory naming its source repository, the full commit hash it was taken from and a SHA-256 content digest.
 
 ## Rationale
 
-Pins and digests elsewhere in this baseline say that something is fixed, not where it came from. Without a record of source and commit, a reviewer cannot tell whether a skill is the artifact its publisher released or a modified copy. The record is evidence the repository ships about itself, so this control establishes that the evidence exists and is well formed; it does not show that the digest matches the content or that anyone signed it.
+Pins and digests elsewhere in this baseline say that something is fixed, not where it came from. Without a record of source and commit, a reviewer cannot tell whether a skill is the artifact its publisher released or a modified copy. The record is evidence the repository ships about itself, so this control establishes that the evidence exists and is well formed; it does not show that the digest matches the content or that anyone signed it. The record sits inside the artifact so that it travels with a copied or vendored skill, which also means whoever can change the artifact can change its record.
 
 ## Audit procedures
 
 ### `record-present` (inventory)
 
-The scanned root contains `.acb-provenance.yaml`, and its `artifacts` list has an entry whose `path` names the directory of every discovered skill and extension package, relative to the scanned root with `/` separators. A missing file fails once for every skill and extension package; a missing entry fails for that artifact.
+Every discovered skill directory and extension package root contains a regular file named `.acb-provenance.yaml`. A missing file fails for that artifact; a record elsewhere, such as at the repository root, does not cover it. A symlinked record is not evaluated.
 
 ### `record-fields` (structure)
 
-`.acb-provenance.yaml` parses as a YAML mapping with an `artifacts` list. Each entry has a `path` that is unique in the list, relative to the scanned root with `/` separators and no `..` segment, a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` of the form `sha256:` followed by 64 lowercase hexadecimal characters.
+Each artifact's `.acb-provenance.yaml` parses as a YAML mapping with a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` of the form `sha256:` followed by 64 lowercase hexadecimal characters.
 
 Illustrative failing indicators (non-exhaustive):
 
@@ -36,7 +36,7 @@ Illustrative failing indicators (non-exhaustive):
 
 ## Remediation
 
-Add `.acb-provenance.yaml` at the repository root with one `artifacts` entry per skill or extension package: `path`, `source`, `commit` and `digest`. Record the commit the content was taken from, not a branch or tag name.
+Add `.acb-provenance.yaml` to each skill directory, next to `SKILL.md`, and to each extension package root, with `source`, `commit` and `digest`. Record the commit the content was taken from, not a branch or tag name.
 
 ## References
 

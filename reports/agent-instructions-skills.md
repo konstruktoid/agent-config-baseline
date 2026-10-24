@@ -4,17 +4,17 @@
 | --- | --- |
 | Repository | https://github.com/konstruktoid/agent-instructions-skills |
 | Commit audited | `db098c2e039c6fc8f0bfc3c0ab5dc4352d31faa0` (2026-10-15T10:26:56+02:00) |
-| Checker | `acb` 0.1.0 at `d97b35c66a57bd2a593e5fc2145bffaa14fbde5e` of this repository; the only uncommitted change was this report |
+| Checker | `acb` 0.1.0 at `433b53bcee72db62d15cbc466162aeb4a941455c` of this repository; the only uncommitted change was this report |
 | Profile | `strict-general` |
 | Command | `acb check ../t --format json`, run from an empty directory: no `--config`, no `--exceptions`; the default bundled client data (`claude-code`) was loaded |
 | Target | `git archive db098c2` extracted to a fresh directory, so the audited clone was not touched and no `.git` directory was scanned |
-| Audited on | 2026-10-23 |
+| Audited on | 2026-10-24 |
 | Inventory | 10 skills, 0 instruction files, 0 MCP declarations, 0 extension packages, 0 agent settings files; nothing unscanned, nothing excluded |
 
 No exceptions were added on behalf of the audited repository. This report
-replaces the 2026-10-22 report of the same commit, which was produced before
-`ACB-PROV-001` existed; the difference is described under "Changes since the
-previous report".
+replaces the 2026-10-23 report of the same commit, which was produced when
+`ACB-PROV-001` expected one record at the repository root; the difference is
+described under "Changes since the previous report".
 
 Instruction files and MCP declarations: none were found, so the controls that
 apply to them evaluated this repository's skills only. `ACB-INSTR-001/bypass-flags`
@@ -89,16 +89,16 @@ No findings.
 
 | Audit | File | Line | Message |
 | --- | --- | --- | --- |
-| `record-present` | `skills/ansible/ansible-verification-loop` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/bash/bash-secure-scripting` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/bash/bash-testing` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/github/github-actions-security` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/github/github-organization-governance` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/github/github-repository-security` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/python/python-secure-coding` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/python/python-testing` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/terraform/terraform-secure-iac` | - | .acb-provenance.yaml does not exist |
-| `record-present` | `skills/terraform/terraform-testing` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/ansible/ansible-verification-loop` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/bash/bash-secure-scripting` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/bash/bash-testing` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/github/github-actions-security` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/github/github-organization-governance` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/github/github-repository-security` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/python/python-secure-coding` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/python/python-testing` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/terraform/terraform-secure-iac` | - | .acb-provenance.yaml does not exist in the artifact directory |
+| `record-present` | `skills/terraform/terraform-testing` | - | .acb-provenance.yaml does not exist in the artifact directory |
 
 ### ACB-SKILL-001 — `fail`
 
@@ -147,14 +147,15 @@ against it. All 33 findings were checked against the source.
   a relative link into another skill's directory. It resolves and works, but
   it crosses the per-skill boundary the control defines. Whether that is
   acceptable for co-maintained skills in one repository is a reviewer's call.
-- `ACB-PROV-001` `record-present` (10, one per skill): the repository contains
-  no `.acb-provenance.yaml`, so none of the 10 skills has a provenance record.
+- `ACB-PROV-001` `record-present` (10, one per skill): no skill directory
+  contains a `.acb-provenance.yaml`, so none of the 10 skills has a provenance
+  record.
   This is a finding about missing evidence, not evidence of tampering. The
   control is a draft, and it checks that a record exists and is well formed;
   it does not check that the digest matches the content or that anyone signed
-  it. The record location (a repository-root file) is a design choice that
-  `docs/provenance-design.md` section 6 leaves open, and this repository has
-  not been given a chance to supply a record elsewhere.
+  it. The record location, one file in each skill directory, is decided in
+  `docs/provenance-design.md` section 6, question 1; a record anywhere else
+  would not count.
 
 **False positives (the checker's limitation, not the target's problem)**
 
@@ -172,11 +173,11 @@ against it. All 33 findings were checked against the source.
 
 ## Changes since the previous report
 
-The previous report of this commit (2026-10-22) listed 23 findings; this one
-lists 33. The target is unchanged. The difference is one new control:
-`ACB-PROV-001` (draft) adds 10 findings, one per skill. The other 23 findings
-are the same as before, in the same files and lines, and the checker's
-`ACB-SKILL-003` exemption for home-directory paths in prose is unchanged.
+The previous report of this commit (2026-10-23) also listed 33 findings, and
+the target is unchanged. `ACB-PROV-001` now looks for a record in each skill
+directory instead of one at the repository root, so its 10 findings name the
+same skills with the message "does not exist in the artifact directory". The
+other 23 findings are the same as before, in the same files and lines.
 
 ## Limits of this run
 
