@@ -4,16 +4,16 @@
 | --- | --- |
 | Repository | https://github.com/konstruktoid/agent-instructions-skills |
 | Commit audited | `db098c2e039c6fc8f0bfc3c0ab5dc4352d31faa0` (2026-10-15T10:26:56+02:00) |
-| Checker | `acb` 0.1.0 at `aa38db441714362c744e1c6268c0fb2fb481286e` of this repository, clean working tree |
+| Checker | `acb` 0.1.0 at `d97b35c66a57bd2a593e5fc2145bffaa14fbde5e` of this repository; the only uncommitted change was this report |
 | Profile | `strict-general` |
 | Command | `acb check ../t --format json`, run from an empty directory: no `--config`, no `--exceptions`; the default bundled client data (`claude-code`) was loaded |
 | Target | `git archive db098c2` extracted to a fresh directory, so the audited clone was not touched and no `.git` directory was scanned |
-| Audited on | 2026-10-22 |
+| Audited on | 2026-10-23 |
 | Inventory | 10 skills, 0 instruction files, 0 MCP declarations, 0 extension packages, 0 agent settings files; nothing unscanned, nothing excluded |
 
 No exceptions were added on behalf of the audited repository. This report
-replaces the 2026-10-19 report of the same commit, which was produced from an
-uncommitted checker; the difference is described under "Changes since the
+replaces the 2026-10-22 report of the same commit, which was produced before
+`ACB-PROV-001` existed; the difference is described under "Changes since the
 previous report".
 
 Instruction files and MCP declarations: none were found, so the controls that
@@ -33,11 +33,12 @@ the target gave them input to check.
 | ACB-INSTR-001 | fail |
 | ACB-INSTR-002 | fail |
 | ACB-INSTR-003 | pass |
+| ACB-PROV-001 | fail |
 | ACB-SKILL-001 | fail |
 | ACB-SKILL-002 | pass |
 | ACB-SKILL-003 | fail |
 
-6 of 10 applicable controls failed; 23 individual findings in total. The other 12 controls are not applicable to this target. See Observations before reading this as a severity ranking.
+7 of 11 applicable controls failed; 33 individual findings in total. The other 12 controls are not applicable to this target. See Observations before reading this as a severity ranking.
 
 ## Findings
 
@@ -84,6 +85,21 @@ No findings.
 
 No findings.
 
+### ACB-PROV-001 — `fail`
+
+| Audit | File | Line | Message |
+| --- | --- | --- | --- |
+| `record-present` | `skills/ansible/ansible-verification-loop` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/bash/bash-secure-scripting` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/bash/bash-testing` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/github/github-actions-security` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/github/github-organization-governance` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/github/github-repository-security` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/python/python-secure-coding` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/python/python-testing` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/terraform/terraform-secure-iac` | - | .acb-provenance.yaml does not exist |
+| `record-present` | `skills/terraform/terraform-testing` | - | .acb-provenance.yaml does not exist |
+
 ### ACB-SKILL-001 — `fail`
 
 | Audit | File | Line | Message |
@@ -115,7 +131,7 @@ No findings.
 This target is a library of security-review skills, so its text discusses the
 very patterns the baseline looks for. Static pattern matching (PROMPT.md
 ground rule 5 forbids model calls) cannot tell an instruction from a warning
-against it. All 23 findings were checked against the source.
+against it. All 33 findings were checked against the source.
 
 **Genuine findings under the controls as written**
 
@@ -131,6 +147,14 @@ against it. All 23 findings were checked against the source.
   a relative link into another skill's directory. It resolves and works, but
   it crosses the per-skill boundary the control defines. Whether that is
   acceptable for co-maintained skills in one repository is a reviewer's call.
+- `ACB-PROV-001` `record-present` (10, one per skill): the repository contains
+  no `.acb-provenance.yaml`, so none of the 10 skills has a provenance record.
+  This is a finding about missing evidence, not evidence of tampering. The
+  control is a draft, and it checks that a record exists and is well formed;
+  it does not check that the digest matches the content or that anyone signed
+  it. The record location (a repository-root file) is a design choice that
+  `docs/provenance-design.md` section 6 leaves open, and this repository has
+  not been given a chance to supply a record elsewhere.
 
 **False positives (the checker's limitation, not the target's problem)**
 
@@ -148,31 +172,21 @@ against it. All 23 findings were checked against the source.
 
 ## Changes since the previous report
 
-The previous report of this commit (2026-10-19) listed 121 findings; this one
-lists 23. The target is unchanged. Both differences are in the checker:
-
-- `ACB-SKILL-003` fell from 100 findings to 2. The control's procedure now
-  defines a file reference (a link or reference-definition target, a file URI,
-  or a relative path) and exempts absolute and home-directory paths outside
-  links, so the 96 absolute-path examples in hardening prose
-  (`/dev/null`, `/etc/profile`, `/var/log`, `/proc/…`, PATH strings, `/tmp`),
-  the home-directory examples in prose (`~/.bashrc`, `$HOME`) and the two bare
-  `..` tokens in prose about path validation are no longer reported. The previous report's request for a decision on this control is
-  resolved by that change.
-- The other controls report the same 21 findings as before, with the same
-  files and lines.
-- The checker is now identified by a commit, and the default client data
-  (`claude-code`) is loaded instead of an empty `clients/`. Nothing in this
-  target is in scope of client data, so this did not change any result.
+The previous report of this commit (2026-10-22) listed 23 findings; this one
+lists 33. The target is unchanged. The difference is one new control:
+`ACB-PROV-001` (draft) adds 10 findings, one per skill. The other 23 findings
+are the same as before, in the same files and lines, and the checker's
+`ACB-SKILL-003` exemption for home-directory paths in prose is unchanged.
 
 ## Limits of this run
 
 - Only skills were evaluated: no instruction files, MCP declarations,
   extension packages or agent settings files exist in this repository, so the
   controls covering those evaluated nothing for them.
-- All 22 controls are `check_type: static`. Nothing here checks who published
-  a skill, whether a release was signed, or whether the content matches an
-  attested build. A clean result says nothing about provenance.
+- All 23 controls are `check_type: static`. `ACB-PROV-001` checks that a
+  provenance record exists and is well formed. Nothing here checks who
+  published a skill, whether a release was signed, or whether the content
+  matches the recorded digest. A pass says nothing about authenticity.
 - The audit is of one commit. The audited repository has moved on (its HEAD
   at the time of this run was `3fd7640b7d4fd07a725453cdbf79b3819861ed27`);
   this report was not re-measured against it.
