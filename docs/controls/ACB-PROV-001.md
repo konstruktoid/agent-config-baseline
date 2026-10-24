@@ -11,7 +11,7 @@
 
 ## Description
 
-Every skill and extension package carries a provenance record in its own directory naming its source repository, the full commit hash it was taken from and a SHA-256 content digest.
+Every skill and extension package carries a provenance record in its own directory naming its source repository, the full commit hash it was taken from and a content digest.
 
 ## Rationale
 
@@ -25,7 +25,7 @@ Every discovered skill directory and extension package root contains a regular f
 
 ### `record-fields` (structure)
 
-Each artifact's `.acb-provenance.yaml` parses as a YAML mapping with a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` of the form `sha256:` followed by 64 lowercase hexadecimal characters.
+Each artifact's `.acb-provenance.yaml` parses as a YAML mapping with a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` that is `h1:` followed by the padded standard base64 encoding of a SHA-256, the format docs/artifact-digest.md defines. Whether the digest matches the content is ACB-PROV-002.
 
 Illustrative failing indicators (non-exhaustive):
 
@@ -36,7 +36,7 @@ Illustrative failing indicators (non-exhaustive):
 
 ## Remediation
 
-Add `.acb-provenance.yaml` to each skill directory, next to `SKILL.md`, and to each extension package root, with `source`, `commit` and `digest`. Record the commit the content was taken from, not a branch or tag name.
+Add `.acb-provenance.yaml` to each skill directory, next to `SKILL.md`, and to each extension package root, with `source`, `commit` and `digest`. Record the commit the content was taken from, not a branch or tag name, and compute the digest as docs/artifact-digest.md describes.
 
 ## References
 
@@ -46,3 +46,4 @@ Add `.acb-provenance.yaml` to each skill directory, next to `SKILL.md`, and to e
 - NIST CSF 2.0: [ID.RA-09](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=24)
 - https://slsa.dev/
 - https://github.com/konstruktoid/agent-config-baseline/blob/main/docs/provenance-design.md
+- https://github.com/konstruktoid/agent-config-baseline/blob/main/docs/artifact-digest.md

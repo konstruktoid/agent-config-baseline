@@ -48,7 +48,7 @@ Recommendation: ship the two `static` rows first as draft controls. They close
 the gap between "a digest is present" and "the digest matches what is on disk",
 cost no dependency, and make the later signature step a strict addition.
 
-## 4. Open design point: the artifact digest
+## 4. The artifact digest
 
 A skill is a directory, so "its digest" needs a canonical definition: sorted
 relative paths, normalised separators, a per-file digest, a digest over that
@@ -60,6 +60,12 @@ Agent Skills specification does not define one (checked 2026-10-24, see
 section 6, question 5), so this baseline would be defining it, which should be a
 separate, versioned document rather than text inside a control.
 
+Decided: [artifact-digest.md](artifact-digest.md) version 1 adopts Go's
+`dirhash` `h1:` format rather than defining a new one, so an existing
+implementation and a coreutils pipeline both reproduce it. The record
+excludes only itself; symlinks, special files and unencodable names make the
+digest not computable, and file modes are not covered.
+
 ## 5. Proposed draft controls
 
 IDs are placeholders. The existing prefixes are `CFG`, `EXT`, `GEN`, `INSTR`,
@@ -70,7 +76,9 @@ IDs are placeholders. The existing prefixes are `CFG`, `EXT`, `GEN`, `INSTR`,
   digest. Missing record fails; it is not `not-applicable`. MCP server
   packages are deferred, see section 7.
 - `ACB-PROV-002` — each record's digest equals the digest computed from the
-  artifact under the section 4 definition.
+  artifact under the section 4 definition. An artifact without a
+  well-formed recorded digest is not evaluated rather than failed, because
+  `ACB-PROV-001` already fails it.
 - A signature control is deferred until the verifier question below is
   settled.
 

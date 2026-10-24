@@ -18,7 +18,7 @@ SCHEMA_PATH = default_schema_path()
 
 def test_bundled_controls_load_and_validate() -> None:
     controls = load_controls(default_controls_dir(), SCHEMA_PATH)
-    assert len(controls) == 23
+    assert len(controls) == 24
     ids = {c.id for c in controls}
     assert "ACB-GEN-001" in ids
     assert "ACB-SKILL-003" in ids
