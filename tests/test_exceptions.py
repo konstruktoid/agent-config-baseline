@@ -1,3 +1,4 @@
+import json
 from datetime import date
 from pathlib import Path
 
@@ -152,6 +153,19 @@ def test_load_parses_quoted_and_unquoted_dates(tmp_path: Path, expires: str) -> 
 def test_load_rejects_invalid_files(tmp_path: Path, text: str, message: str) -> None:
     with pytest.raises(ExceptionsFileError, match=message):
         load_exceptions(_write(tmp_path, text), KNOWN)
+
+
+@pytest.mark.parametrize("control", ["ACB-EXT-001", "ACB-CFG-001", "ACB-PROV-001"])
+def test_load_accepts_every_control_family(tmp_path: Path, control: str) -> None:
+    text = VALID.format(expires="2999-01-01").replace("ACB-GEN-002", control)
+    assert load_exceptions(_write(tmp_path, text), {control})[0].control == control
+
+
+def test_exception_control_pattern_matches_control_id_pattern() -> None:
+    schemas = Path(__file__).resolve().parents[1] / "schema"
+    control = json.loads((schemas / "control.schema.json").read_text())
+    exceptions = json.loads((schemas / "exceptions.schema.json").read_text())
+    assert exceptions["items"]["properties"]["control"]["pattern"] == control["properties"]["id"]["pattern"]
 
 
 def test_unreadable_file_finding_cannot_be_waived() -> None:
