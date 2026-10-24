@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | https://github.com/konstruktoid/agent-instructions-skills |
 | Commit audited | `db098c2e039c6fc8f0bfc3c0ab5dc4352d31faa0` (2026-10-15T10:26:56+02:00) |
-| Checker | `acb` 0.1.0 at `433b53bcee72db62d15cbc466162aeb4a941455c` of this repository; the only uncommitted change was this report |
+| Checker | `acb` 0.1.0 at `98bfae1ff20cc6bfe311c856171d53e44b28413f` of this repository; the only uncommitted change was this report |
 | Profile | `strict-general` |
 | Command | `acb check ../t --format json`, run from an empty directory: no `--config`, no `--exceptions`; the default bundled client data (`claude-code`) was loaded |
 | Target | `git archive db098c2` extracted to a fresh directory, so the audited clone was not touched and no `.git` directory was scanned |
