@@ -71,7 +71,14 @@ def test_nesting_deeper_than_the_recursion_limit_is_hashed(tmp_path: Path) -> No
         deep /= "d"
         deep.mkdir()
     (deep / "leaf").write_bytes(b"x")
-    assert is_digest(artifact_digest(tmp_path))
+    try:
+        assert is_digest(artifact_digest(tmp_path))
+    finally:
+        # pytest cannot remove a tree this deep, so remove it level by level here.
+        (deep / "leaf").unlink()
+        for _ in range(depth):
+            deep.rmdir()
+            deep = deep.parent
 
 
 def test_symlink_inside_the_artifact_is_refused(tmp_path: Path) -> None:
