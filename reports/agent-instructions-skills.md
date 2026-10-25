@@ -20,7 +20,8 @@ Instruction files and MCP declarations: none were found, so the controls that
 apply to them evaluated this repository's skills only. `ACB-INSTR-001/bypass-flags`
 and `ACB-INSTR-002/config-write-scripts` reported `not-applicable`; the
 checker's message is "no client-declared … in scope", which means nothing in
-the target gave them input to check.
+the target gave them input to check. Both controls still failed, through their
+`safety-disable` and `config-write-directives` audits on the skills.
 
 ## Summary
 
