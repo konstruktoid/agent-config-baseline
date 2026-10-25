@@ -17,10 +17,13 @@ directory holding `SKILL.md`) or an extension package root.
 1. List every regular file under the artifact directory, recursively. A
    file's name is its path relative to the artifact directory, with `/`
    separators and no leading `./`.
-2. Leave out exactly one file: `.acb-provenance.yaml` directly in the
-   artifact directory, because a record cannot contain its own digest. A
-   provenance record of a nested artifact, such as a skill inside an
-   extension package, is content of the outer artifact and stays in.
+2. Leave out two entries directly in the artifact directory, and nothing
+   else: `.acb-provenance.yaml`, because a record cannot contain its own
+   digest, and `.git` with everything under it, file or directory, because
+   an extension package at a repository root would otherwise hash the
+   repository's own history. A provenance record or `.git` deeper in the
+   tree, such as in a skill inside an extension package, is content and
+   stays in.
 3. Sort the names by their UTF-8 bytes.
 4. For each name in that order, write one summary line: the lowercase
    hexadecimal SHA-256 of the file's bytes, two spaces (U+0020), the name,
@@ -56,16 +59,16 @@ evaluated, when the artifact directory is or contains:
 ## Reproducing a digest
 
 With Go, `dirhash.HashDir(dir, "", dirhash.Hash1)` gives the same value when
-`.acb-provenance.yaml` is absent from the directory; with it present, list
-the files with `dirhash.DirFiles(dir, "")`, drop that name, and call
-`dirhash.Hash1` on the rest.
+the directory holds neither `.acb-provenance.yaml` nor `.git`; otherwise list
+the files with `dirhash.DirFiles(dir, "")`, drop `.acb-provenance.yaml`,
+`.git` and every name under `.git/`, and call `dirhash.Hash1` on the rest.
 
 With GNU coreutils, for an artifact that has no symlinks and no file name
 containing a backslash or newline (which `sha256sum` escapes):
 
 ```sh
 cd path/to/artifact &&
-  find . -type f ! -path ./.acb-provenance.yaml -printf '%P\0' |
+  find . -path ./.git -prune -o -type f ! -path ./.acb-provenance.yaml -printf '%P\0' |
   LC_ALL=C sort -z | xargs -0 -r sha256sum | sha256sum |
   cut -d ' ' -f 1 | xxd -r -p | base64 | sed 's/^/h1:/'
 ```

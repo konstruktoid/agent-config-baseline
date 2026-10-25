@@ -23,6 +23,8 @@ if TYPE_CHECKING:
     from acb.controls import CheckContext
 
 RECORD_NAME = ".acb-provenance.yaml"
+# A package at a repository root holds the repository's own `.git`, which changes on every fetch.
+_SKIPPED_AT_ROOT = ".git"
 DIGEST_PREFIX = "h1:"
 
 MISSING = "does not exist"
@@ -82,6 +84,8 @@ def _files(directory: Path, prefix: str, found: list[str]) -> None:
         msg = f"cannot list {prefix or '.'}: {exc.strerror}"
         raise DigestError(msg) from exc
     for entry in entries:
+        if not prefix and entry.name == _SKIPPED_AT_ROOT:
+            continue
         name = f"{prefix}{entry.name}"
         try:
             name.encode("utf-8")
@@ -91,7 +95,11 @@ def _files(directory: Path, prefix: str, found: list[str]) -> None:
         if "\n" in name:
             msg = f"name {name!r} contains a newline"
             raise DigestError(msg)
-        mode = entry.stat(follow_symlinks=False).st_mode
+        try:
+            mode = entry.stat(follow_symlinks=False).st_mode
+        except OSError as exc:
+            msg = f"cannot inspect {name}: {exc.strerror}"
+            raise DigestError(msg) from exc
         if stat.S_ISLNK(mode):
             msg = f"{name} is a symlink"
             raise DigestError(msg)
@@ -111,9 +119,13 @@ def _file_sha256(path: Path, name: str) -> str:
         msg = f"cannot read {name}: {exc.strerror}"
         raise DigestError(msg) from exc
     digest = hashlib.sha256()
-    with os.fdopen(fd, "rb") as handle:
-        while chunk := handle.read(_CHUNK):
-            digest.update(chunk)
+    try:
+        with os.fdopen(fd, "rb") as handle:
+            while chunk := handle.read(_CHUNK):
+                digest.update(chunk)
+    except OSError as exc:
+        msg = f"cannot read {name}: {exc.strerror}"
+        raise DigestError(msg) from exc
     return digest.hexdigest()
 
 

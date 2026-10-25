@@ -40,6 +40,16 @@ def test_root_record_is_excluded_and_nested_record_is_not(tmp_path: Path) -> Non
     assert artifact_digest(root) != VECTOR
 
 
+def test_git_is_skipped_only_at_the_artifact_root(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    (root / ".git" / "objects").mkdir(parents=True)
+    (root / ".git" / "HEAD").write_bytes(b"ref: refs/heads/main\n")
+    os.mkfifo(root / ".git" / "objects" / "pipe")
+    assert artifact_digest(root) == VECTOR
+    (root / "nested" / ".git").write_bytes(b"gitdir: ../.git\n")
+    assert artifact_digest(root) != VECTOR
+
+
 def test_empty_directories_and_modes_do_not_count(tmp_path: Path) -> None:
     root = _tree(tmp_path)
     (root / "another-empty").mkdir()
