@@ -10,7 +10,7 @@ from tests.test_controls._bundled import BUNDLED
 from tests.test_controls._shared import check_pass_and_fail
 
 COMMIT = "0123456789abcdef0123456789abcdef01234567"
-DIGEST = "sha256:" + "ab" * 32
+DIGEST = "h1:FSrf+zUG72s0sIdnx6AbHbkFcO5tEPyTbC8AY1DpMBs="
 
 
 def test_acb_prov_001_fixtures() -> None:
@@ -93,8 +93,11 @@ def test_malformed_record_fails(tmp_path: Path, text: str, message: str) -> None
     [
         _record(commit=COMMIT.upper()),
         _record(commit=COMMIT[:39]),
-        _record(digest="sha256:" + "ab" * 31),
-        _record(digest="SHA256:" + "ab" * 32),
+        _record(digest="sha256:" + "ab" * 32),
+        _record(digest="H1:" + DIGEST[3:]),
+        _record(digest=DIGEST[:-1]),
+        _record(digest=DIGEST[:-2] + "t="),
+        _record(digest="h1:" + "A" * 42 + "=="),
         _record(source="http://github.com/example/s"),
         _record(source="https://@/repo"),
         _record(source="https:///repo"),

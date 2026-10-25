@@ -1,0 +1,45 @@
+schema_version: "1.0"
+id: ACB-PROV-002
+title: Skill and extension package content matches its recorded digest
+status: draft
+profiles: [strict-general]
+applies_to: [skill, extension-package]
+check_type: static
+severity: medium
+description: >-
+  The content of every skill and extension package hashes to the `digest`
+  in its provenance record, computed as docs/artifact-digest.md defines.
+rationale: >-
+  ACB-PROV-001 shows that a record names a source and commit; it cannot show
+  that the files beside the record are the files that commit holds. A
+  mismatch means the artifact was changed after its record was written, by a
+  local edit, a partial update or a modified copy. A match shows only that
+  the record describes this content: the record sits inside the artifact,
+  so whoever can change the content can also recompute the digest, and a
+  match says nothing about who published it.
+audit:
+  - id: digest-matches
+    method: inventory
+    procedure: >-
+      For every discovered skill directory and extension package root,
+      compute the version 1 artifact digest of docs/artifact-digest.md and
+      compare it with the `digest` in that artifact's `.acb-provenance.yaml`.
+      A different value fails. The artifact is not evaluated when it has no
+      record, when the record has no well-formed `digest` (ACB-PROV-001
+      reports both), or when the digest cannot be computed because the
+      directory holds a symlink, a special file, an unreadable entry or a
+      name that is not valid UTF-8 or contains a newline.
+remediation: >-
+  If the change is intended, take the content again from the recorded
+  source and commit, or update `commit` and `digest` together to describe
+  the content as it now is. If it is not intended, restore the artifact from
+  its source.
+exceptions: permitted
+references:
+  owasp_asi: [ASI04]
+  owasp_ast: [AST02]
+  five_eyes_risk_areas: [design-and-configuration]
+  nist_csf: [ID.RA-09]
+  other:
+    - https://pkg.go.dev/golang.org/x/mod/sumdb/dirhash
+    - https://github.com/konstruktoid/agent-config-baseline/blob/main/docs/artifact-digest.md

@@ -24,6 +24,7 @@ Generated from controls/*.yaml. Do not hand-edit.
 | [ACB-MCP-002](ACB-MCP-002.md) | MCP server launch commands are not interpreted by a shell | mcp-server-declaration | high | ASI05 | - |
 | [ACB-MCP-003](ACB-MCP-003.md) | MCP server environment does not set process-startup hijack variables | mcp-server-declaration | high | ASI05 | - |
 | [ACB-PROV-001](ACB-PROV-001.md) | Skills and extension packages carry a provenance record | skill, extension-package | medium | ASI04 | AST02 |
+| [ACB-PROV-002](ACB-PROV-002.md) | Skill and extension package content matches its recorded digest | skill, extension-package | medium | ASI04 | AST02 |
 | [ACB-SKILL-001](ACB-SKILL-001.md) | SKILL.md frontmatter conforms to the Agent Skills specification | skill | high | ASI04 | - |
 | [ACB-SKILL-002](ACB-SKILL-002.md) | Skills do not pre-approve tools | skill | high | ASI02, ASI03 | - |
 | [ACB-SKILL-003](ACB-SKILL-003.md) | Bundled skill content is transparent, referenced and contained | skill | high | ASI04, ASI05 | AST02 |

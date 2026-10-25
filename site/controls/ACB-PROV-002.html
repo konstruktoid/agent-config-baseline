@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACB-PROV-002: Skill and extension package content matches its recorded digest</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<nav><a href="../index.html">agent-config-baseline</a><a href="../controls/index.html">Controls</a><a href="../mappings.html">Mappings</a><a href="https://github.com/konstruktoid/agent-config-baseline">Source</a></nav>
+<main>
+<h1>ACB-PROV-002: Skill and extension package content matches its recorded digest</h1>
+<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>medium</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>skill</code>, <code>extension-package</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
+<h2>Description</h2><p>The content of every skill and extension package hashes to the `digest` in its provenance record, computed as docs/artifact-digest.md defines.</p>
+<h2>Rationale</h2><p>ACB-PROV-001 shows that a record names a source and commit; it cannot show that the files beside the record are the files that commit holds. A mismatch means the artifact was changed after its record was written, by a local edit, a partial update or a modified copy. A match shows only that the record describes this content: the record sits inside the artifact, so whoever can change the content can also recompute the digest, and a match says nothing about who published it.</p>
+<h2>Audit procedures</h2>
+<h3><code>digest-matches</code> (inventory)</h3><p>For every discovered skill directory and extension package root, compute the version 1 artifact digest of docs/artifact-digest.md and compare it with the `digest` in that artifact&#x27;s `.acb-provenance.yaml`. A different value fails. The artifact is not evaluated when it has no record, when the record has no well-formed `digest` (ACB-PROV-001 reports both), or when the digest cannot be computed because the directory holds a symlink, a special file, an unreadable entry or a name that is not valid UTF-8 or contains a newline.</p>
+<h2>Remediation</h2><p>If the change is intended, take the content again from the recorded source and commit, or update `commit` and `digest` together to describe the content as it now is. If it is not intended, restore the artifact from its source.</p>
+<h2>References</h2><ul><li>OWASP Top 10 for Agentic Applications 2026: <a href="https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/">ASI04</a></li><li>OWASP Agentic Skills Top 10: <a href="https://owasp.org/www-project-agentic-skills-top-10/ast02.html">AST02</a></li><li>Careful Adoption of Agentic AI Services risk areas: <a href="https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9">design-and-configuration</a></li><li>NIST CSF 2.0: <a href="https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=24">ID.RA-09</a></li><li>https://pkg.go.dev/golang.org/x/mod/sumdb/dirhash</li><li>https://github.com/konstruktoid/agent-config-baseline/blob/main/docs/artifact-digest.md</li></ul>
+</main>
+</body>
+</html>
