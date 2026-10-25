@@ -107,8 +107,9 @@ report text would need to say so.
    that operator file is added together with the trust root (question 3),
    and keys each record by the artifact's path relative to the audited
    root, as findings report it. A record there replaces the in-directory
-   record as a whole, with no merging of fields, and `ACB-PROV-002` and the
-   signature control both read that one resolved record.
+   record as a whole, with no merging of fields. Every `PROV-*` control reads
+   that one resolved record, so an operator record also satisfies
+   `ACB-PROV-001`; the controls change when the operator file ships.
 2. Is the checker allowed a verifier dependency or an external verifier
    subprocess? Decided: no new dependency. A signature control runs an
    external verifier as a subprocess, its result is a claim the checker
