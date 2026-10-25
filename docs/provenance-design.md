@@ -62,9 +62,10 @@ separate, versioned document rather than text inside a control.
 
 Decided: [artifact-digest.md](artifact-digest.md) version 1 adopts Go's
 `dirhash` `h1:` format rather than defining a new one, so an existing
-implementation and a coreutils pipeline both reproduce it. The record
-excludes only itself; symlinks, special files and unencodable names make the
-digest not computable, and file modes are not covered.
+implementation and a coreutils pipeline both reproduce it. The digest
+leaves out only its own record and a `.git` entry, with its contents,
+directly in the artifact directory; symlinks, special files and unencodable
+names make the digest not computable, and file modes are not covered.
 
 ## 5. Proposed draft controls
 

@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -61,6 +62,16 @@ def test_content_bytes_are_not_normalised(tmp_path: Path) -> None:
     root = _tree(tmp_path)
     (root / "SKILL.md").write_bytes(b"---\nname: s\ndescription: d\n---\nBody\n")
     assert artifact_digest(root) != VECTOR
+
+
+def test_nesting_deeper_than_the_recursion_limit_is_hashed(tmp_path: Path) -> None:
+    depth = sys.getrecursionlimit() + 10
+    deep = tmp_path
+    for _ in range(depth):
+        deep /= "d"
+        deep.mkdir()
+    (deep / "leaf").write_bytes(b"x")
+    assert is_digest(artifact_digest(tmp_path))
 
 
 def test_symlink_inside_the_artifact_is_refused(tmp_path: Path) -> None:
