@@ -9,7 +9,7 @@
     "additionalProperties": false,
     "required": ["control", "path", "justification", "approver", "expires"],
     "properties": {
-      "control": { "type": "string", "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|PROV)-[0-9]{3}$" },
+      "control": { "type": "string", "pattern": "^ACB-(SKILL|INSTR|MCP|GEN|EXT|CFG|PROV)-[0-9]{3}$" },
       "path": { "type": "string", "minLength": 1 },
       "justification": { "type": "string", "minLength": 1 },
       "approver": { "type": "string", "minLength": 1 },
