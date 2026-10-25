@@ -105,21 +105,30 @@ report text would need to say so.
    the only option an attacker who controls the skill cannot rewrite, and
    could be added later as an override rather than a replacement. Decided:
    that operator file is added together with the trust root (question 3),
-   and where it names an artifact its record takes precedence over the
-   in-directory one.
+   and keys each record by the artifact's path relative to the audited
+   root, as findings report it. A record there replaces the in-directory
+   record as a whole, with no merging of fields, and `ACB-PROV-002` and the
+   signature control both read that one resolved record.
 2. Is the checker allowed a verifier dependency or an external verifier
    subprocess? Decided: no new dependency. A signature control runs an
    external verifier as a subprocess, its result is a claim the checker
    relays, and the report labels it as that tool's result. The checker's own
-   dependencies stay the standard library, `PyYAML` and `jsonschema`.
+   dependencies stay the standard library, `PyYAML` and `jsonschema`. The
+   operator names the verifier by absolute path, never by a `PATH` lookup,
+   and the checker runs it without a shell and with a timeout. Only a zero
+   exit with well-formed output that names the expected subject digest
+   passes; a verifier that reports a failed verification fails the control,
+   and a missing verifier, a timeout, a crash or malformed output leave it
+   not evaluated, so no path through the verifier passes by default.
 3. How is the trust root pinned, and who owns updating it? Decided: the
    operator supplies it as a file on the command line, as with
    `--exceptions`, and the checker never bundles one, so the person running
    the audit owns updating it. Without a trust root the signature control is
    not evaluated, never passed.
 4. Should `PROV-*` apply to the repository under audit only, or also to
-   third-party skills it vendors? Decided: to every artifact the inventory
-   finds, vendored or not, which is what both draft controls already do. A
+   third-party skills it vendors? Decided: to every skill and extension
+   package the inventory finds, vendored or not, which is what both draft
+   controls already do; MCP server packages stay deferred (section 7). A
    copied third-party skill is the supply-chain case these controls exist
    for.
 5. Verify before implementing, with the command that would check each:
