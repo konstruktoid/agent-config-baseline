@@ -1,9 +1,9 @@
 # Design note: provenance controls
 
-Status: draft for discussion. No control, schema change or checker code exists
-for this yet. Nothing here has been verified against the Sigstore, in-toto or
-SLSA specifications; section 6 lists what to check before any of it is
-implemented.
+Status: draft. `ACB-PROV-001` and `ACB-PROV-002` exist as draft controls and
+section 6 records the decisions behind them. Nothing here has been verified
+against the Sigstore, in-toto or SLSA specifications; section 6, question 5
+lists what to check before a signature control is implemented.
 
 ## 1. Problem
 
@@ -80,8 +80,9 @@ IDs are placeholders. The existing prefixes are `CFG`, `EXT`, `GEN`, `INSTR`,
   artifact under the section 4 definition. An artifact without a
   well-formed recorded digest is not evaluated rather than failed, because
   `ACB-PROV-001` already fails it.
-- A signature control is deferred until the verifier question below is
-  settled.
+- A signature control is deferred until the specifications in section 6,
+  question 5 are checked. It would run an external verifier and read an
+  operator trust root (section 6, questions 2 and 3).
 
 The audit of `konstruktoid/agent-instructions-skills` at `db098c2` would fail
 `ACB-PROV-001` for all 10 skills if the record lives in the repository (a file
@@ -102,13 +103,35 @@ report text would need to say so.
    that whoever can change the artifact can change its record, so
    `ACB-PROV-001` shows only that evidence exists. An operator file remains
    the only option an attacker who controls the skill cannot rewrite, and
-   could be added later as an override rather than a replacement.
+   could be added later as an override rather than a replacement. Decided:
+   that operator file is added together with the trust root (question 3),
+   and keys each record by the artifact's path relative to the audited
+   root, as findings report it. A record there replaces the in-directory
+   record as a whole, with no merging of fields. Every `PROV-*` control reads
+   that one resolved record, so an operator record also satisfies
+   `ACB-PROV-001`; the controls change when the operator file ships.
 2. Is the checker allowed a verifier dependency or an external verifier
-   subprocess? If a subprocess, its result is a claim the checker relays, and
-   the report must label it that way.
-3. How is the trust root pinned, and who owns updating it?
+   subprocess? Decided: no new dependency. A signature control runs an
+   external verifier as a subprocess, its result is a claim the checker
+   relays, and the report labels it as that tool's result. The checker's own
+   dependencies stay the standard library, `PyYAML` and `jsonschema`. The
+   operator names the verifier by absolute path, never by a `PATH` lookup,
+   and the checker runs it without a shell and with a timeout. Only a zero
+   exit with well-formed output that names the expected subject digest
+   passes; a verifier that reports a failed verification fails the control,
+   and a missing verifier, a timeout, a crash or malformed output leave it
+   not evaluated, so no path through the verifier passes by default.
+3. How is the trust root pinned, and who owns updating it? Decided: the
+   operator supplies it as a file on the command line, as with
+   `--exceptions`, and the checker never bundles one, so the person running
+   the audit owns updating it. Without a trust root the signature control is
+   not evaluated, never passed.
 4. Should `PROV-*` apply to the repository under audit only, or also to
-   third-party skills it vendors?
+   third-party skills it vendors? Decided: to every skill and extension
+   package the inventory finds, vendored or not, which is what both draft
+   controls already do; MCP server packages stay deferred (section 7). A
+   copied third-party skill is the supply-chain case these controls exist
+   for.
 5. Verify before implementing, with the command that would check each:
    Sigstore bundle field names and offline verification support (read the
    current sigstore bundle specification); in-toto statement and SLSA
