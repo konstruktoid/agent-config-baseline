@@ -4,17 +4,17 @@
 | --- | --- |
 | Repository | https://github.com/konstruktoid/agent-instructions-skills |
 | Commit audited | `db098c2e039c6fc8f0bfc3c0ab5dc4352d31faa0` (2026-10-15T10:26:56+02:00) |
-| Checker | `acb` 0.1.0 at `98bfae1ff20cc6bfe311c856171d53e44b28413f` of this repository; the only uncommitted change was this report |
+| Checker | `acb` 0.1.0 at `22329cc63463447c263e99e22de71c7806c1457e` of this repository; the only uncommitted change was this report |
 | Profile | `strict-general` |
 | Command | `acb check ../t --format json`, run from an empty directory: no `--config`, no `--exceptions`; the default bundled client data (`claude-code`) was loaded |
 | Target | `git archive db098c2` extracted to a fresh directory, so the audited clone was not touched and no `.git` directory was scanned |
-| Audited on | 2026-10-24 |
+| Audited on | 2026-10-25 |
 | Inventory | 10 skills, 0 instruction files, 0 MCP declarations, 0 extension packages, 0 agent settings files; nothing unscanned, nothing excluded |
 
 No exceptions were added on behalf of the audited repository. This report
-replaces the 2026-10-23 report of the same commit, which was produced when
-`ACB-PROV-001` expected one record at the repository root; the difference is
-described under "Changes since the previous report".
+replaces the 2026-10-24 report of the same commit, which was produced before
+`ACB-PROV-002` existed; the difference is described under "Changes since the
+previous report".
 
 Instruction files and MCP declarations: none were found, so the controls that
 apply to them evaluated this repository's skills only. `ACB-INSTR-001/bypass-flags`
@@ -34,11 +34,12 @@ the target gave them input to check.
 | ACB-INSTR-002 | fail |
 | ACB-INSTR-003 | pass |
 | ACB-PROV-001 | fail |
+| ACB-PROV-002 | not-evaluated |
 | ACB-SKILL-001 | fail |
 | ACB-SKILL-002 | pass |
 | ACB-SKILL-003 | fail |
 
-7 of 11 applicable controls failed; 33 individual findings in total. The other 12 controls are not applicable to this target. See Observations before reading this as a severity ranking.
+7 of 12 applicable controls failed and 1 was not evaluated; 33 failing findings and 10 not-evaluated results in total. The other 12 controls are not applicable to this target. See Observations before reading this as a severity ranking.
 
 ## Findings
 
@@ -100,6 +101,21 @@ No findings.
 | `record-present` | `skills/terraform/terraform-secure-iac` | - | .acb-provenance.yaml does not exist in the artifact directory |
 | `record-present` | `skills/terraform/terraform-testing` | - | .acb-provenance.yaml does not exist in the artifact directory |
 
+### ACB-PROV-002 — `not-evaluated`
+
+| Audit | File | Line | Message |
+| --- | --- | --- | --- |
+| `digest-matches` | `skills/ansible/ansible-verification-loop` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/bash/bash-secure-scripting` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/bash/bash-testing` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/github/github-actions-security` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/github/github-organization-governance` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/github/github-repository-security` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/python/python-secure-coding` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/python/python-testing` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/terraform/terraform-secure-iac` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+| `digest-matches` | `skills/terraform/terraform-testing` | - | no well-formed recorded digest to compare (see ACB-PROV-001) |
+
 ### ACB-SKILL-001 — `fail`
 
 | Audit | File | Line | Message |
@@ -131,7 +147,7 @@ No findings.
 This target is a library of security-review skills, so its text discusses the
 very patterns the baseline looks for. Static pattern matching (PROMPT.md
 ground rule 5 forbids model calls) cannot tell an instruction from a warning
-against it. All 33 findings were checked against the source.
+against it. All 33 failing findings were checked against the source.
 
 **Genuine findings under the controls as written**
 
@@ -157,6 +173,13 @@ against it. All 33 findings were checked against the source.
   `docs/provenance-design.md` section 6, question 1; a record anywhere else
   would not count.
 
+**Not evaluated**
+
+- `ACB-PROV-002` `digest-matches` (10, one per skill): with no record there
+  is no recorded digest to compare, so the control reports each skill as not
+  evaluated rather than failing it a second time; the missing record is
+  already counted under `ACB-PROV-001`.
+
 **False positives (the checker's limitation, not the target's problem)**
 
 - `ACB-GEN-001` `pipe-to-interpreter` (4) and `ACB-INSTR-001` `safety-disable`
@@ -173,21 +196,23 @@ against it. All 33 findings were checked against the source.
 
 ## Changes since the previous report
 
-The previous report of this commit (2026-10-23) also listed 33 findings, and
-the target is unchanged. `ACB-PROV-001` now looks for a record in each skill
-directory instead of one at the repository root, so its 10 findings name the
-same skills with the message "does not exist in the artifact directory". The
-other 23 findings are the same as before, in the same files and lines.
+The previous report of this commit (2026-10-24) listed the same 33 failing
+findings, and the target is unchanged. The difference is one new draft
+control: `ACB-PROV-002` adds 10 not-evaluated results, one per skill, and
+changes no other result. `ACB-PROV-001` now requires its `digest` in the
+`h1:` format of `docs/artifact-digest.md`; that changes nothing here, because
+there are no records.
 
 ## Limits of this run
 
 - Only skills were evaluated: no instruction files, MCP declarations,
   extension packages or agent settings files exist in this repository, so the
   controls covering those evaluated nothing for them.
-- All 23 controls are `check_type: static`. `ACB-PROV-001` checks that a
-  provenance record exists and is well formed. Nothing here checks who
-  published a skill, whether a release was signed, or whether the content
-  matches the recorded digest. A pass says nothing about authenticity.
+- All 24 controls are `check_type: static`. `ACB-PROV-001` checks that a
+  provenance record exists and is well formed, and `ACB-PROV-002` that the
+  content matches the record's digest. Nothing here checks who published a
+  skill or whether a release was signed, and the record sits inside the
+  skill, so a pass says nothing about authenticity.
 - The audit is of one commit. The audited repository has moved on (its HEAD
-  at the time of this run was `3fd7640b7d4fd07a725453cdbf79b3819861ed27`);
+  at the time of this run was `ff4f1a5b2031f432ed67d3a928e64a5ffe29dd97`);
   this report was not re-measured against it.
