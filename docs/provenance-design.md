@@ -117,14 +117,20 @@ report text would need to say so.
    dependencies stay the standard library, `PyYAML` and `jsonschema`. The
    operator names the verifier by absolute path, never by a `PATH` lookup,
    and the checker runs it without a shell and with a timeout. Only a zero
-   exit with well-formed output that names the expected subject digest
-   passes; a verifier that reports a failed verification fails the control,
-   and a missing verifier, a timeout, a crash or malformed output leave it
-   not evaluated, so no path through the verifier passes by default.
+   exit with well-formed output that names the expected subject digest and
+   a signer identity matching the record's `source` repository passes; a
+   different signer or a verifier that reports a failed verification fails
+   the control, and a missing verifier, a timeout, a crash or malformed
+   output leave it not evaluated, so no path through the verifier passes by
+   default.
 3. How is the trust root pinned, and who owns updating it? Decided: the
    operator supplies it as a file on the command line, as with
    `--exceptions`, and the checker never bundles one, so the person running
-   the audit owns updating it. Without a trust root the signature control is
+   the audit owns updating it. The checker does not pin its content, since
+   any pin would sit where the same operator controls it; instead each report
+   records the trust root file's SHA-256, so the evidence names the root that
+   was used, and rotating it means replacing the file, which changes that
+   digest in the next report. Without a trust root the signature control is
    not evaluated, never passed.
 4. Should `PROV-*` apply to the repository under audit only, or also to
    third-party skills it vendors? Decided: to every skill and extension
