@@ -1,9 +1,9 @@
 # Design note: provenance controls
 
 Status: draft. `ACB-PROV-001` and `ACB-PROV-002` exist as draft controls and
-section 6 records the decisions behind them. Nothing here has been verified
-against the Sigstore, in-toto or SLSA specifications; section 6, question 5
-lists what to check before a signature control is implemented.
+section 6 records the decisions behind them. The SLSA, in-toto attestation
+and Sigstore bundle specifications were checked on 2026-10-26 (section 6,
+question 5); what remains open before a signature control is listed there.
 
 ## 1. Problem
 
@@ -152,6 +152,97 @@ report text would need to say so.
    required `SKILL.md`" and defines no digest, hash or provenance field; its
    only extension point is the string-to-string `metadata` frontmatter map,
    which would place the record inside the content it hashes.
+
+   SLSA, checked on 2026-10-26 against v1.2, the current version:
+   - Build provenance keeps `predicateType` `https://slsa.dev/provenance/v1`
+     across minor versions, inside an in-toto statement with `_type`
+     `https://in-toto.io/Statement/v1`. Required fields are
+     `buildDefinition.buildType`, `buildDefinition.externalParameters` and
+     `runDetails.builder.id`.
+   - The verification steps are: verify the envelope signature against the
+     roots of trust, check that a statement `subject` digest matches the
+     artifact, check `predicateType`, look up `builder.id` in the trusted
+     builder map to get the build level, then compare `buildType` and
+     `externalParameters` with expected values, rejecting unrecognized
+     `externalParameters` fields.
+   - Build provenance assumes a build platform. A skill copied from a
+     repository has none, so most skills cannot produce it. The v1.2 Source
+     track fits better: it attests a source revision through a verification
+     summary attestation (`predicateType`
+     `https://slsa.dev/verification_summary/v1`, level in `verifiedLevels`)
+     whose subject digest must include the revision (`gitCommit`) and may
+     include `dirHash`. SLSA leaves the source provenance format undefined.
+   - The in-toto digest set defines `dirHash` as Go's `h1:` hash written as
+     lowercase hex without the prefix, so the
+     [artifact digest](artifact-digest.md) can be a subject digest after a
+     base64-to-hex conversion. The two values agree only when the directory
+     holds neither `.acb-provenance.yaml` nor `.git`. The spec's own example
+     uses the key `dirHash1`, contradicting its heading; a verifier has to
+     decide whether to accept both.
+
+   Sigstore, checked on 2026-10-26 against `sigstore/protobuf-specs` `main`
+   (latest tag `v0.5.2`) and the sigstore-python README:
+   - The bundle media type is `application/vnd.dev.sigstore.bundle.v0.3+json`;
+     verifiers must also accept the older
+     `application/vnd.dev.sigstore.bundle+json;version=0.1` to `0.3` forms.
+     `verificationMaterial` is required, and the content is either
+     `messageSignature` or `dsseEnvelope`. An attestation is a DSSE envelope
+     carrying an in-toto statement, and a verifier must reject an envelope
+     that does not have exactly one signature.
+   - `verificationMaterial` carries a public key hint, a certificate chain or,
+     for keyless v0.3 bundles on the public instance, a single leaf
+     certificate. It also holds `tlogEntries` with an inclusion proof and a
+     signed checkpoint, plus optional RFC 3161 timestamps.
+   - Offline verification works when the bundle carries the inclusion proof
+     and the verifier supplies the trusted root
+     (`application/vnd.dev.sigstore.trustedroot.v0.2+json`: transparency logs,
+     certificate authorities, CT logs, timestamp authorities). sigstore-python
+     offers `verify identity --bundle FILE --offline --cert-identity ID
+     --cert-oidc-issuer URL` and a global `--trust-config FILE`, which takes a
+     `ClientTrustConfig` wrapping a trusted root rather than a bare one.
+     cosign's offline and trusted-root flags are unverified; check with
+     `cosign verify-blob-attestation --help`.
+   - The signer identity (certificate identity and OIDC issuer) is policy the
+     verifier supplies. The bundle does not decide it.
+   - sigstore-python takes the artifact as a file path or a `sha256:` digest.
+     A skill is a directory with a `dirHash` subject, so the checker
+     cannot hand it to the verifier as the artifact. A likely split: the
+     external verifier checks signature, log inclusion and identity, and the
+     checker parses the verified statement and compares `dirHash` itself.
+     Unverified whether sigstore-python verifies a DSSE bundle whose subject
+     has no `sha256`; check by signing a statement with only a `dirHash`
+     subject and running `sigstore verify identity` against it.
+   - The operator trust root from question 3 then has three parts: a
+     Sigstore client trust configuration, the allowed signer identities, and
+     the allowed `builder.id` or source control identities. SLSA requires
+     consumers to accept only specific signer and builder pairs.
+
+   in-toto attestation framework, checked on 2026-10-26 against
+   `in-toto/attestation` `main` (spec v1.2, latest tag `v1.2.0`):
+   - A statement has `_type` `https://in-toto.io/Statement/v1`, a required
+     `subject` array whose elements must each set `digest`, a required
+     `predicateType` and an optional `predicate`. Subjects are matched purely
+     by digest; `name` semantics are left to producer and consumer. So the
+     checker should match on `dirHash` alone and not trust `name` or `uri`
+     to identify the skill.
+   - Consumers must ignore unrecognized statement fields unless a predicate
+     says otherwise. SLSA does say otherwise for `externalParameters`.
+   - Policies should be monotonic: ignoring an attestation must never turn a
+     deny into an allow. "Fail unless a verified attestation matches" meets
+     this and is the same rule as the one-profile constraint in section 2.
+   - With DSSE, `payload` is the base64-encoded statement and `payloadType` is
+     `application/vnd.in-toto+json` or a predicate-specific
+     `application/vnd.in-toto.<predicate>+json`. Consumers must take the
+     predicate type from the statement's `predicateType`, not from the media
+     type, and must parse only a payload whose signature has been verified.
+   - The in-toto envelope spec notes that the Sigstore bundle is not ITE-5
+     compliant because it allows only one signature. This does not block
+     anything here; one signer per bundle fits the signer-to-source binding
+     from question 2.
+
+   Not decided: whether a signature control accepts build provenance, a
+   source verification summary, or both, and which builder or source
+   control system identities the trust root lists for each.
 
 ## 7. Out of scope and deferred
 
