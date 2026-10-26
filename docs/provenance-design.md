@@ -122,7 +122,11 @@ report text would need to say so.
    different signer or a verifier that reports a failed verification fails
    the control, and a missing verifier, a timeout, a crash or malformed
    output leave it not evaluated, so no path through the verifier passes by
-   default.
+   default. The expected `source` comes only from an operator record
+   (question 1), because whoever can change an artifact can also change its
+   in-directory record and sign from a repository they chose; an artifact
+   with only an in-directory record leaves the signature control not
+   evaluated.
 3. How is the trust root pinned, and who owns updating it? Decided: the
    operator supplies it as a file on the command line, as with
    `--exceptions`, and the checker never bundles one, so the person running
@@ -130,8 +134,9 @@ report text would need to say so.
    any pin would sit where the same operator controls it; instead each report
    records the trust root file's SHA-256, so the evidence names the root that
    was used, and rotating it means replacing the file, which changes that
-   digest in the next report. Without a trust root the signature control is
-   not evaluated, never passed.
+   digest in the next report. Without a trust root the report records the
+   trust root as absent, `null` with the reason, rather than a digest, and
+   the signature control is not evaluated, never passed.
 4. Should `PROV-*` apply to the repository under audit only, or also to
    third-party skills it vendors? Decided: to every skill and extension
    package the inventory finds, vendored or not, which is what both draft
