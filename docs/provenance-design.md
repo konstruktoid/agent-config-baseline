@@ -110,6 +110,11 @@ report text would need to say so.
    record as a whole, with no merging of fields. Every `PROV-*` control reads
    that one resolved record, so an operator record also satisfies
    `ACB-PROV-001`; the controls change when the operator file ships.
+   Implemented as `--provenance-records FILE`
+   (`schema/provenance-records.schema.json`), with no working-directory
+   default because the reusable workflow runs with the pull request head as
+   its working directory. An invalid file stops the run, and keys that name
+   no inventoried artifact are reported.
 2. Is the checker allowed a verifier dependency or an external verifier
    subprocess? Decided: no new dependency. A signature control runs an
    external verifier as a subprocess, its result is a claim the checker
@@ -136,7 +141,10 @@ report text would need to say so.
    was used, and rotating it means replacing the file, which changes that
    digest in the next report. Without a trust root the report records the
    trust root as absent, `null` with the reason, rather than a digest, and
-   the signature control is not evaluated, never passed.
+   the signature control is not evaluated, never passed. Implemented as
+   `--trust-root FILE`, with no default: reports record its SHA-256, or
+   `null` with the reason, and the checker does not parse it until the
+   signature control defines its format (question 5).
 4. Should `PROV-*` apply to the repository under audit only, or also to
    third-party skills it vendors? Decided: to every skill and extension
    package the inventory finds, vendored or not, which is what both draft

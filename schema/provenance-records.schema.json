@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/konstruktoid/agent-config-baseline/schema/provenance-records.schema.json",
+  "title": "acb operator provenance records",
+  "description": "Operator-supplied provenance records (--provenance-records FILE, no default). Each key is a skill directory or extension package root relative to the audited PATH, as findings report it; its record replaces that artifact's .acb-provenance.yaml as a whole. Never read from inside the scanned PATH.",
+  "type": "object",
+  "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["source", "commit", "digest"],
+    "properties": {
+      "source": { "type": "string", "minLength": 1 },
+      "commit": { "type": "string", "minLength": 1 },
+      "digest": { "type": "string", "minLength": 1 }
+    }
+  }
+}

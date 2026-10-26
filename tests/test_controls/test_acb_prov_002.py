@@ -1,8 +1,9 @@
+from dataclasses import replace
 from pathlib import Path
 
 from acb.controls.acb_prov_002 import AUDITS
 from acb.model import Outcome
-from acb.provenance import artifact_digest
+from acb.provenance import OperatorRecords, artifact_digest
 from tests._harness import context_for
 from tests.test_controls._shared import check_pass_and_fail
 
@@ -74,4 +75,32 @@ def test_uncomputable_digest_is_not_evaluated(tmp_path: Path) -> None:
     (directory / "link.md").symlink_to(directory / "SKILL.md")
     assert _findings(tmp_path) == [
         (Outcome.NOT_EVALUATED, "skills/a", "digest cannot be computed: link.md is a symlink")
+    ]
+
+
+def _operator_findings(root: Path, digest: str) -> list[tuple[Outcome, str | None, str]]:
+    record = {"source": "https://github.com/example/s", "commit": "ab" * 20, "digest": digest}
+    ctx = replace(
+        context_for(root), provenance_records=OperatorRecords(source="records.yaml", records={"skills/a": record})
+    )
+    return [(f.outcome, f.path, f.message) for f in AUDITS["digest-matches"](ctx)]
+
+
+def test_operator_record_replaces_a_wrong_in_directory_digest(tmp_path: Path) -> None:
+    directory = _skill(tmp_path)
+    _record(directory, "h1:" + "A" * 43 + "=")
+    assert _operator_findings(tmp_path, artifact_digest(directory)) == []
+
+
+def test_operator_record_mismatch_fails_on_the_artifact(tmp_path: Path) -> None:
+    directory = _skill(tmp_path)
+    actual = artifact_digest(directory)
+    _record(directory, actual)
+    wrong = "h1:" + "A" * 43 + "="
+    assert _operator_findings(tmp_path, wrong) == [
+        (
+            Outcome.FAIL,
+            "skills/a",
+            f"operator record in records.yaml digest {wrong} does not match the content, which hashes to {actual}",
+        )
     ]

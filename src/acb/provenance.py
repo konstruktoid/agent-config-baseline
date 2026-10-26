@@ -1,6 +1,15 @@
 """Provenance records and the artifact digest shared by the ACB-PROV controls.
 
 The digest is version 1 of docs/artifact-digest.md: Go's dirhash `h1:` over the artifact directory.
+
+A record comes from the artifact's own `.acb-provenance.yaml` unless the operator's records file
+(--provenance-records FILE, schema/provenance-records.schema.json) has an entry for the artifact's
+root-relative path; that entry replaces the in-directory record as a whole:
+
+    skills/example:
+      source: https://github.com/example/skills
+      commit: 0123456789abcdef0123456789abcdef01234567
+      digest: h1:...
 """
 
 from __future__ import annotations
@@ -9,11 +18,16 @@ import base64
 import binascii
 import hashlib
 import os
+import re
 import stat
+from dataclasses import dataclass, field
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 import yaml
 
+from acb.loader import schema_errors
 from acb.scan import safe_read_text
 from acb.yamlsafe import safe_load_strict
 
@@ -32,10 +46,113 @@ NOT_READABLE = "could not be read (not valid UTF-8 text, or is a symlink); canno
 
 _CHUNK = 1 << 16
 _SHA256_BYTES = 32
+_COMMIT_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 
 
 class DigestError(Exception):
     """The artifact digest cannot be computed for this directory."""
+
+
+class OperatorFileError(Exception):
+    """Raised when an operator-supplied provenance file is invalid or unreadable."""
+
+
+@dataclass(frozen=True)
+class OperatorRecords:
+    """Provenance records from the operator's file, keyed by root-relative artifact path."""
+
+    source: str | None = None
+    records: dict[str, dict[str, str]] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class TrustRoot:
+    """The operator's trust root file as the report names it: its SHA-256, or why there is none."""
+
+    file: str | None = None
+    sha256: str | None = None
+    reason: str | None = "--trust-root not given"
+
+
+def _valid_source(value: object) -> bool:
+    """Report whether value is an https URL with a hostname and a repository path."""
+    if not isinstance(value, str) or re.search(r"\s", value):
+        return False
+    try:
+        parts = urlsplit(value)
+        # Reading the port raises ValueError for a non-numeric or out-of-range one.
+        _ = parts.port
+    except ValueError:
+        return False
+    return parts.scheme == "https" and bool(parts.hostname) and bool(parts.path.strip("/"))
+
+
+def field_problems(data: dict) -> list[str]:
+    """Return what is wrong with a record mapping's `source`, `commit` and `digest`."""
+    problems = []
+    if not _valid_source(data.get("source")):
+        problems.append("`source` is not an https:// URL with a hostname and a repository path")
+    if not isinstance(data.get("commit"), str) or not _COMMIT_RE.fullmatch(data["commit"]):
+        problems.append("`commit` is not a full lowercase hexadecimal commit hash")
+    if not is_digest(data.get("digest")):
+        problems.append("`digest` is not `h1:` followed by a base64 SHA-256, as docs/artifact-digest.md defines")
+    return problems
+
+
+def _valid_key(key: object) -> bool:
+    """Report whether key is a normalised root-relative POSIX path, `.` naming the root itself."""
+    if key == ".":
+        return True
+    if not isinstance(key, str) or not key or key.startswith("/") or "\\" in key:
+        return False
+    parts = key.split("/")
+    return all(part not in ("", ".", "..") for part in parts) and PurePosixPath(key).as_posix() == key
+
+
+def load_operator_records(path: Path | None) -> OperatorRecords:
+    """Load and validate the operator's provenance records file."""
+    if path is None:
+        return OperatorRecords()
+    try:
+        data = safe_load_strict(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as exc:
+        msg = f"{path}: cannot be read: {exc}"
+        raise OperatorFileError(msg) from exc
+    except (yaml.YAMLError, RecursionError, TypeError, ValueError) as exc:
+        msg = f"{path}: not valid YAML: {exc}"
+        raise OperatorFileError(msg) from exc
+    if data is None:
+        data = {}
+
+    errors = schema_errors("provenance-records.schema.json", data)
+    if errors:
+        raise OperatorFileError(f"{path}: " + "; ".join(errors))
+
+    for key, record in data.items():
+        if not _valid_key(key):
+            msg = f"{path}: {key!r} is not a normalised path relative to the audited root"
+            raise OperatorFileError(msg)
+        problems = field_problems(record)
+        if problems:
+            raise OperatorFileError(f"{path}: {key}: " + "; ".join(problems))
+    return OperatorRecords(source=str(path), records=data)
+
+
+def load_trust_root(path: Path | None) -> TrustRoot:
+    """Return the trust root file's SHA-256 without interpreting its content."""
+    if path is None:
+        return TrustRoot()
+    try:
+        content = path.read_bytes()
+    except OSError as exc:
+        msg = f"{path}: cannot be read: {exc}"
+        raise OperatorFileError(msg) from exc
+    return TrustRoot(file=str(path), sha256=hashlib.sha256(content).hexdigest(), reason=None)
+
+
+def unused_operator_records(ctx: CheckContext) -> tuple[str, ...]:
+    """Return operator record keys that name no inventoried skill or extension package."""
+    return tuple(key for key in ctx.provenance_records.records if key not in artifacts(ctx))
 
 
 def artifacts(ctx: CheckContext) -> dict[str, Path]:
@@ -62,6 +179,15 @@ def load_record(directory: Path) -> tuple[object, str | None]:
         return safe_load_strict(text), None
     except (yaml.YAMLError, ValueError, TypeError, RecursionError) as exc:
         return None, f"does not parse as YAML: {exc}"
+
+
+def resolve_record(ctx: CheckContext, relative: str, directory: Path) -> tuple[object, str | None, bool]:
+    """Return the record, a problem, and whether the record is the operator's rather than the in-directory one."""
+    operator = ctx.provenance_records.records.get(relative)
+    if operator is not None:
+        return operator, None, True
+    data, problem = load_record(directory)
+    return data, problem, False
 
 
 def is_digest(value: object) -> bool:

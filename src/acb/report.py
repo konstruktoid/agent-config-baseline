@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 from acb.model import Control, Finding, Outcome, Severity
+from acb.provenance import OperatorRecords, TrustRoot
 from acb.runner import control_outcome
 
 if TYPE_CHECKING:
@@ -47,6 +48,9 @@ class RunInfo:
     inventory: Inventory
     uri_prefix: str = ""
     operator_files_inside_path: tuple[str, ...] = ()
+    provenance_records: OperatorRecords = field(default_factory=OperatorRecords)
+    unused_provenance_records: tuple[str, ...] = ()
+    trust_root: TrustRoot = field(default_factory=TrustRoot)
 
 
 def _run_dict(info: RunInfo) -> dict[str, Any]:
@@ -69,6 +73,14 @@ def _run_dict(info: RunInfo) -> dict[str, Any]:
         "exceptions_file": info.exceptions_file,
         "exception_entries": info.exception_count,
         "stale_exceptions": [{"entry": e.index, "control": e.control, "path": e.path} for e in info.stale_exceptions],
+        "provenance_records_file": info.provenance_records.source,
+        "provenance_record_entries": len(info.provenance_records.records),
+        "unused_provenance_records": list(info.unused_provenance_records),
+        "trust_root": {
+            "file": info.trust_root.file,
+            "sha256": info.trust_root.sha256,
+            "reason": info.trust_root.reason,
+        },
         "client_data": str(info.clients.source) if info.clients.source else None,
         "clients": list(info.clients.clients),
         "unscanned": [{"path": u.path, "reason": u.reason} for u in inventory.unscanned],
@@ -107,6 +119,18 @@ def format_text(controls: list[Control], findings: list[Finding], info: RunInfo)
         f"  stale: entry {stale['entry']} ({stale['control']} {stale['path']}) matched no finding"
         for stale in run["stale_exceptions"]
     )
+    records = run["provenance_records_file"]
+    lines.append(
+        f"provenance records: {records} ({run['provenance_record_entries']} entries)"
+        if records
+        else "provenance records: none"
+    )
+    lines.extend(f"  unused: {key} names no skill or extension package" for key in run["unused_provenance_records"])
+    trust_root = run["trust_root"]
+    if trust_root["file"]:
+        lines.append(f"trust root: {trust_root['file']} (sha256 {trust_root['sha256']}; no control reads it yet)")
+    else:
+        lines.append(f"trust root: none ({trust_root['reason']})")
     clients = ", ".join(run["clients"]) or "no clients declared"
     lines.append(f"client data: {run['client_data'] or 'none'} ({clients})")
     lines.extend(f"unscanned: {unscanned['path']}: {unscanned['reason']}" for unscanned in run["unscanned"])

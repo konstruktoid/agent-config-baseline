@@ -15,13 +15,13 @@ The content of every skill and extension package hashes to the `digest` in its p
 
 ## Rationale
 
-ACB-PROV-001 shows that a record names a source and commit; it cannot show that the files beside the record are the files that commit holds. A mismatch means the artifact was changed after its record was written, by a local edit, a partial update or a modified copy. A match shows only that the record describes this content: the record sits inside the artifact, so whoever can change the content can also recompute the digest, and a match says nothing about who published it.
+ACB-PROV-001 shows that a record names a source and commit; it cannot show that the files beside the record are the files that commit holds. A mismatch means the artifact was changed after its record was written, by a local edit, a partial update or a modified copy. A match shows only that the record describes this content: the record sits inside the artifact, so whoever can change the content can also recompute the digest, and a match says nothing about who published it. An operator record supplied outside PATH removes that gap for the digest, though not for who published it.
 
 ## Audit procedures
 
 ### `digest-matches` (inventory)
 
-For every discovered skill directory and extension package root, compute the version 1 artifact digest of docs/artifact-digest.md and compare it with the `digest` in that artifact's `.acb-provenance.yaml`. A different value fails. The artifact is not evaluated when it has no record, when the record has no well-formed `digest` (ACB-PROV-001 reports both), or when the digest cannot be computed because the directory holds a symlink, a special file, an unreadable entry or a name that is not valid UTF-8 or contains a newline.
+For every discovered skill directory and extension package root, compute the version 1 artifact digest of docs/artifact-digest.md and compare it with the `digest` in that artifact's `.acb-provenance.yaml`, or in the operator's `--provenance-records` entry for the artifact when there is one. A different value fails. The artifact is not evaluated when it has no record, when the record has no well-formed `digest` (ACB-PROV-001 reports both), or when the digest cannot be computed because the directory holds a symlink, a special file, an unreadable entry or a name that is not valid UTF-8 or contains a newline.
 
 ## Remediation
 
