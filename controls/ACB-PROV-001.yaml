@@ -27,7 +27,10 @@ audit:
       Every discovered skill directory and extension package root contains
       a regular file named `.acb-provenance.yaml`. A missing file fails for
       that artifact; a record elsewhere, such as at the repository root,
-      does not cover it. A symlinked record is not evaluated.
+      does not cover it. A symlinked record is not evaluated. An artifact
+      that the operator's `--provenance-records` file names by its path
+      relative to PATH is covered by that record instead, which replaces
+      the in-directory record as a whole.
   - id: record-fields
     method: structure
     procedure: >-
@@ -37,7 +40,8 @@ audit:
       character lowercase hexadecimal hash, and a `digest` that is `h1:`
       followed by the padded standard base64 encoding of a SHA-256, the
       format docs/artifact-digest.md defines. Whether the digest matches the
-      content is ACB-PROV-002.
+      content is ACB-PROV-002. An operator record is validated against the
+      same rules when its file is loaded, and an invalid one stops the run.
     indicators:
       - "commit: main"
       - "commit: 1a2b3c4"

@@ -1,10 +1,21 @@
+import hashlib
 import os
+import re
 import sys
 from pathlib import Path
 
 import pytest
 
-from acb.provenance import DigestError, artifact_digest, is_digest
+from acb.provenance import (
+    DigestError,
+    OperatorFileError,
+    OperatorRecords,
+    TrustRoot,
+    artifact_digest,
+    is_digest,
+    load_operator_records,
+    load_trust_root,
+)
 
 # Computed independently with the coreutils pipeline in docs/artifact-digest.md.
 VECTOR = "h1:o/uGDuAbkDBX1DRjlGY4rn/96S3QScbuSxrf9Xu9N4g="
@@ -135,3 +146,63 @@ def test_non_utf8_name_is_refused(tmp_path: Path) -> None:
 )
 def test_is_digest(value: object, *, expected: bool) -> None:
     assert is_digest(value) is expected
+
+
+_OPERATOR_RECORD = (
+    f"  source: https://github.com/example/s\n  commit: 0123456789abcdef0123456789abcdef01234567\n  digest: {VECTOR}\n"
+)
+
+
+def test_operator_records_load_keyed_by_path(tmp_path: Path) -> None:
+    path = tmp_path / "records.yaml"
+    path.write_text(f"skills/a:\n{_OPERATOR_RECORD}.:\n{_OPERATOR_RECORD}")
+    loaded = load_operator_records(path)
+    assert loaded.source == str(path)
+    assert sorted(loaded.records) == [".", "skills/a"]
+    assert loaded.records["skills/a"]["digest"] == VECTOR
+
+
+def test_no_operator_records_file_means_no_records() -> None:
+    assert load_operator_records(None) == OperatorRecords()
+
+
+def test_empty_operator_records_file_is_no_records(tmp_path: Path) -> None:
+    path = tmp_path / "records.yaml"
+    path.write_text("")
+    assert load_operator_records(path).records == {}
+
+
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
+        ("- a list\n", "is not of type 'object'"),
+        ("skills/a:\n  source: https://github.com/example/s\n", "'commit' is a required property"),
+        (f"skills/a:\n{_OPERATOR_RECORD}  extra: x\n", "Additional properties"),
+        (f"/abs:\n{_OPERATOR_RECORD}", "is not a normalised path"),
+        (f"skills/../a:\n{_OPERATOR_RECORD}", "is not a normalised path"),
+        (f"skills/a/:\n{_OPERATOR_RECORD}", "is not a normalised path"),
+        (f"./skills/a:\n{_OPERATOR_RECORD}", "is not a normalised path"),
+        (f"skills\\\\a:\n{_OPERATOR_RECORD}", "is not a normalised path"),
+        ("1: []\nskills/a: []\n", "1 is not a normalised path"),
+        ("skills/a:\n  source: https://github.com/example/s\n  commit: main\n  digest: x\n", "`commit` is not"),
+        ("skills/a: [\n", "not valid YAML"),
+    ],
+)
+def test_invalid_operator_records_are_refused(tmp_path: Path, text: str, message: str) -> None:
+    path = tmp_path / "records.yaml"
+    path.write_text(text)
+    with pytest.raises(OperatorFileError, match=re.escape(message)):
+        load_operator_records(path)
+
+
+def test_trust_root_is_hashed_and_not_parsed(tmp_path: Path) -> None:
+    path = tmp_path / "root.json"
+    path.write_bytes(b"\x00not json")
+    assert load_trust_root(path) == TrustRoot(
+        file=str(path), sha256=hashlib.sha256(b"\x00not json").hexdigest(), reason=None
+    )
+
+
+def test_absent_trust_root_is_null_with_a_reason() -> None:
+    root = load_trust_root(None)
+    assert (root.file, root.sha256, root.reason) == (None, None, "--trust-root not given")

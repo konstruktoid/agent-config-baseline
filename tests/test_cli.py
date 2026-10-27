@@ -103,7 +103,7 @@ def test_operator_exception_waives_and_sarif_records_suppression(
     assert waived[0]["suppressions"][0]["justification"].startswith("tracked")
 
 
-@pytest.mark.parametrize("flag", ["--exceptions", "--config"])
+@pytest.mark.parametrize("flag", ["--exceptions", "--config", "--provenance-records", "--trust-root"])
 @pytest.mark.usefixtures("operator_dir")
 def test_explicit_missing_operator_file_is_an_error(
     target: Path, capsys: pytest.CaptureFixture[str], flag: str
@@ -233,3 +233,54 @@ def test_require_artifacts_leaves_a_scan_that_found_something_unchanged(
     (root / "AGENTS.md").write_text("fine\n")
     assert main(["check", str(root), "--format", "json", "--require-artifacts"]) == 0
     assert "not-evaluated" not in _json(capsys)["summary"].values()
+
+
+_RECORD = "  source: https://github.com/example/s\n  commit: " + "ab" * 20 + "\n  digest: h1:" + "A" * 43 + "=\n"
+
+
+@pytest.mark.usefixtures("operator_dir")
+def test_trust_root_digest_and_absence_are_reported(
+    target: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(["check", str(target), "--format", "json"])
+    assert _json(capsys)["run"]["trust_root"] == {"file": None, "sha256": None, "reason": "--trust-root not given"}
+    root = tmp_path / "trust.json"
+    root.write_text("{}")
+    main(["check", str(target), "--format", "json", "--trust-root", str(root)])
+    assert _json(capsys)["run"]["trust_root"] == {
+        "file": str(root),
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "reason": None,
+    }
+
+
+@pytest.mark.usefixtures("operator_dir")
+def test_unused_provenance_records_are_reported(
+    target: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    records = tmp_path / "records.yaml"
+    records.write_text(f"skills/gone:\n{_RECORD}")
+    main(["check", str(target), "--format", "json", "--provenance-records", str(records)])
+    run = _json(capsys)["run"]
+    assert (run["provenance_records_file"], run["provenance_record_entries"]) == (str(records), 1)
+    assert run["unused_provenance_records"] == ["skills/gone"]
+    main(["check", str(target), "--provenance-records", str(records)])
+    assert "  unused: skills/gone names no skill or extension package" in capsys.readouterr().out
+
+
+@pytest.mark.usefixtures("operator_dir")
+def test_invalid_provenance_records_exit_2(target: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    records = tmp_path / "records.yaml"
+    records.write_text(f"../outside:\n{_RECORD}")
+    assert main(["check", str(target), "--provenance-records", str(records)]) == 2
+    assert capsys.readouterr().err.startswith("error: ")
+
+
+def test_new_operator_files_have_no_working_directory_default(
+    operator_dir: Path, target: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (operator_dir / ".acb-provenance.yaml").write_text(f"skills/a:\n{_RECORD}")
+    main(["check", str(target), "--format", "json"])
+    run = _json(capsys)["run"]
+    assert run["provenance_records_file"] is None
+    assert run["trust_root"]["file"] is None

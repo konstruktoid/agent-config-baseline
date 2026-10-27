@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from acb.controls import REGISTRY, CheckContext
 from acb.model import Control, Finding, Outcome
+from acb.provenance import OperatorRecords
 
 if TYPE_CHECKING:
     from acb.clients import ClientData
@@ -53,9 +54,16 @@ def run(  # noqa: PLR0913
     *,
     run_validators: bool = False,
     require_artifacts: bool = False,
+    provenance_records: OperatorRecords | None = None,
 ) -> list[Finding]:
     """Run every audit of every control and collect the findings."""
-    ctx = CheckContext(inventory=inventory, clients=clients, root=Path(root).resolve(), run_validators=run_validators)
+    ctx = CheckContext(
+        inventory=inventory,
+        clients=clients,
+        root=Path(root).resolve(),
+        run_validators=run_validators,
+        provenance_records=provenance_records or OperatorRecords(),
+    )
     findings: list[Finding] = []
 
     for control in controls:
