@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -51,6 +51,7 @@ from acb.controls import (
     acb_skill_003,
 )
 from acb.model import Finding
+from acb.provenance import OperatorRecords
 
 if TYPE_CHECKING:
     from acb.clients import ClientData
@@ -66,6 +67,7 @@ class CheckContext:
     root: Path
     # Running a client's validator executes a third-party binary, so the operator opts in.
     run_validators: bool = False
+    provenance_records: OperatorRecords = field(default_factory=OperatorRecords)
 
     def relative(self, path: Path) -> str:
         """Return a path relative to the root, or its name when it lies outside."""

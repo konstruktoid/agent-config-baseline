@@ -16,6 +16,7 @@ from pathlib import Path
 from acb import __version__
 from acb.clients import ClientDataError, load_clients
 from acb.config import CONFIG_FILENAME, ConfigError, load_config
+from acb.controls import CheckContext
 from acb.discovery import discover
 from acb.exceptions import (
     EXCEPTIONS_FILENAME,
@@ -31,6 +32,7 @@ from acb.loader import (
     default_schema_path,
     load_controls,
 )
+from acb.provenance import OperatorFileError, load_operator_records, load_trust_root, unused_operator_records
 from acb.report import FORMATTERS, RunInfo
 from acb.runner import all_pass, run
 
@@ -63,6 +65,19 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=f"operator configuration (default: ./{CONFIG_FILENAME} in the working directory, if present)",
     )
+    # No working-directory default for either: a scanned repository must not be able to supply its own.
+    check.add_argument(
+        "--provenance-records",
+        type=Path,
+        default=None,
+        help="operator provenance records that replace the in-directory .acb-provenance.yaml (no default)",
+    )
+    check.add_argument(
+        "--trust-root",
+        type=Path,
+        default=None,
+        help="operator trust root file; reports record its SHA-256, and no control reads it yet (no default)",
+    )
     check.add_argument(
         "--run-validators",
         action="store_true",
@@ -77,12 +92,14 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _operator_file(explicit: Path | None, default_name: str) -> Path | None:
+def _operator_file(explicit: Path | None, default_name: str | None) -> Path | None:
     if explicit is not None:
         if not explicit.is_file():
             msg = f"{explicit}: no such file"
             raise UsageError(msg)
         return explicit
+    if default_name is None:
+        return None
     default = Path(default_name)
     return default if default.is_file() else None
 
@@ -120,20 +137,33 @@ def main(argv: list[str] | None = None) -> int:
         config = load_config(_operator_file(args.config, CONFIG_FILENAME))
         exceptions_path = _operator_file(args.exceptions, EXCEPTIONS_FILENAME)
         entries = load_exceptions(exceptions_path, {c.id for c in all_controls})
-    except (UsageError, ControlLoadError, ClientDataError, ConfigError, ExceptionsFileError) as exc:
+        records_path = _operator_file(args.provenance_records, None)
+        records = load_operator_records(records_path)
+        trust_root_path = _operator_file(args.trust_root, None)
+        trust_root = load_trust_root(trust_root_path)
+    except (UsageError, ControlLoadError, ClientDataError, ConfigError, ExceptionsFileError, OperatorFileError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
     inventory = discover(root, clients, config)
     findings = run(
-        controls, inventory, clients, root, run_validators=args.run_validators, require_artifacts=args.require_artifacts
+        controls,
+        inventory,
+        clients,
+        root,
+        run_validators=args.run_validators,
+        require_artifacts=args.require_artifacts,
+        provenance_records=records,
+    )
+    unused_records = unused_operator_records(
+        CheckContext(inventory=inventory, clients=clients, root=root, provenance_records=records)
     )
     exceptions_display = str(exceptions_path) if exceptions_path is not None else None
     applied = apply_exceptions(findings, entries, {c.id: c for c in controls}, exceptions_display)
 
     inside = tuple(
         str(path)
-        for path in (config.source, exceptions_path)
+        for path in (config.source, exceptions_path, records_path, trust_root_path)
         if path is not None and Path(os.path.realpath(path)).is_relative_to(root)
     )
     info = RunInfo(
@@ -147,6 +177,9 @@ def main(argv: list[str] | None = None) -> int:
         inventory=inventory,
         uri_prefix=_uri_prefix(root),
         operator_files_inside_path=inside,
+        provenance_records=records,
+        unused_provenance_records=unused_records,
+        trust_root=trust_root,
     )
     print(FORMATTERS[args.format](controls, applied.findings, info))
     return 0 if all_pass(controls, applied.findings, inventory) else 1

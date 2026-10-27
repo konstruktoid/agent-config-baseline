@@ -21,11 +21,11 @@ Pins and digests elsewhere in this baseline say that something is fixed, not whe
 
 ### `record-present` (inventory)
 
-Every discovered skill directory and extension package root contains a regular file named `.acb-provenance.yaml`. A missing file fails for that artifact; a record elsewhere, such as at the repository root, does not cover it. A symlinked record is not evaluated.
+Every discovered skill directory and extension package root contains a regular file named `.acb-provenance.yaml`. A missing file fails for that artifact; a record elsewhere, such as at the repository root, does not cover it. A symlinked record is not evaluated. An artifact that the operator's `--provenance-records` file names by its path relative to PATH is covered by that record instead, which replaces the in-directory record as a whole.
 
 ### `record-fields` (structure)
 
-Each artifact's `.acb-provenance.yaml` parses as a YAML mapping with a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` that is `h1:` followed by the padded standard base64 encoding of a SHA-256, the format docs/artifact-digest.md defines. Whether the digest matches the content is ACB-PROV-002.
+Each artifact's `.acb-provenance.yaml` parses as a YAML mapping with a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` that is `h1:` followed by the padded standard base64 encoding of a SHA-256, the format docs/artifact-digest.md defines. Whether the digest matches the content is ACB-PROV-002. An operator record is validated against the same rules when its file is loaded, and an invalid one stops the run.
 
 Illustrative failing indicators (non-exhaustive):
 

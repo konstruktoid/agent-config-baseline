@@ -159,7 +159,7 @@ not as a review of the content.
 ## Usage
 
 ```console
-$ uv run acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--run-validators] [--require-artifacts]
+$ uv run acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--provenance-records FILE] [--trust-root FILE] [--run-validators] [--require-artifacts]
 ```
 
 `--run-validators` lets acb run the capability validator that client data
@@ -188,9 +188,13 @@ PATH is untrusted content. Nothing inside it can change how it is judged:
 | Client data | acb's bundled `clients/`, or `--clients DIR`, which replaces it. |
 | Operator configuration (exclusions, extra instruction files) | `--config FILE`, or `.acb.yaml` in the current working directory. |
 | Exceptions | `--exceptions FILE`, or `.acb-exceptions.yaml` in the current working directory. |
+| Provenance records that replace an artifact's `.acb-provenance.yaml` (`schema/provenance-records.schema.json`) | `--provenance-records FILE` only; there is no default. |
+| Trust root for a future signature control; reports record its SHA-256, and no control reads it yet | `--trust-root FILE` only; there is no default. |
 
 Operator files are resolved against the working directory, never against
-PATH, and a file passed explicitly must exist. Every exclusion needs a
+PATH, and a file passed explicitly must exist. The provenance records and
+trust root have no default file name, so a scanned repository that is also
+the working directory cannot supply them. Every exclusion needs a
 reason, every exception needs a justification, approver and expiry date, and
 patterns that match everything are rejected. The output of every format
 lists the configuration used, each exclusion with how many entries it

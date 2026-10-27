@@ -1,10 +1,13 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
+from acb.controls import CheckContext
 from acb.controls.acb_prov_001 import AUDITS
 from acb.model import Outcome
+from acb.provenance import OperatorRecords
 from tests._harness import context_for
 from tests.test_controls._bundled import BUNDLED
 from tests.test_controls._shared import check_pass_and_fail
@@ -127,3 +130,23 @@ def test_source_with_a_valid_port_is_accepted(tmp_path: Path) -> None:
 def test_record_outside_any_artifact_is_ignored(tmp_path: Path) -> None:
     (tmp_path / ".acb-provenance.yaml").write_text("source: [")
     assert AUDITS["record-fields"](context_for(tmp_path)) == []
+
+
+def _with_operator(root: Path, records: dict[str, dict[str, str]]) -> CheckContext:
+    return replace(context_for(root), provenance_records=OperatorRecords(source="records.yaml", records=records))
+
+
+def test_operator_record_covers_an_artifact_without_or_with_a_broken_record(tmp_path: Path) -> None:
+    _skill(tmp_path, "none")
+    (_skill(tmp_path, "broken") / ".acb-provenance.yaml").write_text("commit: main\n")
+    record = {"source": "https://github.com/example/s", "commit": COMMIT, "digest": DIGEST}
+    ctx = _with_operator(tmp_path, {"skills/none": record, "skills/broken": record})
+    assert AUDITS["record-present"](ctx) == []
+    assert AUDITS["record-fields"](ctx) == []
+
+
+def test_operator_record_for_another_path_does_not_cover_a_skill(tmp_path: Path) -> None:
+    _skill(tmp_path, "a")
+    record = {"source": "https://github.com/example/s", "commit": COMMIT, "digest": DIGEST}
+    ctx = _with_operator(tmp_path, {"skills/b": record})
+    assert [f.path for f in AUDITS["record-present"](ctx)] == ["skills/a"]
