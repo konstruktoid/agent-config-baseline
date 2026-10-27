@@ -175,8 +175,9 @@ report text would need to say so.
    - The in-toto digest set defines `dirHash` as Go's `h1:` hash written as
      lowercase hex without the prefix, so the
      [artifact digest](artifact-digest.md) can be a subject digest after a
-     base64-to-hex conversion. The two values agree only when the directory
-     holds neither `.acb-provenance.yaml` nor `.git`. The spec's own example
+     base64-to-hex conversion. The two values agree only when the artifact
+     root holds neither `.acb-provenance.yaml` nor `.git`; entries with those
+     names below the root count in both. The spec's own example
      uses the key `dirHash1`, contradicting its heading; a verifier has to
      decide whether to accept both.
 
@@ -198,8 +199,8 @@ report text would need to say so.
      (`application/vnd.dev.sigstore.trustedroot.v0.2+json`: transparency logs,
      certificate authorities, CT logs, timestamp authorities). sigstore-python
      offers `verify identity --bundle FILE --offline --cert-identity ID
-     --cert-oidc-issuer URL` and a global `--trust-config FILE`, which takes a
-     `ClientTrustConfig` wrapping a trusted root rather than a bare one.
+     --cert-oidc-issuer URL FILE_OR_DIGEST` and a global `--trust-config FILE`,
+     which takes a `ClientTrustConfig` wrapping a trusted root rather than a bare one.
      cosign's offline and trusted-root flags are unverified; check with
      `cosign verify-blob-attestation --help`.
    - The signer identity (certificate identity and OIDC issuer) is policy the
