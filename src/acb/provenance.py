@@ -124,14 +124,17 @@ def load_operator_records(path: Path | None) -> OperatorRecords:
     if data is None:
         data = {}
 
+    # Schema errors sort by path, which raises TypeError when keys mix integers and strings.
+    for key in data if isinstance(data, dict) else ():
+        if not _valid_key(key):
+            msg = f"{path}: {key!r} is not a normalised path relative to the audited root"
+            raise OperatorFileError(msg)
+
     errors = schema_errors("provenance-records.schema.json", data)
     if errors:
         raise OperatorFileError(f"{path}: " + "; ".join(errors))
 
     for key, record in data.items():
-        if not _valid_key(key):
-            msg = f"{path}: {key!r} is not a normalised path relative to the audited root"
-            raise OperatorFileError(msg)
         problems = field_problems(record)
         if problems:
             raise OperatorFileError(f"{path}: {key}: " + "; ".join(problems))
@@ -152,7 +155,8 @@ def load_trust_root(path: Path | None) -> TrustRoot:
 
 def unused_operator_records(ctx: CheckContext) -> tuple[str, ...]:
     """Return operator record keys that name no inventoried skill or extension package."""
-    return tuple(key for key in ctx.provenance_records.records if key not in artifacts(ctx))
+    inventoried = artifacts(ctx)
+    return tuple(key for key in ctx.provenance_records.records if key not in inventoried)
 
 
 def artifacts(ctx: CheckContext) -> dict[str, Path]:

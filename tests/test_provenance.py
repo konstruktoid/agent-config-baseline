@@ -183,6 +183,7 @@ def test_empty_operator_records_file_is_no_records(tmp_path: Path) -> None:
         (f"skills/a/:\n{_OPERATOR_RECORD}", "is not a normalised path"),
         (f"./skills/a:\n{_OPERATOR_RECORD}", "is not a normalised path"),
         (f"skills\\\\a:\n{_OPERATOR_RECORD}", "is not a normalised path"),
+        ("1: []\nskills/a: []\n", "1 is not a normalised path"),
         ("skills/a:\n  source: https://github.com/example/s\n  commit: main\n  digest: x\n", "`commit` is not"),
         ("skills/a: [\n", "not valid YAML"),
     ],
