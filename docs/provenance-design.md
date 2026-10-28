@@ -326,19 +326,29 @@ report text would need to say so.
      `externalParameters` it knows how to check, and rejects any other
      value, since SLSA requires rejecting unrecognised `externalParameters`.
      For the GitHub Actions workflow type, `externalParameters.workflow.repository`
-     must equal `source`. That field name is unverified; check it against
-     https://actions.github.io/buildtypes/workflow/v1 before implementing.
+     must equal `source`. Checked on 2026-10-28 against
+     https://github.com/actions/buildtypes/blob/main/workflow/v1/: the field
+     is the repository's `https://` URL without a `.git` suffix, the same
+     form as the certificate's Source Repository URI. So `source` is written
+     in that form, for example `https://github.com/foo/hello-world`.
    - Source VSA, checked on 2026-10-28 against SLSA v1.2: the verifier signs
      the VSA, not the skill repository, and SLSA requires `verifier.id` to
      match the signing identity. So the signer-to-source binding from
      question 2 cannot hold for a VSA. Each entry instead pins the signer
      (`issuer`, `identity`) to one `verifier.id`, and the source binding
-     moves to `resourceUri`, which must equal the record's `source`. The
+     moves to `resourceUri`, which must equal `git+` followed by the
+     record's `source`. SLSA asks for `resourceUri` in SPDX Download Location
+     form, such as `git+https://github.com/foo/hello-world`, and the
+     reference producer (slsa-framework/source-tool `pkg/attest/vsa.go`)
+     writes exactly that. The comparison is exact, with no optional prefix,
+     in keeping with exact identity strings. This was checked against the
+     spec and that tool's source, not against a VSA found in the wild. The
      checker also requires `verificationResult` `PASSED` and a
      `verifiedLevels` entry `SLSA_SOURCE_LEVEL_<n>` with `n` at least
-     `min_source_level`. Whether verifiers write `resourceUri` as a bare
-     `https://` URL or with a `git+` prefix is unverified, so the comparison
-     rule waits until a real VSA has been inspected.
+     `min_source_level`. `min_source_level` is capped at 4: the source track
+     defines levels 1 to 4, and although the VSA requirements list only
+     levels 0 to 3 as values, the VSA format itself shows
+     `SLSA_SOURCE_LEVEL_4`.
    - Either section may be absent. A predicate whose section is absent is
      never accepted, which keeps the policy monotonic. An empty trust root
      accepts nothing.

@@ -155,6 +155,10 @@ _OPERATOR_RECORD = (
 )
 
 
+def _with_source(source: str) -> str:
+    return "skills/a:\n" + _OPERATOR_RECORD.replace("https://github.com/example/s", source)
+
+
 def test_operator_records_load_keyed_by_path(tmp_path: Path) -> None:
     path = tmp_path / "records.yaml"
     path.write_text(f"skills/a:\n{_OPERATOR_RECORD}.:\n{_OPERATOR_RECORD}")
@@ -187,6 +191,10 @@ def test_empty_operator_records_file_is_no_records(tmp_path: Path) -> None:
         (f"skills\\\\a:\n{_OPERATOR_RECORD}", "is not a normalised path"),
         ("1: []\nskills/a: []\n", "1 is not a normalised path"),
         ("skills/a:\n  source: https://github.com/example/s\n  commit: main\n  digest: x\n", "`commit` is not"),
+        (_with_source("https://github.com/example/s.git"), "does not match"),
+        (_with_source("https://github.com/example/s/"), "does not match"),
+        (_with_source("git+https://github.com/example/s"), "does not match"),
+        (_with_source("https://github.com"), "does not match"),
         ("skills/a: [\n", "not valid YAML"),
     ],
 )

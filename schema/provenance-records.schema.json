@@ -9,7 +9,11 @@
     "additionalProperties": false,
     "required": ["source", "commit", "digest"],
     "properties": {
-      "source": { "type": "string", "minLength": 1 },
+      "source": {
+        "description": "Repository URL as signing certificates and build provenance write it: https://, no trailing slash, no .git suffix.",
+        "type": "string",
+        "pattern": "^https://[^/\\s]+(/[^/\\s]+)+(?<!\\.git)$"
+      },
       "commit": { "type": "string", "minLength": 1 },
       "digest": { "type": "string", "minLength": 1 }
     }

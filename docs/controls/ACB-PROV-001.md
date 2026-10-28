@@ -25,7 +25,7 @@ Every discovered skill directory and extension package root contains a regular f
 
 ### `record-fields` (structure)
 
-Each artifact's `.acb-provenance.yaml` parses as a YAML mapping with a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` that is `h1:` followed by the padded standard base64 encoding of a SHA-256, the format docs/artifact-digest.md defines. Whether the digest matches the content is ACB-PROV-002. An operator record is validated against the same rules when its file is loaded, and an invalid one stops the run.
+Each artifact's `.acb-provenance.yaml` parses as a YAML mapping with a `source` that is an `https://` URL with a hostname, a valid port if any and a repository path, a `commit` that is a full 40 or 64 character lowercase hexadecimal hash, and a `digest` that is `h1:` followed by the padded standard base64 encoding of a SHA-256, the format docs/artifact-digest.md defines. Whether the digest matches the content is ACB-PROV-002. An operator record is validated against the same rules when its file is loaded, and an invalid one stops the run. Its `source` must also end without a trailing slash or a `.git` suffix, the form signatures are later compared against.
 
 Illustrative failing indicators (non-exhaustive):
 
