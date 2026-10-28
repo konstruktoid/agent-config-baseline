@@ -207,7 +207,11 @@ directory is inside PATH (for example `acb check .` in a repository), the
 scanned tree supplies its own operator files; acb prints a warning naming
 them. Protect those files with review. The reusable workflow
 `.github/workflows/acb-check.yml` removes that gap for pull requests by
-reading them from the base commit, and refuses `pull_request_target`. It
+reading them from the base commit, and refuses `pull_request_target`. There
+the provenance records and trust root have fixed names,
+`.acb-provenance-records.yaml` and `.acb-trust-root.yaml`, and when the trust
+root is present the workflow installs the Sigstore verifier from `verifier/`
+and passes it to `ACB-PROV-003`. It
 cannot protect itself: the calling workflow file comes from the pull request
 head, so guard that file with a required-workflow ruleset or CODEOWNERS. For
 `push`, `merge_group` and `workflow_dispatch` there is no base commit, so use

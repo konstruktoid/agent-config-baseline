@@ -14,10 +14,14 @@ name: acb check (reusable)
 # and runs against the caller's repository. Callers should normally set
 # both to the same value.
 #
-# The caller's .acb.yaml and .acb-exceptions.yaml are read from the pull
-# request's base commit (or the pushed commit outside pull requests), never
-# from the head being checked: a change cannot exclude or waive itself. A new
-# exception has to merge before the change that needs it.
+# The caller's .acb.yaml, .acb-exceptions.yaml, .acb-provenance-records.yaml
+# and .acb-trust-root.yaml are read from the pull request's base commit (or
+# the pushed commit outside pull requests), never from the head being checked:
+# a change cannot exclude, waive or vouch for itself. A new exception, record
+# or Sigstore bundle has to merge before the change that needs it. Paths the
+# records and trust root name (bundles, the Sigstore trust config) resolve
+# against that base checkout. When .acb-trust-root.yaml is present, the
+# Sigstore verifier from the same acb-ref is installed and passed to acb.
 #
 # What this workflow cannot enforce: the caller's own workflow file comes from
 # the pull request head, so a change can edit `path`, `fail-on-findings` or
@@ -82,16 +86,13 @@ jobs:
           persist-credentials: false
           path: target
 
+      # Not sparse: the records and trust root name bundle and trust config paths only known after parsing them.
       - name: Checkout operator configuration from the base commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha || github.sha }}
           persist-credentials: false
           path: operator-config
-          sparse-checkout: |
-            .acb.yaml
-            .acb-exceptions.yaml
-          sparse-checkout-cone-mode: false
 
       - name: Checkout agent-config-baseline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -111,9 +112,15 @@ jobs:
         working-directory: acb-src
         run: uv sync --locked
 
+      - name: Install the Sigstore verifier
+        if: hashFiles('operator-config/.acb-trust-root.yaml') != ''
+        working-directory: acb-src
+        run: uv sync --locked --project verifier
+
       # Runs inside the caller's checkout so SARIF paths are repository-relative.
-      # Both operator files are always passed explicitly (an empty file when the
-      # base commit has none), so acb never falls back to the head's copies.
+      # The configuration and exceptions are always passed explicitly (an empty
+      # file when the base commit has none), so acb never falls back to the
+      # head's copies. The records and trust root have no default to fall back to.
       - name: Run acb check
         id: acb
         working-directory: target
@@ -128,6 +135,12 @@ jobs:
           exceptions=../operator-config/.acb-exceptions.yaml
           [ -f "$config" ] || config=../empty.yaml
           [ -f "$exceptions" ] || exceptions=../empty.yaml
+          records=../operator-config/.acb-provenance-records.yaml
+          trust_root=../operator-config/.acb-trust-root.yaml
+          if [ -f "$records" ]; then args+=(--provenance-records "$records"); fi
+          if [ -f "$trust_root" ]; then
+            args+=(--trust-root "$trust_root" --sigstore-verifier "$GITHUB_WORKSPACE/acb-src/verifier/.venv/bin/acb-sigstore-verify")
+          fi
           set +e
           uv run --project ../acb-src acb check "$CHECK_PATH" --format sarif \
             --config "$config" --exceptions "$exceptions" "${args[@]}" > ../results.sarif
