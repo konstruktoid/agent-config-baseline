@@ -167,7 +167,7 @@ def load_operator_records(path: Path | None) -> OperatorRecords:
             raise OperatorFileError(f"{path}: {key}: " + "; ".join(problems))
         records[key] = {name: value for name, value in entry.items() if name != "bundles"}
         if "bundles" in entry:
-            bundles[key] = tuple(str(_beside(path, name, f"{key}: bundle")) for name in entry["bundles"])
+            bundles[key] = tuple(str(_beside(path, name, f"{key}: bundle").resolve()) for name in entry["bundles"])
     return OperatorRecords(source=str(path), records=records, bundles=bundles)
 
 

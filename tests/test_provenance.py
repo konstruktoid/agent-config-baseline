@@ -263,6 +263,21 @@ def test_operator_bundles_resolve_beside_the_records_file(tmp_path: Path) -> Non
         load_operator_records(path)
 
 
+def test_operator_bundles_are_absolute_when_the_records_path_is_relative(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "bundles").mkdir()
+    (tmp_path / "bundles" / "a.json").write_text("{}")
+    (tmp_path / "records.yaml").write_text(
+        f"skills/a:\n  source: https://github.com/e/s\n  commit: {'ab' * 20}\n  digest: h1:{'A' * 43}=\n"
+        "  bundles: [bundles/a.json]\n"
+    )
+    (tmp_path / "target").mkdir()
+    monkeypatch.chdir(tmp_path / "target")
+    records = load_operator_records(Path("../records.yaml"))
+    assert records.bundles == {"skills/a": (str((tmp_path / "bundles" / "a.json").resolve()),)}
+
+
 def test_absent_trust_root_is_null_with_a_reason() -> None:
     root = load_trust_root(None)
     assert (root.file, root.sha256, root.reason) == (None, None, "--trust-root not given")
