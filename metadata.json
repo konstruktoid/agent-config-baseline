@@ -1,0 +1,64 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M61067ABKFAJR6KCHY7ZKFTN",
+  "strategy": "manual-commit",
+  "branch": "signature-control",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "controls/ACB-PROV-003.yaml",
+    "docs/controls/ACB-PROV-003.md",
+    "docs/controls/index.md",
+    "docs/mappings.md",
+    "docs/provenance-design.md",
+    "pyproject.toml",
+    "schema/provenance-records.schema.json",
+    "site/controls/ACB-PROV-003.html",
+    "site/controls/index.html",
+    "site/mappings.html",
+    "src/acb/attestation.py",
+    "src/acb/cli.py",
+    "src/acb/controls/__init__.py",
+    "src/acb/controls/acb_prov_003.py",
+    "src/acb/provenance.py",
+    "src/acb/report.py",
+    "src/acb/runner.py",
+    "tests/test_cli.py",
+    "tests/test_controls/test_acb_prov_003.py",
+    "tests/test_loader.py",
+    "tests/test_provenance.py",
+    "verifier/acb_sigstore_verify.py",
+    "verifier/pyproject.toml",
+    "verifier/uv.lock"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 80,
+    "cache_creation_tokens": 156384,
+    "cache_read_tokens": 4586959,
+    "output_tokens": 57940,
+    "api_call_count": 38
+  },
+  "redaction": {
+    "replacements": 0,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 0,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}
