@@ -4,12 +4,17 @@ The digest is version 1 of docs/artifact-digest.md: Go's dirhash `h1:` over the 
 
 A record comes from the artifact's own `.acb-provenance.yaml` unless the operator's records file
 (--provenance-records FILE, schema/provenance-records.schema.json) has an entry for the artifact's
-root-relative path; that entry replaces the in-directory record as a whole:
+root-relative path; that entry replaces the in-directory record as a whole. Only an operator entry
+can name Sigstore bundles, by paths relative to the records file:
 
     skills/example:
       source: https://github.com/example/skills
       commit: 0123456789abcdef0123456789abcdef01234567
       digest: h1:...
+      bundles: [bundles/example.sigstore.json]
+
+The trust root (--trust-root FILE, schema/trust-root.schema.json) is parsed, and the Sigstore client trust
+configuration it names is checked against its pinned SHA-256 before any control reads it.
 """
 
 from __future__ import annotations
@@ -22,7 +27,7 @@ import re
 import stat
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 import yaml
@@ -63,15 +68,19 @@ class OperatorRecords:
 
     source: str | None = None
     records: dict[str, dict[str, str]] = field(default_factory=dict)
+    # Bundle paths resolved against the records file, kept apart so a record stays a mapping of strings.
+    bundles: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class TrustRoot:
-    """The operator's trust root file as the report names it: its SHA-256, or why there is none."""
+    """The operator's trust root: its SHA-256 or why there is none, its parsed policy and its trust config path."""
 
     file: str | None = None
     sha256: str | None = None
     reason: str | None = "--trust-root not given"
+    policy: dict = field(default_factory=dict)
+    trust_config: str | None = None
 
 
 def _valid_source(value: object) -> bool:
@@ -109,18 +118,34 @@ def _valid_key(key: object) -> bool:
     return all(part not in ("", ".", "..") for part in parts) and PurePosixPath(key).as_posix() == key
 
 
-def load_operator_records(path: Path | None) -> OperatorRecords:
-    """Load and validate the operator's provenance records file."""
-    if path is None:
-        return OperatorRecords()
+def _load_operator_yaml(path: Path) -> Any:  # noqa: ANN401
     try:
-        data = safe_load_strict(path.read_text(encoding="utf-8"))
+        return safe_load_strict(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError) as exc:
         msg = f"{path}: cannot be read: {exc}"
         raise OperatorFileError(msg) from exc
     except (yaml.YAMLError, RecursionError, TypeError, ValueError) as exc:
         msg = f"{path}: not valid YAML: {exc}"
         raise OperatorFileError(msg) from exc
+
+
+def _beside(path: Path, name: str, what: str) -> Path:
+    """Return `name` resolved against the directory of the operator file at `path`, which must hold a file there."""
+    if PurePosixPath(name).is_absolute() or "\\" in name:
+        msg = f"{path}: {what} {name!r} is not a path relative to this file"
+        raise OperatorFileError(msg)
+    target = path.parent / name
+    if not target.is_file():
+        msg = f"{path}: {what} {name!r} is not a file"
+        raise OperatorFileError(msg)
+    return target
+
+
+def load_operator_records(path: Path | None) -> OperatorRecords:
+    """Load and validate the operator's provenance records file."""
+    if path is None:
+        return OperatorRecords()
+    data = _load_operator_yaml(path)
     if data is None:
         data = {}
 
@@ -134,15 +159,20 @@ def load_operator_records(path: Path | None) -> OperatorRecords:
     if errors:
         raise OperatorFileError(f"{path}: " + "; ".join(errors))
 
-    for key, record in data.items():
-        problems = field_problems(record)
+    records: dict[str, dict[str, str]] = {}
+    bundles: dict[str, tuple[str, ...]] = {}
+    for key, entry in data.items():
+        problems = field_problems(entry)
         if problems:
             raise OperatorFileError(f"{path}: {key}: " + "; ".join(problems))
-    return OperatorRecords(source=str(path), records=data)
+        records[key] = {name: value for name, value in entry.items() if name != "bundles"}
+        if "bundles" in entry:
+            bundles[key] = tuple(str(_beside(path, name, f"{key}: bundle")) for name in entry["bundles"])
+    return OperatorRecords(source=str(path), records=records, bundles=bundles)
 
 
 def load_trust_root(path: Path | None) -> TrustRoot:
-    """Return the trust root file's SHA-256 without interpreting its content."""
+    """Parse and validate the trust root, and check its Sigstore trust config against the pinned SHA-256."""
     if path is None:
         return TrustRoot()
     try:
@@ -150,7 +180,30 @@ def load_trust_root(path: Path | None) -> TrustRoot:
     except OSError as exc:
         msg = f"{path}: cannot be read: {exc}"
         raise OperatorFileError(msg) from exc
-    return TrustRoot(file=str(path), sha256=hashlib.sha256(content).hexdigest(), reason=None)
+    data = _load_operator_yaml(path)
+    errors = schema_errors("trust-root.schema.json", data)
+    if errors:
+        raise OperatorFileError(f"{path}: " + "; ".join(errors))
+    if not isinstance(data, dict):
+        msg = f"{path}: not a mapping"
+        raise OperatorFileError(msg)
+
+    config = _beside(path, data["sigstore"]["trust_config"], "sigstore.trust_config")
+    try:
+        actual = hashlib.sha256(config.read_bytes()).hexdigest()
+    except OSError as exc:
+        msg = f"{config}: cannot be read: {exc}"
+        raise OperatorFileError(msg) from exc
+    if actual != data["sigstore"]["sha256"]:
+        msg = f"{path}: {config} has SHA-256 {actual}, not the pinned {data['sigstore']['sha256']}"
+        raise OperatorFileError(msg)
+    return TrustRoot(
+        file=str(path),
+        sha256=hashlib.sha256(content).hexdigest(),
+        reason=None,
+        policy=data,
+        trust_config=str(config.resolve()),
+    )
 
 
 def unused_operator_records(ctx: CheckContext) -> tuple[str, ...]:

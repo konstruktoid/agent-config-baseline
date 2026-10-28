@@ -205,12 +205,62 @@ def test_invalid_operator_records_are_refused(tmp_path: Path, text: str, message
         load_operator_records(path)
 
 
-def test_trust_root_is_hashed_and_not_parsed(tmp_path: Path) -> None:
-    path = tmp_path / "root.json"
-    path.write_bytes(b"\x00not json")
+def _write_trust_root(tmp_path: Path, root: dict, config: bytes = b"{}") -> Path:
+    (tmp_path / "trust-config.json").write_bytes(config)
+    root["sigstore"] = {"trust_config": "trust-config.json", "sha256": hashlib.sha256(b"{}").hexdigest()}
+    path = tmp_path / "root.yaml"
+    path.write_text(yaml.safe_dump(root))
+    return path
+
+
+def test_trust_root_is_parsed_and_hashed(tmp_path: Path) -> None:
+    root = _documented_trust_root()
+    path = _write_trust_root(tmp_path, root)
     assert load_trust_root(path) == TrustRoot(
-        file=str(path), sha256=hashlib.sha256(b"\x00not json").hexdigest(), reason=None
+        file=str(path),
+        sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+        reason=None,
+        policy=root,
+        trust_config=str((tmp_path / "trust-config.json").resolve()),
     )
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"config": b"changed"}, "not the pinned"),
+        ({"trust_config": "/etc/trust-config.json"}, "is not a path relative to this file"),
+        ({"trust_config": "missing.json"}, "is not a file"),
+        ({"version": 2}, "version"),
+    ],
+)
+def test_invalid_trust_root_is_refused(tmp_path: Path, change: dict, message: str) -> None:
+    root = _documented_trust_root()
+    if "version" in change:
+        root["version"] = change["version"]
+    path = _write_trust_root(tmp_path, root, change.get("config", b"{}"))
+    if "trust_config" in change:
+        data = yaml.safe_load(path.read_text())
+        data["sigstore"]["trust_config"] = change["trust_config"]
+        path.write_text(yaml.safe_dump(data))
+    with pytest.raises(OperatorFileError, match=re.escape(message)):
+        load_trust_root(path)
+
+
+def test_operator_bundles_resolve_beside_the_records_file(tmp_path: Path) -> None:
+    (tmp_path / "bundles").mkdir()
+    (tmp_path / "bundles" / "a.json").write_text("{}")
+    path = tmp_path / "records.yaml"
+    path.write_text(
+        f"skills/a:\n  source: https://github.com/e/s\n  commit: {'ab' * 20}\n  digest: h1:{'A' * 43}=\n"
+        "  bundles: [bundles/a.json]\n"
+    )
+    records = load_operator_records(path)
+    assert records.bundles == {"skills/a": (str(tmp_path / "bundles" / "a.json"),)}
+    assert "bundles" not in records.records["skills/a"]
+    path.write_text(path.read_text().replace("bundles/a.json", "bundles/gone.json"))
+    with pytest.raises(OperatorFileError, match=re.escape("'bundles/gone.json' is not a file")):
+        load_operator_records(path)
 
 
 def test_absent_trust_root_is_null_with_a_reason() -> None:

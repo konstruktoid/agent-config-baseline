@@ -76,7 +76,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--trust-root",
         type=Path,
         default=None,
-        help="operator trust root file; reports record its SHA-256, and no control reads it yet (no default)",
+        help="operator trust root (schema/trust-root.schema.json); reports record its SHA-256 (no default)",
+    )
+    check.add_argument(
+        "--sigstore-verifier",
+        type=Path,
+        default=None,
+        help="absolute path of the Sigstore verifier program ACB-PROV-003 runs on each bundle (no default)",
     )
     check.add_argument(
         "--run-validators",
@@ -111,6 +117,19 @@ def _uri_prefix(root: Path) -> str:
     return Path(relative).as_posix()
 
 
+def _verifier(path: Path | None) -> str | None:
+    """Return the verifier's path, which must be absolute so that no PATH lookup or working directory picks it."""
+    if path is None:
+        return None
+    if not path.is_absolute():
+        msg = f"{path}: --sigstore-verifier must be an absolute path"
+        raise UsageError(msg)
+    if not path.is_file() or not os.access(path, os.X_OK):
+        msg = f"{path}: not an executable file"
+        raise UsageError(msg)
+    return str(path)
+
+
 def _require_directory(path: Path | None) -> None:
     """Raise UsageError when an operator-supplied directory is not one."""
     if path is not None and not path.is_dir():
@@ -141,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         records = load_operator_records(records_path)
         trust_root_path = _operator_file(args.trust_root, None)
         trust_root = load_trust_root(trust_root_path)
+        verifier = _verifier(args.sigstore_verifier)
     except (UsageError, ControlLoadError, ClientDataError, ConfigError, ExceptionsFileError, OperatorFileError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -154,6 +174,8 @@ def main(argv: list[str] | None = None) -> int:
         run_validators=args.run_validators,
         require_artifacts=args.require_artifacts,
         provenance_records=records,
+        trust_root=trust_root,
+        sigstore_verifier=verifier,
     )
     unused_records = unused_operator_records(
         CheckContext(inventory=inventory, clients=clients, root=root, provenance_records=records)

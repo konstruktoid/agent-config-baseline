@@ -32,6 +32,10 @@ dev = [
     "ty==0.0.90",
 ]
 
+[tool.ty.src]
+# The verifier imports sigstore, which only its own environment (verifier/pyproject.toml) installs.
+exclude = ["verifier"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
@@ -56,6 +60,8 @@ ignore = [
 # Writing to the terminal is what a command-line entry point is for.
 "src/acb/cli.py" = ["T201"]
 "scripts/*.py" = ["T201"]
+# The verifier is a standalone program in its own project, and its JSON on stdout is its interface.
+"verifier/*.py" = ["T201", "INP001"]
 # pytest reports failures through assert, and test names document the test.
 "tests/**" = ["S101", "D100", "D101", "D102", "D103", "D104", "PLR2004"]
 
