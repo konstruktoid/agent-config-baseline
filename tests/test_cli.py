@@ -200,6 +200,20 @@ def test_operator_files_inside_path_are_called_out(
     assert _json(capsys)["run"]["operator_files_inside_path"] == [".acb.yaml"]
 
 
+def test_a_verifier_inside_path_is_called_out(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "AGENTS.md").write_text("fine\n")
+    verifier = repo / "verify"
+    verifier.write_text("#!/bin/sh\n")
+    verifier.chmod(0o755)
+    monkeypatch.chdir(repo)
+    main(["check", ".", "--format", "json", "--sigstore-verifier", str(verifier)])
+    assert _json(capsys)["run"]["operator_files_inside_path"] == [str(verifier)]
+
+
 @pytest.mark.usefixtures("operator_dir")
 def test_sarif_marks_an_unchecked_run_as_unsuccessful_and_encodes_uris(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]

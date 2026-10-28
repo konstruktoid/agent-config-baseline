@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
 
     inside = tuple(
         str(path)
-        for path in (config.source, exceptions_path, records_path, trust_root_path)
+        for path in (config.source, exceptions_path, records_path, trust_root_path, verifier)
         if path is not None and Path(os.path.realpath(path)).is_relative_to(root)
     )
     info = RunInfo(
