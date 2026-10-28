@@ -1,0 +1,13 @@
+read the state file and start with the three checks listed there
+
+---
+
+yes, update the doc first
+
+---
+
+add the source pattern to the schema too
+
+---
+
+create a branch and commit this
