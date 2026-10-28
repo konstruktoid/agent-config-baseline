@@ -274,9 +274,11 @@ report text would need to say so.
    digest, and any mismatch rejects the statement rather than choosing a
    key. Output and documentation from this baseline use `dirHash`.
 
-   Decided: a VSA subject's `gitCommit` is reported but not checked. A
-   vendored skill usually has no `.git`, so the checker cannot recompute
-   the revision, and the match is on the directory digest alone.
+   Decided: a VSA subject must carry `gitCommit`, as the Source track
+   requires, and its value must equal the operator record's `commit`; a
+   missing or different value rejects the VSA. A vendored skill usually has
+   no `.git`, so the checker cannot recompute the revision, but the record
+   names it, so the comparison needs no repository.
 
    Decided: the trust root lists the identities for each predicate in this
    format (`schema/trust-root.schema.json`):
@@ -291,9 +293,9 @@ report text would need to say so.
        - issuer: https://token.actions.githubusercontent.com
          build_signer_uris:
            - "{source}/.github/workflows/release.yml@refs/heads/main"
-     builders:
-       - id: https://github.com/actions/runner/github-hosted
-         build_type: https://actions.github.io/buildtypes/workflow/v1
+         builders:
+           - id: https://github.com/actions/runner/github-hosted
+             build_type: https://actions.github.io/buildtypes/workflow/v1
    source_vsa:
      verifiers:
        - id: https://example.com/source-verifier
@@ -314,10 +316,13 @@ report text would need to say so.
      `issuer`. Its Source Repository URI extension
      (`1.3.6.1.4.1.57264.1.12`, `OIDCSourceRepositoryURI` in
      sigstore-python 4.5.1) must equal the record's `source`; this is the
-     signer-to-source binding from question 2. When `build_signer_uris` is
-     given, its Build Signer URI extension (`…1.9`) must equal one of them.
-     The statement's `builder.id` and `buildType` must match one listed
-     pair. The checker accepts only `buildType` values whose
+     signer-to-source binding from question 2. Its Build Signer URI
+     extension (`…1.9`) must equal one of that signer's required
+     `build_signer_uris`, which binds the signer to one workflow path and
+     ref rather than to any workflow in the repository. The statement's
+     `builder.id` and `buildType` must match a pair listed under that same
+     signer, since SLSA requires accepting only specific signer and builder
+     pairs. The checker accepts only `buildType` values whose
      `externalParameters` it knows how to check, and rejects any other
      value, since SLSA requires rejecting unrecognised `externalParameters`.
      For the GitHub Actions workflow type, `externalParameters.workflow.repository`

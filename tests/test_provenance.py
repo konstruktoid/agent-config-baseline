@@ -228,7 +228,9 @@ def test_documented_trust_root_matches_the_schema() -> None:
     [
         ("sigstore", {"sha256": "A" * 64}),
         ("sigstore", {"pattern": "x"}),
-        ("build_provenance", {"builders": []}),
+        ("build_provenance", {"builders": [{"id": "b", "build_type": "t"}]}),
+        ("build_provenance", {"signers": [{"issuer": "i", "build_signer_uris": ["u"], "builders": []}]}),
+        ("build_provenance", {"signers": [{"issuer": "i", "builders": [{"id": "b", "build_type": "t"}]}]}),
         ("source_vsa", {"verifiers": [{"id": "v", "issuer": "i", "identity": "a b", "min_source_level": 2}]}),
         ("source_vsa", {"verifiers": [{"id": "v", "issuer": "i", "identity": "a", "min_source_level": 0}]}),
     ],

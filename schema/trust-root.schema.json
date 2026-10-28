@@ -27,7 +27,7 @@
     "build_provenance": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["signers", "builders"],
+      "required": ["signers"],
       "properties": {
         "signers": {
           "type": "array",
@@ -36,7 +36,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["issuer"],
+            "required": ["issuer", "build_signer_uris", "builders"],
             "properties": {
               "issuer": { "$ref": "#/$defs/exact" },
               "build_signer_uris": {
@@ -44,21 +44,22 @@
                 "minItems": 1,
                 "uniqueItems": true,
                 "items": { "$ref": "#/$defs/exact" }
+              },
+              "builders": {
+                "description": "The builder.id and buildType pairs this signer may claim.",
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "build_type"],
+                  "properties": {
+                    "id": { "$ref": "#/$defs/exact" },
+                    "build_type": { "$ref": "#/$defs/exact" }
+                  }
+                }
               }
-            }
-          }
-        },
-        "builders": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["id", "build_type"],
-            "properties": {
-              "id": { "$ref": "#/$defs/exact" },
-              "build_type": { "$ref": "#/$defs/exact" }
             }
           }
         }
