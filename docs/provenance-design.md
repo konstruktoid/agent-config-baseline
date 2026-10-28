@@ -1,9 +1,10 @@
 # Design note: provenance controls
 
-Status: draft. `ACB-PROV-001` and `ACB-PROV-002` exist as draft controls and
-section 6 records the decisions behind them. The SLSA, in-toto attestation
-and Sigstore bundle specifications were checked on 2026-10-26 (section 6,
-question 5); what remains open before a signature control is listed there.
+Status: draft. `ACB-PROV-001`, `ACB-PROV-002` and the signature control
+`ACB-PROV-003` exist as draft controls, and section 6 records the decisions
+behind them. The SLSA, in-toto attestation and Sigstore bundle
+specifications were checked on 2026-10-26 and 2026-10-28 (section 6,
+question 5).
 
 ## 1. Problem
 
@@ -80,9 +81,11 @@ IDs are placeholders. The existing prefixes are `CFG`, `EXT`, `GEN`, `INSTR`,
   artifact under the section 4 definition. An artifact without a
   well-formed recorded digest is not evaluated rather than failed, because
   `ACB-PROV-001` already fails it.
-- A signature control is deferred until the specifications in section 6,
-  question 5 are checked. It would run an external verifier and read an
-  operator trust root (section 6, questions 2 and 3).
+- `ACB-PROV-003` — an artifact with an operator record passes when one of
+  the Sigstore bundles that record lists verifies and its statement matches
+  the operator trust root and the artifact (section 6, questions 2, 3 and
+  5). It is `check_type: provenance`: the signature result comes from an
+  external verifier, and the checker relays it.
 
 The audit of `konstruktoid/agent-instructions-skills` at `db098c2` would fail
 `ACB-PROV-001` for all 10 skills if the record lives in the repository (a file
@@ -114,7 +117,10 @@ report text would need to say so.
    (`schema/provenance-records.schema.json`), with no working-directory
    default because the reusable workflow runs with the pull request head as
    its working directory. An invalid file stops the run, and keys that name
-   no inventoried artifact are reported.
+   no inventoried artifact are reported. Decided 2026-10-28: an operator
+   record may list `bundles`, Sigstore bundle paths relative to the records
+   file. Only an operator record can name bundles, which keeps
+   `.acb-provenance.yaml` the only file the artifact digest leaves out.
 2. Is the checker allowed a verifier dependency or an external verifier
    subprocess? Decided: no new dependency. A signature control runs an
    external verifier as a subprocess, its result is a claim the checker
@@ -133,7 +139,15 @@ report text would need to say so.
    with only an in-directory record leaves the signature control not
    evaluated. A source VSA is signed by its verifier rather than the source
    repository, so for that predicate the binding to `source` moves to the
-   VSA's `resourceUri` (question 5).
+   VSA's `resourceUri` (question 5). Implemented as `--sigstore-verifier
+   PATH`, which must be absolute and executable, with no default. The
+   verifier ships in this repository as `verifier/acb_sigstore_verify.py`,
+   with its own `pyproject.toml` and hash-locked `uv.lock` pinning
+   sigstore-python, so it runs from an environment separate from acb's. Exit
+   0 prints the verified payload and certificate values as JSON. Exit 3
+   reports a rejected bundle, which fails the artifact unless another bundle
+   is accepted. Any other exit, a timeout or malformed output leaves the
+   artifact not evaluated.
 3. How is the trust root pinned, and who owns updating it? Decided: the
    operator supplies it as a file on the command line, as with
    `--exceptions`, and the checker never bundles one, so the person running
@@ -146,8 +160,9 @@ report text would need to say so.
    the signature control is not evaluated, never passed. Implemented as
    `--trust-root FILE`, with no default: reports record its SHA-256, or
    `null` with the reason. Its format is decided in question 5
-   (`schema/trust-root.schema.json`), and the checker does not parse it
-   until the signature control ships.
+   (`schema/trust-root.schema.json`). The checker parses it against that
+   schema and refuses to run when the file is invalid or the trust config
+   differs from its pinned SHA-256.
 4. Should `PROV-*` apply to the repository under audit only, or also to
    third-party skills it vendors? Decided: to every skill and extension
    package the inventory finds, vendored or not, which is what both draft
@@ -326,19 +341,29 @@ report text would need to say so.
      `externalParameters` it knows how to check, and rejects any other
      value, since SLSA requires rejecting unrecognised `externalParameters`.
      For the GitHub Actions workflow type, `externalParameters.workflow.repository`
-     must equal `source`. That field name is unverified; check it against
-     https://actions.github.io/buildtypes/workflow/v1 before implementing.
+     must equal `source`. Checked on 2026-10-28 against
+     https://github.com/actions/buildtypes/blob/main/workflow/v1/: the field
+     is the repository's `https://` URL without a `.git` suffix, the same
+     form as the certificate's Source Repository URI. So `source` is written
+     in that form, for example `https://github.com/foo/hello-world`.
    - Source VSA, checked on 2026-10-28 against SLSA v1.2: the verifier signs
      the VSA, not the skill repository, and SLSA requires `verifier.id` to
      match the signing identity. So the signer-to-source binding from
      question 2 cannot hold for a VSA. Each entry instead pins the signer
      (`issuer`, `identity`) to one `verifier.id`, and the source binding
-     moves to `resourceUri`, which must equal the record's `source`. The
+     moves to `resourceUri`, which must equal `git+` followed by the
+     record's `source`. SLSA asks for `resourceUri` in SPDX Download Location
+     form, such as `git+https://github.com/foo/hello-world`, and the
+     reference producer (slsa-framework/source-tool `pkg/attest/vsa.go`)
+     writes exactly that. The comparison is exact, with no optional prefix,
+     in keeping with exact identity strings. This was checked against the
+     spec and that tool's source, not against a VSA found in the wild. The
      checker also requires `verificationResult` `PASSED` and a
      `verifiedLevels` entry `SLSA_SOURCE_LEVEL_<n>` with `n` at least
-     `min_source_level`. Whether verifiers write `resourceUri` as a bare
-     `https://` URL or with a `git+` prefix is unverified, so the comparison
-     rule waits until a real VSA has been inspected.
+     `min_source_level`. `min_source_level` is capped at 4: the source track
+     defines levels 1 to 4, and although the VSA requirements list only
+     levels 0 to 3 as values, the VSA format itself shows
+     `SLSA_SOURCE_LEVEL_4`.
    - Either section may be absent. A predicate whose section is absent is
      never accepted, which keeps the policy monotonic. An empty trust root
      accepts nothing.

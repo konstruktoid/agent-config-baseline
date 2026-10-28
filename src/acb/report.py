@@ -128,7 +128,7 @@ def format_text(controls: list[Control], findings: list[Finding], info: RunInfo)
     lines.extend(f"  unused: {key} names no skill or extension package" for key in run["unused_provenance_records"])
     trust_root = run["trust_root"]
     if trust_root["file"]:
-        lines.append(f"trust root: {trust_root['file']} (sha256 {trust_root['sha256']}; no control reads it yet)")
+        lines.append(f"trust root: {trust_root['file']} (sha256 {trust_root['sha256']})")
     else:
         lines.append(f"trust root: none ({trust_root['reason']})")
     clients = ", ".join(run["clients"]) or "no clients declared"

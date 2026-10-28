@@ -9,9 +9,20 @@
     "additionalProperties": false,
     "required": ["source", "commit", "digest"],
     "properties": {
-      "source": { "type": "string", "minLength": 1 },
+      "source": {
+        "description": "Repository URL as signing certificates and build provenance write it: https://, no trailing slash, no .git suffix.",
+        "type": "string",
+        "pattern": "^https://[^/\\s]+(/[^/\\s]+)+(?<!\\.git)$"
+      },
       "commit": { "type": "string", "minLength": 1 },
-      "digest": { "type": "string", "minLength": 1 }
+      "digest": { "type": "string", "minLength": 1 },
+      "bundles": {
+        "description": "Sigstore bundles for this artifact, as paths relative to the records file. ACB-PROV-003 passes the artifact when one verifies and matches the trust root.",
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": { "type": "string", "pattern": "^\\S+$" }
+      }
     }
   }
 }

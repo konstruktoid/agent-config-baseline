@@ -46,12 +46,13 @@ from acb.controls import (
     acb_mcp_003,
     acb_prov_001,
     acb_prov_002,
+    acb_prov_003,
     acb_skill_001,
     acb_skill_002,
     acb_skill_003,
 )
 from acb.model import Finding
-from acb.provenance import OperatorRecords
+from acb.provenance import OperatorRecords, TrustRoot
 
 if TYPE_CHECKING:
     from acb.clients import ClientData
@@ -68,6 +69,9 @@ class CheckContext:
     # Running a client's validator executes a third-party binary, so the operator opts in.
     run_validators: bool = False
     provenance_records: OperatorRecords = field(default_factory=OperatorRecords)
+    trust_root: TrustRoot = field(default_factory=TrustRoot)
+    # An absolute path the operator named; the checker never looks a verifier up on PATH.
+    sigstore_verifier: str | None = None
 
     def relative(self, path: Path) -> str:
         """Return a path relative to the root, or its name when it lies outside."""
@@ -94,6 +98,7 @@ _MODULES = (
     acb_mcp_003,
     acb_prov_001,
     acb_prov_002,
+    acb_prov_003,
     acb_skill_001,
     acb_skill_002,
     acb_skill_003,

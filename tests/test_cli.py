@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import TYPE_CHECKING
 
@@ -199,6 +200,20 @@ def test_operator_files_inside_path_are_called_out(
     assert _json(capsys)["run"]["operator_files_inside_path"] == [".acb.yaml"]
 
 
+def test_a_verifier_inside_path_is_called_out(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "AGENTS.md").write_text("fine\n")
+    verifier = repo / "verify"
+    verifier.write_text("#!/bin/sh\n")
+    verifier.chmod(0o755)
+    monkeypatch.chdir(repo)
+    main(["check", ".", "--format", "json", "--sigstore-verifier", str(verifier)])
+    assert _json(capsys)["run"]["operator_files_inside_path"] == [str(verifier)]
+
+
 @pytest.mark.usefixtures("operator_dir")
 def test_sarif_marks_an_unchecked_run_as_unsuccessful_and_encodes_uris(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -244,14 +259,29 @@ def test_trust_root_digest_and_absence_are_reported(
 ) -> None:
     main(["check", str(target), "--format", "json"])
     assert _json(capsys)["run"]["trust_root"] == {"file": None, "sha256": None, "reason": "--trust-root not given"}
-    root = tmp_path / "trust.json"
-    root.write_text("{}")
+    (tmp_path / "tc.json").write_text("{}")
+    root = tmp_path / "trust.yaml"
+    root.write_text(f"version: 1\nsigstore:\n  trust_config: tc.json\n  sha256: {hashlib.sha256(b'{}').hexdigest()}\n")
     main(["check", str(target), "--format", "json", "--trust-root", str(root)])
     assert _json(capsys)["run"]["trust_root"] == {
         "file": str(root),
-        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "sha256": hashlib.sha256(root.read_bytes()).hexdigest(),
         "reason": None,
     }
+    root.write_text("version: 1\n")
+    assert main(["check", str(target), "--trust-root", str(root)]) == 2
+
+
+@pytest.mark.usefixtures("operator_dir")
+def test_sigstore_verifier_must_be_an_absolute_executable(
+    target: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check", str(target), "--sigstore-verifier", "verify"]) == 2
+    assert "must be an absolute path" in capsys.readouterr().err
+    script = tmp_path / "verify"
+    script.write_text("#!/bin/sh\n")
+    assert main(["check", str(target), "--sigstore-verifier", str(script)]) == 2
+    assert "not an executable file" in capsys.readouterr().err
 
 
 @pytest.mark.usefixtures("operator_dir")

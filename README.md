@@ -159,7 +159,7 @@ not as a review of the content.
 ## Usage
 
 ```console
-$ uv run acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--provenance-records FILE] [--trust-root FILE] [--run-validators] [--require-artifacts]
+$ uv run acb check PATH [--format text|json|sarif] [--exceptions FILE] [--clients DIR] [--config FILE] [--provenance-records FILE] [--trust-root FILE] [--sigstore-verifier PATH] [--run-validators] [--require-artifacts]
 ```
 
 `--run-validators` lets acb run the capability validator that client data
@@ -189,7 +189,8 @@ PATH is untrusted content. Nothing inside it can change how it is judged:
 | Operator configuration (exclusions, extra instruction files) | `--config FILE`, or `.acb.yaml` in the current working directory. |
 | Exceptions | `--exceptions FILE`, or `.acb-exceptions.yaml` in the current working directory. |
 | Provenance records that replace an artifact's `.acb-provenance.yaml` (`schema/provenance-records.schema.json`) | `--provenance-records FILE` only; there is no default. |
-| Trust root for a future signature control; reports record its SHA-256, and no control reads it yet | `--trust-root FILE` only; there is no default. |
+| Trust root for `ACB-PROV-003` (`schema/trust-root.schema.json`); reports record its SHA-256 | `--trust-root FILE` only; there is no default. |
+| Sigstore verifier program for `ACB-PROV-003` (`verifier/`) | `--sigstore-verifier PATH` only, an absolute path; there is no default. |
 
 Operator files are resolved against the working directory, never against
 PATH, and a file passed explicitly must exist. The provenance records and
