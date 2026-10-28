@@ -1,0 +1,66 @@
+read the state file and move forward with the trust root format
+
+---
+
+approved, mark it decided and write the schema
+
+---
+
+move it to a new branch off main and commit with minimal commit message
+
+---
+
+push it and open a PR
+
+---
+
+checkout main and pull, clean up, the track any reviews of #31
+
+---
+
+<task-notification>
+<task-id>b150hpnpb</task-id>
+<summary>Monitor event: "PR #31 reviews, comments, checks and state"</summary>
+<event>**&lt;picture&gt;&lt;img src="https://storage.googleapis.com/coderabbit_public_assets/review-comment-icons-v1/amber-16.svg" width="16" height="16" align="absmiddle" alt=""&gt;
+**&lt;picture&gt;&lt;img src="https://storage.googleapis.com/coderabbit_public_assets/review-comment-icons-v1/major-16.svg" width="16" height="16" align="absmiddle" alt=""&gt;
+**&lt;picture&gt;&lt;img src="https://storage.googleapis.com/coderabbit_public_assets/review-comment-icons-v1/major-16.svg" width="16" height="16" align="absmiddle" alt=""&gt;
+**Actionable comments posted: 3**
+- [ ] &lt;!-- {"checkboxId":"4b0d0e0a-96d7-4f10-b296-3a18ea78f0b9"} --&gt; 🪄 Fix comments: Fix Co
+---
+&lt;!-- This is an auto-generated comment: summarize by coderabbit.ai --&gt;
+&lt;!-- autofix_checkbox_start --&gt;
+&lt;!-- review_stack_entry_start --&gt;
+&lt;a href="https://app.coderabbit.ai/change-stack/konstrukt
+comment 6465033370 coderabbitai[bot]: &lt;!-- coderabbit-ai-generated:v1 --&gt;
+inline 4398770911 coderabbitai[bot] docs/provenance-design.md:279: &lt;!-- coderabbit-ai-generated:v1 --&gt;
+inline 4398770921 coderabbitai[bot] docs/provenance-design.md:325: &lt;!-- coderabbit-ai-generated:v1 --&gt;
+inline 4398770926 coderabbitai[bot] schema/trust-root.schema.json:30: &lt;!-- coderabbit-ai-generated:v1 --&gt;
+review 5680254156 coderabbitai[bot] COMMENTED: &lt;!-- coderabbit-ai-generated:v1 --&gt;</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b150hpnpb</task-id>
+<summary>Monitor event: "PR #31 reviews, comments, checks and state"</summary>
+<event>check Analyze (actions): pass
+check Analyze (python): pass
+check CodeQL: pass
+check CodeRabbit: pass
+check Validate, test and self-check: pass</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b150hpnpb</task-id>
+<summary>Monitor event: "PR #31 reviews, comments, checks and state"</summary>
+<event>state OPEN BLOCKED</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+fix all three, commit and push
