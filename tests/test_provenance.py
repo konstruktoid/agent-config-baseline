@@ -5,7 +5,9 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
+from acb.loader import schema_errors
 from acb.provenance import (
     DigestError,
     OperatorFileError,
@@ -206,3 +208,32 @@ def test_trust_root_is_hashed_and_not_parsed(tmp_path: Path) -> None:
 def test_absent_trust_root_is_null_with_a_reason() -> None:
     root = load_trust_root(None)
     assert (root.file, root.sha256, root.reason) == (None, None, "--trust-root not given")
+
+
+def _documented_trust_root() -> dict:
+    doc = (Path(__file__).parents[1] / "docs" / "provenance-design.md").read_text(encoding="utf-8")
+    block = re.search(r"trust root lists the identities.*?```yaml\n(.*?)```", doc, re.DOTALL)
+    assert block
+    root = yaml.safe_load(block.group(1))
+    root["sigstore"]["sha256"] = "0" * 64
+    return root
+
+
+def test_documented_trust_root_matches_the_schema() -> None:
+    assert schema_errors("trust-root.schema.json", _documented_trust_root()) == []
+
+
+@pytest.mark.parametrize(
+    ("section", "change"),
+    [
+        ("sigstore", {"sha256": "A" * 64}),
+        ("sigstore", {"pattern": "x"}),
+        ("build_provenance", {"builders": []}),
+        ("source_vsa", {"verifiers": [{"id": "v", "issuer": "i", "identity": "a b", "min_source_level": 2}]}),
+        ("source_vsa", {"verifiers": [{"id": "v", "issuer": "i", "identity": "a", "min_source_level": 0}]}),
+    ],
+)
+def test_trust_root_schema_rejects(section: str, change: dict) -> None:
+    root = _documented_trust_root()
+    root[section].update(change)
+    assert schema_errors("trust-root.schema.json", root)

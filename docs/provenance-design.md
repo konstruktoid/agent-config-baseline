@@ -131,7 +131,9 @@ report text would need to say so.
    (question 1), because whoever can change an artifact can also change its
    in-directory record and sign from a repository they chose; an artifact
    with only an in-directory record leaves the signature control not
-   evaluated.
+   evaluated. A source VSA is signed by its verifier rather than the source
+   repository, so for that predicate the binding to `source` moves to the
+   VSA's `resourceUri` (question 5).
 3. How is the trust root pinned, and who owns updating it? Decided: the
    operator supplies it as a file on the command line, as with
    `--exceptions`, and the checker never bundles one, so the person running
@@ -143,8 +145,9 @@ report text would need to say so.
    trust root as absent, `null` with the reason, rather than a digest, and
    the signature control is not evaluated, never passed. Implemented as
    `--trust-root FILE`, with no default: reports record its SHA-256, or
-   `null` with the reason, and the checker does not parse it until the
-   signature control defines its format (question 5).
+   `null` with the reason. Its format is decided in question 5
+   (`schema/trust-root.schema.json`), and the checker does not parse it
+   until the signature control ships.
 4. Should `PROV-*` apply to the repository under audit only, or also to
    third-party skills it vendors? Decided: to every skill and extension
    package the inventory finds, vendored or not, which is what both draft
@@ -218,9 +221,19 @@ report text would need to say so.
      cannot hand it to the verifier as the artifact. A likely split: the
      external verifier checks signature, log inclusion and identity, and the
      checker parses the verified statement and compares `dirHash` itself.
-     Unverified whether sigstore-python verifies a DSSE bundle whose subject
-     has no `sha256`; check by signing a statement with only a `dirHash`
-     subject and running `sigstore verify identity` against it.
+     Checked on 2026-10-28 with sigstore-python 4.5.1 by signing a statement
+     whose only subject digest is `dirHash` against production Sigstore:
+     `Verifier.verify_dsse()` with `offline=True` and an identity policy
+     accepts the bundle and returns the raw payload, because it checks the
+     certificate, log entry, identity and DSSE signature but never parses
+     the statement. `sigstore verify identity --offline` rejects the same
+     bundle after those checks pass, with "malformed in-toto statement",
+     because the library's `DigestSet` accepts only `sha256`, `sha384`,
+     `sha512` and `sha3_*` keys. The same model makes `StatementBuilder`
+     unable to build such a statement. The split above therefore holds
+     with the library API rather than the CLI: the checker calls
+     `verify_dsse()` and parses the returned payload with its own in-toto
+     code, without `sigstore.dsse.Statement`.
    - The operator trust root from question 3 then has three parts: a
      Sigstore client trust configuration, the allowed signer identities, and
      the allowed `builder.id` or source control identities. SLSA requires
@@ -249,9 +262,93 @@ report text would need to say so.
      anything here; one signer per bundle fits the signer-to-source binding
      from question 2.
 
-   Not decided: whether a signature control accepts build provenance, a
-   source verification summary, or both, and which builder or source
-   control system identities the trust root lists for each.
+   Decided: a signature control accepts both SLSA build provenance and a
+   source verification summary attestation. Either one, once verified and
+   matched, passes the artifact. Ignoring one never turns a fail into a pass,
+   so the policy stays monotonic. Most skills have no build platform, so build
+   provenance alone would fail them, and a VSA alone would refuse skills that
+   ship build provenance.
+
+   Decided: a subject digest matches under the key `dirHash` or `dirHash1`.
+   When a subject carries both keys, both values must equal the computed
+   digest, and any mismatch rejects the statement rather than choosing a
+   key. Output and documentation from this baseline use `dirHash`.
+
+   Decided: a VSA subject's `gitCommit` is reported but not checked. A
+   vendored skill usually has no `.git`, so the checker cannot recompute
+   the revision, and the match is on the directory digest alone.
+
+   Decided: the trust root lists the identities for each predicate in this
+   format (`schema/trust-root.schema.json`):
+
+   ```yaml
+   version: 1
+   sigstore:
+     trust_config: sigstore-trust-config.json
+     sha256: "<hex SHA-256 of that file>"
+   build_provenance:
+     signers:
+       - issuer: https://token.actions.githubusercontent.com
+         build_signer_uris:
+           - "{source}/.github/workflows/release.yml@refs/heads/main"
+     builders:
+       - id: https://github.com/actions/runner/github-hosted
+         build_type: https://actions.github.io/buildtypes/workflow/v1
+   source_vsa:
+     verifiers:
+       - id: https://example.com/source-verifier
+         issuer: https://token.actions.githubusercontent.com
+         identity: https://example.com/verifier/.github/workflows/vsa.yml@refs/heads/main
+         min_source_level: 2
+   ```
+
+   - `sigstore.trust_config` is a `ClientTrustConfig` path relative to the
+     trust root file, pinned by `sha256`. The checker refuses to run the
+     verifier when the digest differs, so the one SHA-256 in the report
+     covers the Sigstore roots too, and rotating them changes that digest.
+   - Every identity is an exact string. No patterns or prefixes, because a
+     pattern that matches too much shows no error and still widens trust.
+     The one substitution is `{source}`, which is filled in from the
+     operator record and nothing else.
+   - Build provenance: the signing certificate's OIDC issuer must equal
+     `issuer`. Its Source Repository URI extension
+     (`1.3.6.1.4.1.57264.1.12`, `OIDCSourceRepositoryURI` in
+     sigstore-python 4.5.1) must equal the record's `source`; this is the
+     signer-to-source binding from question 2. When `build_signer_uris` is
+     given, its Build Signer URI extension (`…1.9`) must equal one of them.
+     The statement's `builder.id` and `buildType` must match one listed
+     pair. The checker accepts only `buildType` values whose
+     `externalParameters` it knows how to check, and rejects any other
+     value, since SLSA requires rejecting unrecognised `externalParameters`.
+     For the GitHub Actions workflow type, `externalParameters.workflow.repository`
+     must equal `source`. That field name is unverified; check it against
+     https://actions.github.io/buildtypes/workflow/v1 before implementing.
+   - Source VSA, checked on 2026-10-28 against SLSA v1.2: the verifier signs
+     the VSA, not the skill repository, and SLSA requires `verifier.id` to
+     match the signing identity. So the signer-to-source binding from
+     question 2 cannot hold for a VSA. Each entry instead pins the signer
+     (`issuer`, `identity`) to one `verifier.id`, and the source binding
+     moves to `resourceUri`, which must equal the record's `source`. The
+     checker also requires `verificationResult` `PASSED` and a
+     `verifiedLevels` entry `SLSA_SOURCE_LEVEL_<n>` with `n` at least
+     `min_source_level`. Whether verifiers write `resourceUri` as a bare
+     `https://` URL or with a `git+` prefix is unverified, so the comparison
+     rule waits until a real VSA has been inspected.
+   - Either section may be absent. A predicate whose section is absent is
+     never accepted, which keeps the policy monotonic. An empty trust root
+     accepts nothing.
+   - Question 2 requires an external verifier with no new dependency, and
+     the decision below requires `verify_dsse()`, which is a library call.
+     Both hold if the external verifier is a small program, run from its
+     own environment with sigstore-python installed, that takes the bundle,
+     the `ClientTrustConfig` and an exact issuer and identity policy. It
+     prints the verified payload and the certificate's extension values as
+     JSON, and the checker does all in-toto and predicate checks itself.
+
+   Decided: the checker verifies bundles with sigstore-python's
+   `Verifier.verify_dsse()` and parses the statement itself, since the CLI
+   and `sigstore.dsse.Statement` reject a `dirHash`-only subject (section 6,
+   Sigstore).
 
 ## 7. Out of scope and deferred
 
