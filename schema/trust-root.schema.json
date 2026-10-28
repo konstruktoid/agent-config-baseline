@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/konstruktoid/agent-config-baseline/schema/trust-root.schema.json",
+  "title": "acb operator trust root",
+  "description": "Operator-supplied trust root (--trust-root FILE, no default), as docs/provenance-design.md section 6 question 5 defines it. Every identity is an exact string; the only substitution is {source} in build_signer_uris, filled from the operator record. A predicate whose section is absent is never accepted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "sigstore"],
+  "properties": {
+    "version": { "const": 1 },
+    "sigstore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trust_config", "sha256"],
+      "properties": {
+        "trust_config": {
+          "description": "Path to a Sigstore ClientTrustConfig, relative to the trust root file.",
+          "$ref": "#/$defs/exact"
+        },
+        "sha256": {
+          "description": "Lowercase hex SHA-256 of trust_config; the verifier is not run when it differs.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "build_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signers"],
+      "properties": {
+        "signers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["issuer", "build_signer_uris", "builders"],
+            "properties": {
+              "issuer": { "$ref": "#/$defs/exact" },
+              "build_signer_uris": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "$ref": "#/$defs/exact" }
+              },
+              "builders": {
+                "description": "The builder.id and buildType pairs this signer may claim.",
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "build_type"],
+                  "properties": {
+                    "id": { "$ref": "#/$defs/exact" },
+                    "build_type": { "$ref": "#/$defs/exact" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "source_vsa": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verifiers"],
+      "properties": {
+        "verifiers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "issuer", "identity", "min_source_level"],
+            "properties": {
+              "id": { "$ref": "#/$defs/exact" },
+              "issuer": { "$ref": "#/$defs/exact" },
+              "identity": { "$ref": "#/$defs/exact" },
+              "min_source_level": { "type": "integer", "minimum": 1, "maximum": 4 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "exact": { "type": "string", "pattern": "^\\S+$" }
+  }
+}
