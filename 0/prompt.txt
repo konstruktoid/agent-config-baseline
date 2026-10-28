@@ -1,0 +1,37 @@
+whats the status?
+
+---
+
+check state regarding branches and commits, reread state and update if needed
+
+---
+
+delete the stale local and remote branches
+
+---
+
+fix the coderabbit comments on #27, and merge #28 if ok
+
+---
+
+commit and push #27, resolve the threads
+
+---
+
+update the branch, check review comments or wait for the rabbitcode limit to expire and fix any issues, when there's no issues: merge #27
+
+---
+
+workt through the list of whats left locally
+
+---
+
+push and open the operator PR , then enable entire on a separate branch
+
+---
+
+Push and open the entire PR
+
+---
+
+What for review and then fix any issues, merge otherwise
