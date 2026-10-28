@@ -1,0 +1,76 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M612KMFAAANK8PWMHATK97KK",
+  "session_id": "674cc0bf-6ea9-490c-8298-06cbe669fc49",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-28T10:59:02.909935859Z",
+  "branch": "provenance-workflow",
+  "checkpoints_count": 2,
+  "save_step_count": 2,
+  "files_touched": [
+    ".github/workflows/acb-check.yml",
+    "README.md"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "9dfdfed23298",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 46427,
+    "cache_read_tokens": 870543,
+    "output_tokens": 10053,
+    "api_call_count": 14
+  },
+  "redaction": {
+    "replacements": 0,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 0,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01AjxFXmZWUJBGSuzoih5RRU",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "github-standards:github-actions-security"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "9dfdfed23298",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 55,
+        "end": 56,
+        "entry_ids": [
+          "c54ff1d0-140d-479f-a79a-e15d68fe6db2"
+        ],
+        "tool_use_id": "toolu_01AjxFXmZWUJBGSuzoih5RRU"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01AjxFXmZWUJBGSuzoih5RRU"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: github-standards:github-actions-security",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 2
+  }
+}
