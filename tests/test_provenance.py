@@ -231,6 +231,7 @@ def test_trust_root_is_parsed_and_hashed(tmp_path: Path) -> None:
         ({"config": b"changed"}, "not the pinned"),
         ({"trust_config": "/etc/trust-config.json"}, "is not a path relative to this file"),
         ({"trust_config": "missing.json"}, "is not a file"),
+        ({"trust_config": "../trust-config.json"}, "is not inside this file's directory"),
         ({"version": 2}, "version"),
     ],
 )
@@ -261,6 +262,31 @@ def test_operator_bundles_resolve_beside_the_records_file(tmp_path: Path) -> Non
     path.write_text(path.read_text().replace("bundles/a.json", "bundles/gone.json"))
     with pytest.raises(OperatorFileError, match=re.escape("'bundles/gone.json' is not a file")):
         load_operator_records(path)
+
+
+@pytest.mark.parametrize("name", ["../outside.json", "bundles/../../outside.json", "link.json"])
+def test_operator_bundles_outside_the_records_directory_are_refused(tmp_path: Path, name: str) -> None:
+    (tmp_path / "outside.json").write_text("{}")
+    (tmp_path / "base").mkdir()
+    (tmp_path / "base" / "bundles").mkdir()
+    (tmp_path / "base" / "link.json").symlink_to(tmp_path / "outside.json")
+    path = tmp_path / "base" / "records.yaml"
+    path.write_text(
+        f"skills/a:\n  source: https://github.com/e/s\n  commit: {'ab' * 20}\n  digest: h1:{'A' * 43}=\n"
+        f"  bundles: [{name}]\n"
+    )
+    with pytest.raises(OperatorFileError, match=re.escape(f"{name!r} is not inside this file's directory")):
+        load_operator_records(path)
+
+
+def test_trust_config_symlink_outside_the_trust_root_directory_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "base").mkdir()
+    path = _write_trust_root(tmp_path / "base", _documented_trust_root())
+    (tmp_path / "outside.json").write_bytes(b"{}")
+    (tmp_path / "base" / "trust-config.json").unlink()
+    (tmp_path / "base" / "trust-config.json").symlink_to(tmp_path / "outside.json")
+    with pytest.raises(OperatorFileError, match=re.escape("is not inside this file's directory")):
+        load_trust_root(path)
 
 
 def test_operator_bundles_are_absolute_when_the_records_path_is_relative(

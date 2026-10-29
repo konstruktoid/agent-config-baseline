@@ -14,7 +14,7 @@
       "required": ["trust_config", "sha256"],
       "properties": {
         "trust_config": {
-          "description": "Path to a Sigstore ClientTrustConfig, relative to the trust root file.",
+          "description": "Path to a Sigstore ClientTrustConfig, relative to the trust root file and inside its directory.",
           "$ref": "#/$defs/exact"
         },
         "sha256": {
