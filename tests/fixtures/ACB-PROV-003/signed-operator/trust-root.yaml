@@ -6,7 +6,7 @@ build_provenance:
   signers:
     - issuer: https://token.actions.githubusercontent.com
       build_signer_uris:
-        - "{source}/.github/workflows/sign-test-bundle.yml@refs/heads/sign-test-bundle"
+        - "{source}/.github/workflows/sign-test-bundle.yml@refs/heads/main"
       builders:
         - id: https://github.com/actions/runner/github-hosted
           build_type: https://actions.github.io/buildtypes/workflow/v1

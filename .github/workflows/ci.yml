@@ -86,8 +86,6 @@ jobs:
           trust_root="$operator/.acb-trust-root.yaml"
           if [ -f "$records" ]; then args+=(--provenance-records "$records"); fi
           if [ -f "$trust_root" ]; then
-            # The verifier environment stays outside the scanned tree, as acb warns about a verifier inside it.
-            UV_PROJECT_ENVIRONMENT="$RUNNER_TEMP/verifier-venv" uv sync --locked --project verifier
             args+=(--trust-root "$trust_root" --sigstore-verifier "$RUNNER_TEMP/verifier-venv/bin/acb-sigstore-verify")
           fi
           uv run acb check . --format text --require-artifacts --config "$config" --exceptions "$exceptions" "${args[@]}"
