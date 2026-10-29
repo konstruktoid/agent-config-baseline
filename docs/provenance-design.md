@@ -119,8 +119,9 @@ report text would need to say so.
    its working directory. An invalid file stops the run, and keys that name
    no inventoried artifact are reported. Decided 2026-10-28: an operator
    record may list `bundles`, Sigstore bundle paths relative to the records
-   file. Only an operator record can name bundles, which keeps
-   `.acb-provenance.yaml` the only file the artifact digest leaves out.
+   file and inside its directory. Only an operator record can name bundles,
+   which keeps `.acb-provenance.yaml` the only file the artifact digest
+   leaves out.
 2. Is the checker allowed a verifier dependency or an external verifier
    subprocess? Decided: no new dependency. A signature control runs an
    external verifier as a subprocess, its result is a claim the checker
@@ -320,8 +321,9 @@ report text would need to say so.
    ```
 
    - `sigstore.trust_config` is a `ClientTrustConfig` path relative to the
-     trust root file, pinned by `sha256`. The checker refuses to run the
-     verifier when the digest differs, so the one SHA-256 in the report
+     trust root file and inside its directory, pinned by `sha256`. The
+     checker refuses to run the verifier when the digest differs, so the one
+     SHA-256 in the report
      covers the Sigstore roots too, and rotating them changes that digest.
    - Every identity is an exact string. No patterns or prefixes, because a
      pattern that matches too much shows no error and still widens trust.

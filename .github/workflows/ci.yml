@@ -62,16 +62,13 @@ jobs:
           ACB_SIGSTORE_VERIFIER: ${{ runner.temp }}/verifier-venv/bin/acb-sigstore-verify
         run: uv run pytest -q
 
+      # Not sparse: the records and trust root name bundle and trust config paths only known after parsing them.
       - name: Checkout operator configuration from the base commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha || github.sha }}
           persist-credentials: false
           path: operator-config
-          sparse-checkout: |
-            .acb.yaml
-            .acb-exceptions.yaml
-          sparse-checkout-cone-mode: false
 
       - name: Move operator configuration out of the scanned tree
         run: mv operator-config "$RUNNER_TEMP/operator-config"
@@ -84,4 +81,13 @@ jobs:
           exceptions="$operator/.acb-exceptions.yaml"
           [ -f "$config" ] || config="$RUNNER_TEMP/empty.yaml"
           [ -f "$exceptions" ] || exceptions="$RUNNER_TEMP/empty.yaml"
-          uv run acb check . --format text --require-artifacts --config "$config" --exceptions "$exceptions"
+          args=()
+          records="$operator/.acb-provenance-records.yaml"
+          trust_root="$operator/.acb-trust-root.yaml"
+          if [ -f "$records" ]; then args+=(--provenance-records "$records"); fi
+          if [ -f "$trust_root" ]; then
+            # The verifier environment stays outside the scanned tree, as acb warns about a verifier inside it.
+            UV_PROJECT_ENVIRONMENT="$RUNNER_TEMP/verifier-venv" uv sync --locked --project verifier
+            args+=(--trust-root "$trust_root" --sigstore-verifier "$RUNNER_TEMP/verifier-venv/bin/acb-sigstore-verify")
+          fi
+          uv run acb check . --format text --require-artifacts --config "$config" --exceptions "$exceptions" "${args[@]}"

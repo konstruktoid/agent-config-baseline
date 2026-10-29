@@ -135,6 +135,15 @@ def _beside(path: Path, name: str, what: str) -> Path:
         msg = f"{path}: {what} {name!r} is not a path relative to this file"
         raise OperatorFileError(msg)
     target = path.parent / name
+    # The workflow keeps operator files in the base checkout, so a path leaving that directory could read the head.
+    try:
+        inside = target.resolve().is_relative_to(path.parent.resolve())
+    except (OSError, RuntimeError) as exc:
+        msg = f"{path}: {what} {name!r} cannot be resolved: {exc}"
+        raise OperatorFileError(msg) from exc
+    if not inside:
+        msg = f"{path}: {what} {name!r} is not inside this file's directory"
+        raise OperatorFileError(msg)
     if not target.is_file():
         msg = f"{path}: {what} {name!r} is not a file"
         raise OperatorFileError(msg)
