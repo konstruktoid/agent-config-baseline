@@ -2,7 +2,7 @@ name: Sign test bundle
 
 # Signs tests/fixtures/ACB-PROV-003/signed/skills/signed-skill with this workflow's GitHub Actions identity
 # and uploads the Sigstore bundle, so ACB-PROV-003 and the verifier can be tested against a real signature.
-# The committed bundle was signed from branch sign-test-bundle; a new one needs its trust root signer URI updated.
+# The committed bundle was signed from main; signing from another ref needs the fixture trust root signer URI updated.
 
 on:
   workflow_dispatch:
