@@ -1,0 +1,55 @@
+name: Sign test bundle
+
+# Signs tests/fixtures/ACB-PROV-003/signed/skills/signed-skill with this workflow's GitHub Actions identity
+# and uploads the Sigstore bundle, so ACB-PROV-003 and the verifier can be tested against a real signature.
+# The committed bundle was signed from branch sign-test-bundle; a new one needs its trust root signer URI updated.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sign:
+    name: Sign the fixture skill
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # required to request the OIDC token Fulcio issues the signing certificate for
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.12"
+          enable-cache: true
+
+      - name: Install acb and the verifier environment
+        run: |
+          uv sync --locked
+          uv sync --locked --project verifier
+
+      - name: Sign the fixture skill
+        run: |
+          skill=tests/fixtures/ACB-PROV-003/signed/skills/signed-skill
+          digest=$(uv run python -c "import sys; from pathlib import Path; from acb.provenance import artifact_digest; print(artifact_digest(Path(sys.argv[1])))" "$skill")
+          echo "dirHash: $digest"
+          mkdir -p "$RUNNER_TEMP/bundle"
+          verifier/.venv/bin/python verifier/sign_test_statement.py \
+            --name skills/signed-skill --digest "$digest" --out "$RUNNER_TEMP/bundle/signed-skill.sigstore.json"
+
+      - name: Upload the bundle
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: signed-skill-bundle
+          path: ${{ runner.temp }}/bundle/signed-skill.sigstore.json
+          if-no-files-found: error

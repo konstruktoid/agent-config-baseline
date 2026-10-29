@@ -53,7 +53,13 @@ jobs:
       - name: Type check with ty
         run: uv run ty check
 
+      # Outside the tree, so the self-check does not scan its packages.
+      - name: Install the Sigstore verifier
+        run: UV_PROJECT_ENVIRONMENT="$RUNNER_TEMP/verifier-venv" uv sync --locked --project verifier
+
       - name: Run test suite
+        env:
+          ACB_SIGSTORE_VERIFIER: ${{ runner.temp }}/verifier-venv/bin/acb-sigstore-verify
         run: uv run pytest -q
 
       - name: Checkout operator configuration from the base commit

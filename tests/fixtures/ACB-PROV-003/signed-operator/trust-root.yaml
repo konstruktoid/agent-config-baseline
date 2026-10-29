@@ -1,0 +1,12 @@
+version: 1
+sigstore:
+  trust_config: sigstore-trust-config.json
+  sha256: "53553bc92bfb7e0d408c01c84a03df573b33b9900b82c9e3062e186f7094c728"
+build_provenance:
+  signers:
+    - issuer: https://token.actions.githubusercontent.com
+      build_signer_uris:
+        - "{source}/.github/workflows/sign-test-bundle.yml@refs/heads/sign-test-bundle"
+      builders:
+        - id: https://github.com/actions/runner/github-hosted
+          build_type: https://actions.github.io/buildtypes/workflow/v1
