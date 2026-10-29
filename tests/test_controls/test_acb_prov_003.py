@@ -1,6 +1,7 @@
 import base64
 import copy
 import json
+import os
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -11,7 +12,7 @@ from acb.attestation import BUILD_PROVENANCE, GITHUB_WORKFLOW, SOURCE_VSA, STATE
 from acb.controls import CheckContext
 from acb.controls.acb_prov_003 import AUDITS
 from acb.model import Outcome
-from acb.provenance import OperatorRecords, TrustRoot, artifact_digest
+from acb.provenance import OperatorRecords, TrustRoot, artifact_digest, load_operator_records, load_trust_root
 from tests._harness import context_for
 
 SOURCE = "https://github.com/example/skills"
@@ -315,3 +316,40 @@ def test_an_in_directory_record_alone_is_not_evaluated(tmp_path: Path) -> None:
 
 def test_no_artifacts_means_nothing_to_verify(tmp_path: Path) -> None:
     assert AUDITS["signature-verifies"](context_for(tmp_path)) == []
+
+
+SIGNED = Path(__file__).parents[1] / "fixtures" / "ACB-PROV-003"
+# CI installs the verifier outside the tree and names it here; locally `uv sync --project verifier` provides it.
+REAL_VERIFIER = Path(
+    os.environ.get("ACB_SIGSTORE_VERIFIER", Path(__file__).parents[2] / "verifier/.venv/bin/acb-sigstore-verify")
+)
+
+
+def _signed_context(policy_change: dict | None = None) -> CheckContext:
+    if not os.access(REAL_VERIFIER, os.X_OK):
+        pytest.fail(f"{REAL_VERIFIER} is not executable: run `uv sync --locked --project verifier`")
+    operator = SIGNED / "signed-operator"
+    trust_root = load_trust_root(operator / "trust-root.yaml")
+    if policy_change:
+        trust_root = replace(trust_root, policy={**trust_root.policy, **policy_change})
+    return replace(
+        context_for(SIGNED / "signed"),
+        provenance_records=load_operator_records(operator / "provenance-records.yaml"),
+        trust_root=trust_root,
+        sigstore_verifier=str(REAL_VERIFIER),
+    )
+
+
+def test_a_real_bundle_signed_on_github_actions_passes() -> None:
+    assert AUDITS["signature-verifies"](_signed_context()) == []
+
+
+def test_a_real_bundle_from_an_unlisted_workflow_fails() -> None:
+    signer = {
+        "issuer": ISSUER,
+        "build_signer_uris": [SIGNER],
+        "builders": [{"id": BUILDER, "build_type": GITHUB_WORKFLOW}],
+    }
+    [finding] = AUDITS["signature-verifies"](_signed_context({"build_provenance": {"signers": [signer]}}))
+    assert finding.outcome == Outcome.FAIL
+    assert finding.path == "skills/signed-skill"

@@ -1,0 +1,5 @@
+skills/signed-skill:
+  source: https://github.com/konstruktoid/agent-config-baseline
+  commit: 006f9dfdf706a2d192eba7323136a9918aa29dcb
+  digest: "h1:FDkBNXrt5R072Twgi0krmZ06+6H2Vfmi7JGQBwuEwR0="
+  bundles: [bundles/signed-skill.sigstore.json]
