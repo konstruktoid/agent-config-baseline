@@ -279,6 +279,17 @@ def test_operator_bundles_outside_the_records_directory_are_refused(tmp_path: Pa
         load_operator_records(path)
 
 
+def test_operator_bundle_symlink_loop_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "loop.json").symlink_to(tmp_path / "loop.json")
+    path = tmp_path / "records.yaml"
+    path.write_text(
+        f"skills/a:\n  source: https://github.com/e/s\n  commit: {'ab' * 20}\n  digest: h1:{'A' * 43}=\n"
+        "  bundles: [loop.json]\n"
+    )
+    with pytest.raises(OperatorFileError, match=re.escape("'loop.json'")):
+        load_operator_records(path)
+
+
 def test_trust_config_symlink_outside_the_trust_root_directory_is_refused(tmp_path: Path) -> None:
     (tmp_path / "base").mkdir()
     path = _write_trust_root(tmp_path / "base", _documented_trust_root())
