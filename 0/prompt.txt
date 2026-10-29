@@ -1,0 +1,49 @@
+start with the two PR mentioned in the state file
+
+---
+
+yes, do #1 and then the rest
+
+---
+
+B, and yes install the verifier
+
+---
+
+yes, run them
+
+---
+
+yes, run them
+
+---
+
+yes, run them
+
+---
+
+yes, run them
+
+---
+
+require the verifier venv in CI
+
+---
+
+yes, run them
+
+---
+
+merge in the correct order and the clean up
+
+---
+
+yes, run them
+
+---
+
+Fix the open issues
+
+---
+
+Work through the steps and I'll clean up later unless you can
