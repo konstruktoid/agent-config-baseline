@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M63EHP9KAKFFQQKCHWX6W8SB",
+  "session_id": "09062158-3903-4ae3-bc56-eddec6f31b9c",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-29T09:06:11.045771331Z",
+  "branch": "sign-test-bundle",
+  "checkpoints_count": 3,
+  "save_step_count": 2,
+  "files_touched": [
+    ".github/workflows/sign-test-bundle.yml",
+    "tests/fixtures/ACB-PROV-003/signed/skills/signed-skill/SKILL.md",
+    "verifier/sign_test_statement.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "a22b4727d904",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 62,
+    "cache_creation_tokens": 127581,
+    "cache_read_tokens": 2002507,
+    "output_tokens": 24467,
+    "api_call_count": 29
+  },
+  "redaction": {
+    "replacements": 0,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 0,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01CXZXrRFfw8MrefFAoP6J1d",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "github-standards:github-actions-security"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "a22b4727d904",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 106,
+        "end": 107,
+        "entry_ids": [
+          "7a007d2d-cb9c-4c93-b8c9-9526000ceec7"
+        ],
+        "tool_use_id": "toolu_01CXZXrRFfw8MrefFAoP6J1d"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01CXZXrRFfw8MrefFAoP6J1d"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: github-standards:github-actions-security",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 3
+  }
+}
