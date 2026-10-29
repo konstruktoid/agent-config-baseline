@@ -1,0 +1,25 @@
+start with the two PR mentioned in the state file
+
+---
+
+yes, do #1 and then the rest
+
+---
+
+B, and yes install the verifier
+
+---
+
+yes, run them
+
+---
+
+yes, run them
+
+---
+
+yes, run them
+
+---
+
+yes, run them
