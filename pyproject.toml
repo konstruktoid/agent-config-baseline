@@ -29,7 +29,7 @@ packages = ["src/acb"]
 dev = [
     "pytest==9.1.1",
     "ruff==0.17.1",
-    "ty==0.0.90",
+    "ty==0.0.92",
 ]
 
 [tool.ty.src]
