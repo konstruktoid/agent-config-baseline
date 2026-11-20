@@ -78,9 +78,12 @@ def requirement_failures(settings: SettingsFile, requirements: list[dict]) -> li
             failures.append(f"`{key}` must be {json.dumps(req['value'])} (is {shown})")
         elif req["check"] == "not-equals" and value is not _MISSING and _same(value, req["value"]):
             failures.append(f"`{key}` must not be {json.dumps(req['value'])}")
-        elif req["check"] == "contains-if-present" and value is not _MISSING:
-            if not isinstance(value, list) or req["value"] not in value:
-                failures.append(f"`{key}` is set, so it must list {json.dumps(req['value'])}")
+        elif (
+            req["check"] == "contains-if-present"
+            and value is not _MISSING
+            and (not isinstance(value, list) or req["value"] not in value)
+        ):
+            failures.append(f"`{key}` is set, so it must list {json.dumps(req['value'])}")
     return failures
 
 
