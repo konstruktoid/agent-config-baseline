@@ -1,0 +1,70 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M8CAH06WYSWEBT4JP4635NDR",
+  "strategy": "manual-commit",
+  "branch": "mcp-proxy-checks",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "README.md",
+    "controls/ACB-MCP-001.yaml",
+    "controls/ACB-MCP-004.yaml",
+    "docs/controls/ACB-MCP-001.md",
+    "docs/controls/ACB-MCP-004.md",
+    "docs/controls/index.md",
+    "docs/mappings.md",
+    "site/controls/ACB-MCP-001.html",
+    "site/controls/ACB-MCP-004.html",
+    "site/controls/index.html",
+    "site/mappings.html",
+    "src/acb/controls/__init__.py",
+    "src/acb/controls/_mcp_proxy.py",
+    "src/acb/controls/acb_mcp_001.py",
+    "src/acb/controls/acb_mcp_004.py",
+    "tests/fixtures/ACB-MCP-001/remote-declares-auth/fail/mcp.json",
+    "tests/fixtures/ACB-MCP-001/remote-declares-auth/pass/mcp.json",
+    "tests/fixtures/ACB-MCP-001/remote-uses-tls/fail/mcp.json",
+    "tests/fixtures/ACB-MCP-001/remote-uses-tls/pass/mcp.json",
+    "tests/fixtures/ACB-MCP-004/mcp-remote-not-vulnerable/fail/mcp.json",
+    "tests/fixtures/ACB-MCP-004/mcp-remote-not-vulnerable/pass/mcp.json",
+    "tests/test_controls/test_acb_mcp_001_proxy.py",
+    "tests/test_controls/test_acb_mcp_004.py",
+    "tests/test_loader.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 42,
+    "cache_creation_tokens": 197575,
+    "cache_read_tokens": 1167193,
+    "output_tokens": 28598,
+    "api_call_count": 16,
+    "subagent_tokens": {
+      "input_tokens": 12,
+      "cache_creation_tokens": 89256,
+      "cache_read_tokens": 18567,
+      "output_tokens": 10377,
+      "api_call_count": 6
+    }
+  },
+  "redaction": {
+    "replacements": 1,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 1,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

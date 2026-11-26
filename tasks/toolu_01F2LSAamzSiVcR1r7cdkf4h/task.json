@@ -1,0 +1,23 @@
+{
+  "tool_use_id": "toolu_01F2LSAamzSiVcR1r7cdkf4h",
+  "agent_id": "a92c8a025b081f2e1",
+  "subagent_type": "web-fetch",
+  "task_description": "Verify MCP proxy CLI syntax",
+  "files": [
+    "controls/ACB-MCP-001.yaml",
+    "docs/controls/ACB-MCP-001.md",
+    "site/controls/ACB-MCP-001.html",
+    "src/acb/controls/acb_mcp_001.py",
+    "tests/fixtures/ACB-MCP-001/remote-uses-tls/fail/mcp.json",
+    "tests/fixtures/ACB-MCP-001/remote-uses-tls/pass/mcp.json"
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 57056,
+    "cache_read_tokens": 4369,
+    "output_tokens": 3142,
+    "api_call_count": 2
+  },
+  "started_at": "2026-11-26T09:55:57.930702943Z",
+  "completed_at": "2026-11-26T09:55:57.93118147Z"
+}
