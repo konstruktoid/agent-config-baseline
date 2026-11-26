@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "fixed": {"command": "npx", "args": ["-y", "mcp-remote@0.1.16", "https://mcp.example.com/mcp"]},
+    "other": {"command": "npx", "args": ["some-mcp-remote-like@0.1.0"]}
+  }
+}

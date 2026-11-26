@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "old": {"command": "npx", "args": ["-y", "mcp-remote@0.1.15", "https://mcp.example.com/mcp"]}
+  }
+}

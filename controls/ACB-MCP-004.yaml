@@ -1,0 +1,38 @@
+schema_version: "1.0"
+id: ACB-MCP-004
+title: The mcp-remote proxy is not pinned to a known-vulnerable version
+status: draft
+profiles: [strict-general]
+applies_to: [mcp-server-declaration]
+check_type: static
+severity: high
+description: >-
+  No MCP server declaration launches a version of the mcp-remote proxy that
+  is affected by CVE-2025-6514 (0.0.5 through 0.1.15).
+rationale: >-
+  A pinned version is not a safe version. An affected mcp-remote passes a
+  server-supplied authorization endpoint to the operating system, so a
+  malicious or hijacked server can run commands or programs on the client
+  (CVSS 9.6, fixed in 0.1.16).
+audit:
+  - id: mcp-remote-not-vulnerable
+    method: structure
+    procedure: >-
+      For each server entry whose command or args name mcp-remote with an
+      exact version, the version is not between 0.0.5 and 0.1.15 inclusive.
+      Unpinned and ranged specifiers are left to ACB-GEN-002. Image digests
+      and lockfile-resolved versions are not examined.
+    indicators:
+      - '"mcp-remote@0.1.15"'
+remediation: >-
+  Pin mcp-remote to 0.1.16 or a later reviewed release, and connect only to
+  trusted servers over https.
+exceptions: permitted
+references:
+  owasp_asi: [ASI05]
+  owasp_mcp: [MCP05]
+  five_eyes_risk_areas: [design-and-configuration]
+  nist_csf: [PR.PS-01]
+  other:
+    - https://nvd.nist.gov/vuln/detail/CVE-2025-6514
+    - https://jfrog.com/blog/2025-6514-critical-mcp-remote-rce-vulnerability/

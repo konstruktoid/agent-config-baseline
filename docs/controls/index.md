@@ -23,6 +23,7 @@ Generated from controls/*.yaml. Do not hand-edit.
 | [ACB-MCP-001](ACB-MCP-001.md) | Remote MCP servers use TLS and declare authentication | mcp-server-declaration | high | ASI03 | - |
 | [ACB-MCP-002](ACB-MCP-002.md) | MCP server launch commands are not interpreted by a shell | mcp-server-declaration | high | ASI05 | - |
 | [ACB-MCP-003](ACB-MCP-003.md) | MCP server environment does not set process-startup hijack variables | mcp-server-declaration | high | ASI05 | - |
+| [ACB-MCP-004](ACB-MCP-004.md) | The mcp-remote proxy is not pinned to a known-vulnerable version | mcp-server-declaration | high | ASI05 | - |
 | [ACB-PROV-001](ACB-PROV-001.md) | Skills and extension packages carry a provenance record | skill, extension-package | medium | ASI04 | AST02 |
 | [ACB-PROV-002](ACB-PROV-002.md) | Skill and extension package content matches its recorded digest | skill, extension-package | medium | ASI04 | AST02 |
 | [ACB-PROV-003](ACB-PROV-003.md) | A signed attestation binds each skill and extension package to its recorded source | skill, extension-package | medium | ASI04 | AST02 |

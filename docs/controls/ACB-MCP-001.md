@@ -11,7 +11,7 @@
 
 ## Description
 
-Every MCP server declaration that names a remote endpoint by URL uses an encrypted scheme (https or wss) and declares how the client authenticates to it. A loopback endpoint (localhost, 127.0.0.0/8 or ::1) is exempt from both requirements.
+Every MCP server declaration that names a remote endpoint by URL uses an encrypted scheme (https or wss) and declares how the client authenticates to it. The same applies to a remote server reached through a stdio proxy (mcp-remote, supergateway or mcp-proxy) named in a launch command. A loopback endpoint (localhost, 127.0.0.0/8 or ::1) is exempt from both requirements.
 
 ## Rationale
 
@@ -21,23 +21,25 @@ An MCP server receives prompts, tool arguments and results, and can return instr
 
 ### `remote-uses-tls` (structure)
 
-Each server entry with a url key whose host is not a loopback address uses the https or wss scheme. A cleartext scheme, or a url that cannot be parsed into a scheme and host, fails or is reported as not evaluated respectively.
+Each server entry with a url key whose host is not a loopback address uses the https or wss scheme. A cleartext scheme, or a url that cannot be parsed into a scheme and host, fails or is reported as not evaluated respectively. The same applies to the URL a server entry passes to a proxy named in command or args: the first positional argument of mcp-remote or mcp-proxy, or the --sse or --streamableHttp value of supergateway. Other proxies, and proxy configuration files, are not read.
 
 Illustrative failing indicators (non-exhaustive):
 
 - `"url": "http://mcp.example.com/mcp"`
+- `"mcp-remote@0.1.16", "http://mcp.example.com/mcp"`
 
 ### `remote-declares-auth` (structure)
 
-Each server entry with a url key whose host is not a loopback address declares authentication: an auth, oauth or authorization key, or a headers mapping that contains an authorization or API-key header. Credential values are not inspected here (see ACB-GEN-003).
+Each server entry with a url key whose host is not a loopback address declares authentication: an auth, oauth or authorization key, or a headers mapping that contains an authorization or API-key header. Credential values are not inspected here (see ACB-GEN-003). A proxied server declares it with an authorization or API-key header argument; for mcp-remote also --header-file or an OAuth client, client-credentials or device-code option; for supergateway also --oauth2Bearer; for mcp-proxy also --client-id, --username or an API_ACCESS_TOKEN environment entry. Interactive OAuth that the declaration does not mention does not count.
 
 Illustrative failing indicators (non-exhaustive):
 
 - `"url": "https://mcp.example.com/mcp"`
+- `"mcp-remote@0.1.16", "https://mcp.example.com/mcp"`
 
 ## Remediation
 
-Change the url to an https or wss endpoint, and add an authentication declaration that refers to the credential by reference, for example an Authorization header whose value is taken from an environment variable. Run a server that needs neither only on a loopback address.
+Change the url to an https or wss endpoint, and add an authentication declaration that refers to the credential by reference, for example an Authorization header whose value is taken from an environment variable. For a proxied server, make both changes in the proxy's arguments. Run a server that needs neither only on a loopback address.
 
 ## References
 
@@ -46,3 +48,5 @@ Change the url to an https or wss endpoint, and add an authentication declaratio
 - Careful Adoption of Agentic AI Services risk areas: [privilege](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=7), [design-and-configuration](https://www.ncsc.govt.nz/assets/guidance/Documents/Careful-adoption-of-agentic-AI-services_FINAL.pdf#page=9)
 - NIST CSF 2.0: [PR.AA-05](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25), [PR.PS-01](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.29.pdf#page=25)
 - https://www.nsa.gov/Portals/75/documents/Cybersecurity/CSI_MCP_SECURITY.pdf
+- https://jfrog.com/blog/2025-6514-critical-mcp-remote-rce-vulnerability/
+- https://arxiv.org/abs/2605.22333
