@@ -37,7 +37,7 @@ _CONTAINER_BOOLEAN_LETTERS = frozenset("ditPq")
 _IDENTIFIERS = r"[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*"
 # npm reads versions loosely, so leading =, v and spaces still name one exact version.
 _EXACT_VERSION_RE = re.compile(rf"^[\s=v]*(\d+)\.(\d+)\.(\d+)(?:-{_IDENTIFIERS})?(?:\+{_IDENTIFIERS})?\s*$")
-# mcp-remote options that count as authentication in every version checked.
+# The only mcp-remote options besides --header that both 0.1.16 and the main branch read.
 _REMOTE_AUTH_FLAGS = frozenset({"--static-oauth-client-info", "--static-oauth-client-metadata"})
 # Number of values each flag consumes, so that a value is never read as the server URL.
 _VALUE_FLAGS = {
@@ -108,6 +108,7 @@ class ProxyLaunch:
     package: str
     version: str | None
     args: tuple[str, ...]
+    env: dict
 
 
 def _split_spec(word: str) -> tuple[str, str | None]:
@@ -136,20 +137,33 @@ def exact_version(version: str | None) -> tuple[int, ...] | None:
     return tuple(map(int, match.groups())) if match else None
 
 
-def _takes_next_word(option: str) -> bool:
-    if "=" in option:
-        return False
-    if option.startswith("--"):
-        return option not in _CONTAINER_BOOLEAN_FLAGS
-    # In a cluster such as -ite, the first letter that takes a value uses the rest of the word, if there is any.
-    for position, letter in enumerate(option[1:], start=1):
-        if letter not in _CONTAINER_BOOLEAN_LETTERS:
-            return position == len(option) - 1
-    return False
+def _value_letter(option: str) -> int | None:
+    """Return the position of the first letter in a short option cluster, such as -ite, that takes a value."""
+    return next((i for i, c in enumerate(option[1:], start=1) if c not in _CONTAINER_BOOLEAN_LETTERS), None)
 
 
-def _from_image(words: list[str]) -> list[str]:
-    """For a container run command, return the words from what the container executes onwards."""
+def _container_option(words: list[str], index: int) -> tuple[str, str, int]:
+    """Return the name and value of the run option at index, and how many words it occupies."""
+    word = words[index]
+    following = words[index + 1] if index + 1 < len(words) else ""
+    if word.startswith("--"):
+        name, equals, value = word.partition("=")
+        if equals:
+            return name, value, 1
+        return (name, "", 1) if name in _CONTAINER_BOOLEAN_FLAGS else (name, following, 2)
+    position = _value_letter(word)
+    if position is None:
+        return word, "", 1
+    attached = word[position + 1 :]
+    return f"-{word[position]}", attached.removeprefix("=") if attached else following, 1 if attached else 2
+
+
+def _from_image(words: list[str], host_env: dict) -> tuple[list[str], dict]:
+    """Return the words that are executed and the environment they receive.
+
+    For a container run command that is everything from the image or entrypoint on, with only the
+    variables the command passes into the container.
+    """
     engine = None
     for index, word in enumerate(words):
         name = _split_spec(word)[0]
@@ -159,18 +173,24 @@ def _from_image(words: list[str]) -> list[str]:
             engine = index
             break
     if engine is None or "run" not in words[engine + 1 :]:
-        return words
+        return words, host_env
     index = words.index("run", engine + 1) + 1
     entrypoint = None
+    env: dict = {}
     while index < len(words) and words[index].startswith("-"):
-        option, equals, value = words[index].partition("=")
-        takes_next = _takes_next_word(words[index])
-        if option == "--entrypoint":
-            entrypoint = value if equals else "".join(words[index + 1 : index + 2])
-        index += 2 if takes_next else 1
+        name, value, width = _container_option(words, index)
+        if name == "--entrypoint":
+            entrypoint = value
+        elif name in ("-e", "--env"):
+            variable, equals, assigned = value.partition("=")
+            # Without =, the engine copies the variable from its own environment.
+            passed = assigned if equals else host_env.get(variable)
+            if passed is not None:
+                env[variable] = passed
+        index += width
     if entrypoint:
-        return [entrypoint, *words[index + 1 :]]
-    return words[index:]
+        return [entrypoint, *words[index + 1 :]], env
+    return words[index:], env
 
 
 def _call_words(call: str) -> list[str]:
@@ -185,7 +205,8 @@ def proxy_launch(server: dict) -> ProxyLaunch | None:
     command = server.get("command")
     args = server.get("args")
     words = [word for word in [command, *(args if isinstance(args, list) else [])] if isinstance(word, str)]
-    words = _from_image(words)
+    env = server.get("env")
+    words, env = _from_image(words, env if isinstance(env, dict) else {})
     versions: dict[str, str] = {}
     index = 0
     while index < len(words):
@@ -203,7 +224,7 @@ def proxy_launch(server: dict) -> ProxyLaunch | None:
         else:
             name, version = _split_spec(word)
             if package := _package(name):
-                return ProxyLaunch(package, version or versions.get(package), tuple(words[index + 1 :]))
+                return ProxyLaunch(package, version or versions.get(package), tuple(words[index + 1 :]), env)
             index += 1
     return None
 
@@ -242,16 +263,15 @@ def _first_positional(args: tuple[str, ...], value_flags: dict) -> str | None:
     return None
 
 
-def proxy_url(launch: ProxyLaunch, server: dict) -> str | None:
+def proxy_url(launch: ProxyLaunch) -> str | None:
     """Return the remote endpoint the proxy is given, which may not be a valid URL, or None."""
     if launch.package == "supergateway":
         return next((v[0] for flag in _SUPERGATEWAY_URL_FLAGS for v in _flag_values(launch.args, flag)), None)
     endpoint = _first_positional(launch.args, _VALUE_FLAGS[launch.package])
     if launch.package == "mcp-remote":
         return endpoint
-    env = server.get("env")
-    if endpoint is None and isinstance(env, dict):
-        endpoint = env.get("SSE_URL")
+    if endpoint is None:
+        endpoint = launch.env.get("SSE_URL")
     # For mcp-proxy anything but a URL is a local command.
     return endpoint if isinstance(endpoint, str) and "://" in endpoint else None
 
@@ -274,25 +294,18 @@ def _array_values(args: tuple[str, ...], flag: str) -> list[str]:
     return values
 
 
-def proxy_declares_auth(launch: ProxyLaunch, server: dict, headers: frozenset[str]) -> bool:
+def proxy_declares_auth(launch: ProxyLaunch, headers: frozenset[str]) -> bool:
     """Whether the launch declares a credential or OAuth client configuration for the remote server."""
     args = launch.args
     names = {arg.split("=", 1)[0] for arg in args}
     if launch.package == "mcp-remote":
         # mcp-remote matches whole words only, so --flag=value is ignored by the proxy.
-        version = exact_version(launch.version)
-        later = version is None or version > (0, 1, 16)
-        valued = _REMOTE_AUTH_FLAGS | ({"--header-file", "--client-metadata-url"} if later else set())
-        boolean = {"--client-credentials", "--device-code"} if later else set()
-        return (
-            any(_words_after(args, flag) for flag in valued)
-            or bool(boolean & set(args))
-            or _has_auth_header(_words_after(args, "--header"), headers)
+        return any(_words_after(args, flag) for flag in _REMOTE_AUTH_FLAGS) or _has_auth_header(
+            _words_after(args, "--header"), headers
         )
     if launch.package == "supergateway":
         return "--oauth2Bearer" in names or _has_auth_header(_array_values(args, "--header"), headers)
-    env = server.get("env")
-    if isinstance(env, dict) and env.get("API_ACCESS_TOKEN"):
+    if launch.env.get("API_ACCESS_TOKEN"):
         return True
     pairs = _flag_values(args, "-H", 2) + _flag_values(args, "--headers", 2)
     return bool(names & {"--client-id", "--username"}) or _has_auth_header([pair[0] for pair in pairs], headers)

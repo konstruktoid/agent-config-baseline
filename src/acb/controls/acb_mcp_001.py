@@ -38,7 +38,7 @@ def _proxied_servers(ctx: CheckContext) -> Iterator[tuple[McpDeclaration, str, d
     for decl in ctx.inventory.mcp_declarations:
         for name, server in decl.servers.items():
             launch = proxy_launch(server)
-            raw = proxy_url(launch, server) if launch else None
+            raw = proxy_url(launch) if launch else None
             if raw is not None and not _is_loopback_url(raw):
                 yield decl, name, server, raw
 
@@ -106,7 +106,7 @@ def _check_auth(ctx: CheckContext) -> list[Finding]:
     missing = [(decl, name) for decl, name, server, _raw in _remote_servers(ctx) if not _declares_auth(server)]
     for decl, name, server, _raw in _proxied_servers(ctx):
         launch = proxy_launch(server)
-        if launch and not proxy_declares_auth(launch, server, _AUTH_HEADERS):
+        if launch and not proxy_declares_auth(launch, _AUTH_HEADERS):
             missing.append((decl, name))
     return [
         _finding(ctx, decl, "remote-declares-auth", Outcome.FAIL, f"server {name!r} declares no authentication")

@@ -11,7 +11,7 @@
 
 ## Description
 
-Every MCP server declaration that names a remote endpoint by URL uses an encrypted scheme (https or wss) and declares how the client authenticates to it. The same applies to a remote server reached through a stdio proxy (mcp-remote, supergateway or mcp-proxy) named in a launch command. A loopback endpoint (localhost, 127.0.0.0/8 or ::1) is exempt from both requirements.
+Every MCP server declaration that names a remote endpoint by URL uses an encrypted scheme (https or wss) and declares how the client authenticates to it. The same applies to a remote server reached through a stdio proxy (mcp-remote, supergateway or mcp-proxy) named in a launch command. A loopback endpoint (localhost, 127.0.0.0/8 or ::1) is exempt from both requirements. Proxy detection is best-effort: it reads common launch forms without running them, so a pass does not show that a launch command reaches no remote server.
 
 ## Rationale
 
@@ -30,7 +30,7 @@ Illustrative failing indicators (non-exhaustive):
 
 ### `remote-declares-auth` (structure)
 
-Each server entry with a url key whose host is not a loopback address declares authentication: an auth, oauth or authorization key, or a headers mapping that contains an authorization or API-key header. Credential values are not inspected here (see ACB-GEN-003). A proxied server declares it with an authorization or API-key header argument; for mcp-remote also --header-file or an OAuth client, client-credentials or device-code option, each as separate words because it ignores --flag=value, and only the header and static OAuth options count for a version pinned at 0.1.16 or earlier; for supergateway also --oauth2Bearer; for mcp-proxy also --client-id, --username or an API_ACCESS_TOKEN environment entry. Interactive OAuth that the declaration does not mention does not count.
+Each server entry with a url key whose host is not a loopback address declares authentication: an auth, oauth or authorization key, or a headers mapping that contains an authorization or API-key header. Credential values are not inspected here (see ACB-GEN-003). A proxied server declares it with an authorization or API-key header argument; for mcp-remote also a static OAuth client information or metadata option, each as separate words because it ignores --flag=value, and no other mcp-remote option counts; for supergateway also --oauth2Bearer; for mcp-proxy also --client-id, --username or an API_ACCESS_TOKEN environment entry. For a container launch, only environment variables passed with -e or --env are read, not environment files. Interactive OAuth that the declaration does not mention does not count.
 
 Illustrative failing indicators (non-exhaustive):
 

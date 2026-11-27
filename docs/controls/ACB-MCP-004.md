@@ -11,7 +11,7 @@
 
 ## Description
 
-No MCP server declaration launches a version of the mcp-remote proxy that is affected by CVE-2025-6514 (0.0.5 through 0.1.15).
+No MCP server declaration launches a version of the mcp-remote proxy that is affected by CVE-2025-6514 (0.0.5 through 0.1.15). Proxy detection is best-effort, so a pass does not show that no affected version can run.
 
 ## Rationale
 

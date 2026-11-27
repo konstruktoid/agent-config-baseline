@@ -11,7 +11,7 @@
 <main>
 <h1>ACB-MCP-004: The mcp-remote proxy is not pinned to a known-vulnerable version</h1>
 <table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Status</td><td><code>draft</code></td></tr><tr><td>Severity</td><td><code>high</code></td></tr><tr><td>Check type</td><td><code>static</code></td></tr><tr><td>Applies to</td><td><code>mcp-server-declaration</code></td></tr><tr><td>Profiles</td><td>strict-general</td></tr><tr><td>Exceptions</td><td><code>permitted</code></td></tr></tbody></table>
-<h2>Description</h2><p>No MCP server declaration launches a version of the mcp-remote proxy that is affected by CVE-2025-6514 (0.0.5 through 0.1.15).</p>
+<h2>Description</h2><p>No MCP server declaration launches a version of the mcp-remote proxy that is affected by CVE-2025-6514 (0.0.5 through 0.1.15). Proxy detection is best-effort, so a pass does not show that no affected version can run.</p>
 <h2>Rationale</h2><p>A pinned version is not a safe version. An affected mcp-remote passes a server-supplied authorization endpoint to the operating system, so a malicious or hijacked server can run commands or programs on the client (CVSS 9.6, fixed in 0.1.16).</p>
 <h2>Audit procedures</h2>
 <h3><code>mcp-remote-not-vulnerable</code> (structure)</h3><p>For each server entry whose command or args name mcp-remote with an exact version, including npm&#x27;s loose forms such as =0.1.15 or v0.1.15, the version is not between 0.0.5 and 0.1.15 inclusive. Unpinned and ranged specifiers are left to ACB-GEN-002. Image digests and lockfile-resolved versions are not examined.</p>

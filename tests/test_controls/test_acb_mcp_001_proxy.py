@@ -47,6 +47,10 @@ def _findings(tmp_path: Path, audit: str, server: dict[str, Any]) -> list:
         {"command": "docker", "args": ["run", "--name=x", "--entrypoint", "mcp-proxy", "some/image", _URL]},
         {"command": "sudo", "args": ["docker", "run", "-v/a:/supergateway", "ghcr.io/sparfenyuk/mcp-proxy", _URL]},
         {"command": "docker", "args": ["run", "-i", "node:22", "npx", "-y", "mcp-remote", _URL]},
+        {"command": "docker", "args": ["run", "-e", f"SSE_URL={_URL}", "x/mcp-proxy:v0.10.0"]},
+        {"command": "docker", "args": ["run", f"--env=SSE_URL={_URL}", "x/mcp-proxy"]},
+        {"command": "docker", "args": ["run", f"-ieSSE_URL={_URL}", "x/mcp-proxy"]},
+        {"command": "docker", "args": ["run", "-e", "SSE_URL", "x/mcp-proxy"], "env": {"SSE_URL": _URL}},
     ],
 )
 def test_proxied_cleartext_fails(tmp_path: Path, server: dict[str, Any]) -> None:
@@ -62,6 +66,7 @@ def test_proxied_cleartext_fails(tmp_path: Path, server: dict[str, Any]) -> None
         {"command": "npx", "args": ["some-server", _URL]},
         {"command": "mcp-proxy", "args": ["--allow-origin", "http://a.example.com", "http://b.example.com"]},
         {"command": "npx", "args": ["-p", "mcp-remote", "some-server", _URL]},
+        {"command": "docker", "args": ["run", "x/mcp-proxy"], "env": {"SSE_URL": _URL}},
     ],
 )
 def test_other_urls_are_not_the_server(tmp_path: Path, server: dict[str, Any]) -> None:
@@ -84,14 +89,29 @@ def test_unreadable_endpoint_is_not_evaluated(tmp_path: Path, server: dict[str, 
     ("server", "fails"),
     [
         ({"command": "mcp-remote", "args": [_URL, "--header", "X-Trace: 1"]}, True),
-        ({"command": "mcp-remote", "args": [_URL, "--header-file", "h.txt"]}, False),
-        ({"command": "mcp-remote", "args": [_URL, "--client-credentials"]}, False),
-        ({"command": "mcp-remote", "args": ["--header-file", "/etc/mcp-remote", _URL]}, False),
+        ({"command": "mcp-remote", "args": [_URL, "--header-file", "h.txt"]}, True),
+        ({"command": "mcp-remote", "args": [_URL, "--client-credentials"]}, True),
+        (
+            {
+                "command": "mcp-remote",
+                "args": ["--header-file", "/etc/mcp-remote", _URL, "--header", "Authorization: x"],
+            },
+            False,
+        ),
         ({"command": "mcp-remote", "args": [_URL, "--header=Authorization: Bearer ${T}"]}, True),
         ({"command": "mcp-remote", "args": [_URL, "--header-file=h.txt"]}, True),
         ({"command": "mcp-remote", "args": [_URL, "--static-oauth-client-info", "@c.json"]}, False),
-        ({"command": "npx", "args": ["mcp-remote@0.1.16", _URL, "--header-file", "h.txt"]}, True),
-        ({"command": "npx", "args": ["mcp-remote@0.1.17", _URL, "--header-file", "h.txt"]}, False),
+        ({"command": "mcp-remote", "args": [_URL, "--device-code"]}, True),
+        ({"command": "docker", "args": ["run", "-e", "API_ACCESS_TOKEN=${T}", "x/mcp-proxy", _URL]}, False),
+        (
+            {
+                "command": "docker",
+                "args": ["run", "-e", "API_ACCESS_TOKEN", "x/mcp-proxy", _URL],
+                "env": {"API_ACCESS_TOKEN": "${T}"},
+            },
+            False,
+        ),
+        ({"command": "docker", "args": ["run", "x/mcp-proxy", _URL], "env": {"API_ACCESS_TOKEN": "${T}"}}, True),
         ({"command": "supergateway", "args": ["--sse", _URL, "--header", "X-A: 1", "Authorization: ${T}"]}, False),
         ({"command": "supergateway", "args": ["--sse", _URL, "--header=Authorization: ${T}"]}, False),
         ({"command": "supergateway", "args": ["--sse", _URL]}, True),
