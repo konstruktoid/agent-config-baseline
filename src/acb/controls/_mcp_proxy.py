@@ -158,6 +158,17 @@ def _container_option(words: list[str], index: int) -> tuple[str, str, int]:
     return f"-{word[position]}", attached.removeprefix("=") if attached else following, 1 if attached else 2
 
 
+def _pass_variable(env: dict, declaration: str, host_env: dict) -> None:
+    """Apply one -e declaration to the variables the container receives; the last one wins."""
+    variable, equals, assigned = declaration.partition("=")
+    # Without =, the engine copies the variable from its own environment, or unsets it if absent there.
+    passed = assigned if equals else host_env.get(variable)
+    if passed is None:
+        env.pop(variable, None)
+    else:
+        env[variable] = passed
+
+
 def _from_image(words: list[str], host_env: dict) -> tuple[list[str], dict]:
     """Return the words that are executed and the environment they receive.
 
@@ -178,15 +189,14 @@ def _from_image(words: list[str], host_env: dict) -> tuple[list[str], dict]:
     entrypoint = None
     env: dict = {}
     while index < len(words) and words[index].startswith("-"):
+        if words[index] == "--":
+            index += 1
+            break
         name, value, width = _container_option(words, index)
         if name == "--entrypoint":
             entrypoint = value
         elif name in ("-e", "--env"):
-            variable, equals, assigned = value.partition("=")
-            # Without =, the engine copies the variable from its own environment.
-            passed = assigned if equals else host_env.get(variable)
-            if passed is not None:
-                env[variable] = passed
+            _pass_variable(env, value, host_env)
         index += width
     if entrypoint:
         return [entrypoint, *words[index + 1 :]], env

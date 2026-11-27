@@ -51,6 +51,7 @@ def _findings(tmp_path: Path, audit: str, server: dict[str, Any]) -> list:
         {"command": "docker", "args": ["run", f"--env=SSE_URL={_URL}", "x/mcp-proxy"]},
         {"command": "docker", "args": ["run", f"-ieSSE_URL={_URL}", "x/mcp-proxy"]},
         {"command": "docker", "args": ["run", "-e", "SSE_URL", "x/mcp-proxy"], "env": {"SSE_URL": _URL}},
+        {"command": "docker", "args": ["run", "--", "x/mcp-proxy", _URL]},
     ],
 )
 def test_proxied_cleartext_fails(tmp_path: Path, server: dict[str, Any]) -> None:
@@ -103,6 +104,13 @@ def test_unreadable_endpoint_is_not_evaluated(tmp_path: Path, server: dict[str, 
         ({"command": "mcp-remote", "args": [_URL, "--static-oauth-client-info", "@c.json"]}, False),
         ({"command": "mcp-remote", "args": [_URL, "--device-code"]}, True),
         ({"command": "docker", "args": ["run", "-e", "API_ACCESS_TOKEN=${T}", "x/mcp-proxy", _URL]}, False),
+        (
+            {
+                "command": "docker",
+                "args": ["run", "-e", "API_ACCESS_TOKEN=${T}", "-e", "API_ACCESS_TOKEN", "x/mcp-proxy", _URL],
+            },
+            True,
+        ),
         (
             {
                 "command": "docker",
