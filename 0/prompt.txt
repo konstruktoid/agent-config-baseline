@@ -1,0 +1,29 @@
+<task-notification>
+<task-id>b85qsrhbj</task-id>
+<summary>Monitor event: "CI and review of 6216935 on PR 50"</summary>
+<event>check Analyze (actions): SUCCESS
+check Analyze (python): SUCCESS
+check CodeQL: SUCCESS
+check Validate, test and self-check: SUCCESS</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b85qsrhbj</task-id>
+<summary>Monitor event: "CI and review of 6216935 on PR 50"</summary>
+<event>check CodeRabbit: SUCCESS
+inline 4719070062 by coderabbitai[bot] on src/acb/controls/_mcp_proxy.py
+inline 4719070071 by coderabbitai[bot] on src/acb/controls/_mcp_proxy.py
+review 6087754226 by coderabbitai[bot] COMMENTED</event>
+If this event is something the user would act on now, send a PushNotification. Routine or benign output doesn't need one.
+</task-notification>
+
+---
+
+make those three changes
+
+---
+
+commit, push and update the description
