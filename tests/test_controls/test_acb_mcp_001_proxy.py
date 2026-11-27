@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from acb.controls.acb_mcp_001 import AUDITS
+from acb.model import Outcome
 from tests._harness import context_for
 
 if TYPE_CHECKING:
@@ -31,6 +32,15 @@ def _findings(tmp_path: Path, audit: str, server: dict[str, Any]) -> list:
         {"command": "uvx", "args": ["mcp-proxy==0.8.0", "-H", "X-Trace", "1", _URL]},
         {"command": "/usr/local/bin/mcp-proxy", "args": ["--transport", "streamablehttp", _URL]},
         {"command": "docker", "args": ["run", "-i", "ghcr.io/sparfenyuk/mcp-proxy:v1", _URL]},
+        {"command": "docker", "args": ["run", "--name", "mcp-proxy", "ghcr.io/sparfenyuk/mcp-proxy", _URL]},
+        {"command": "mcp-proxy", "args": ["--", _URL]},
+        {"command": "mcp-proxy", "args": ["--verify-ssl", "true", _URL]},
+        {"command": "mcp-proxy", "args": ["--verify-ssl", _URL]},
+        {"command": "mcp-proxy", "args": [], "env": {"SSE_URL": _URL}},
+        {"command": "npx", "args": ["--package=supergateway@3.4.0", "-p", "mcp-remote", "mcp-remote", _URL]},
+        {"command": "npx", "args": ["-p=mcp-remote@0.1.16", "mcp-remote-client", _URL]},
+        {"command": "npx", "args": ["-p", "mcp-remote", "-c", f"mcp-remote {_URL}"]},
+        {"command": "uvx", "args": ["--from", "mcp-proxy==0.8.0", "mcp-proxy", _URL]},
     ],
 )
 def test_proxied_cleartext_fails(tmp_path: Path, server: dict[str, Any]) -> None:
@@ -44,10 +54,24 @@ def test_proxied_cleartext_fails(tmp_path: Path, server: dict[str, Any]) -> None
         {"command": "mcp-proxy", "args": ["--", "server", _URL]},
         {"command": "npx", "args": ["supergateway", "--stdio", "server", "--baseUrl", _URL]},
         {"command": "npx", "args": ["some-server", _URL]},
+        {"command": "mcp-proxy", "args": ["--allow-origin", "http://a.example.com", "http://b.example.com"]},
+        {"command": "npx", "args": ["-p", "mcp-remote", "some-server", _URL]},
     ],
 )
 def test_other_urls_are_not_the_server(tmp_path: Path, server: dict[str, Any]) -> None:
     assert _findings(tmp_path, "remote-uses-tls", server) == []
+
+
+@pytest.mark.parametrize(
+    "server",
+    [
+        {"command": "mcp-remote", "args": ["mcp.example.com/mcp"]},
+        {"command": "mcp-remote", "args": ["${MCP_URL}"]},
+        {"command": "supergateway", "args": ["--sse", "mcp.example.com/sse"]},
+    ],
+)
+def test_unreadable_endpoint_is_not_evaluated(tmp_path: Path, server: dict[str, Any]) -> None:
+    assert [f.outcome for f in _findings(tmp_path, "remote-uses-tls", server)] == [Outcome.NOT_EVALUATED]
 
 
 @pytest.mark.parametrize(
@@ -56,6 +80,7 @@ def test_other_urls_are_not_the_server(tmp_path: Path, server: dict[str, Any]) -
         ({"command": "mcp-remote", "args": [_URL, "--header", "X-Trace: 1"]}, True),
         ({"command": "mcp-remote", "args": [_URL, "--header-file", "h.txt"]}, False),
         ({"command": "mcp-remote", "args": [_URL, "--client-credentials"]}, False),
+        ({"command": "mcp-remote", "args": ["--header-file", "/etc/mcp-remote", _URL]}, False),
         ({"command": "supergateway", "args": ["--sse", _URL]}, True),
         ({"command": "supergateway", "args": ["--sse", _URL, "--oauth2Bearer", "${T}"]}, False),
         ({"command": "mcp-proxy", "args": [_URL]}, True),

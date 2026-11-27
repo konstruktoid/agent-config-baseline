@@ -21,7 +21,7 @@ An MCP server receives prompts, tool arguments and results, and can return instr
 
 ### `remote-uses-tls` (structure)
 
-Each server entry with a url key whose host is not a loopback address uses the https or wss scheme. A cleartext scheme, or a url that cannot be parsed into a scheme and host, fails or is reported as not evaluated respectively. The same applies to the URL a server entry passes to a proxy named in command or args: the first positional argument of mcp-remote or mcp-proxy, or the --sse or --streamableHttp value of supergateway. Other proxies, and proxy configuration files, are not read.
+Each server entry with a url key whose host is not a loopback address uses the https or wss scheme. A cleartext scheme, or a url that cannot be parsed into a scheme and host, fails or is reported as not evaluated respectively. The same applies to the endpoint a server entry passes to a proxy named in command or args: the first positional argument of mcp-remote or mcp-proxy, or the --sse or --streamableHttp value of supergateway. For mcp-proxy, only a value containing :// is an endpoint, since anything else is a local command, and the SSE_URL environment entry is read when no positional argument is given. Abbreviated option names, other proxies and proxy configuration files are not read.
 
 Illustrative failing indicators (non-exhaustive):
 

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import shlex
 from dataclasses import dataclass
 
 _PACKAGES = ("mcp-remote-client", "mcp-remote", "supergateway", "mcp-proxy")
 _SUPERGATEWAY_URL_FLAGS = ("--sse", "--streamableHttp")
+# Runner options that name a package to install, as opposed to the executable to run.
+_PACKAGE_FLAGS = frozenset({"--package", "-p", "--from", "--spec"})
+_CALL_FLAGS = frozenset({"--call", "-c"})
 # Number of values each flag consumes, so that a value is never read as the server URL.
 _VALUE_FLAGS = {
     "mcp-remote": dict.fromkeys(
@@ -40,6 +44,8 @@ _VALUE_FLAGS = {
         "-e": 2,
         "--env": 2,
         "--named-server": 2,
+        # None marks a flag that takes every following word up to the next option.
+        "--allow-origin": None,
         **dict.fromkeys(
             (
                 "--transport",
@@ -55,7 +61,6 @@ _VALUE_FLAGS = {
                 "--host",
                 "--sse-port",
                 "--sse-host",
-                "--allow-origin",
                 "--allowed-host",
                 "--expose-header",
                 "--initialization-timeout",
@@ -78,40 +83,58 @@ class ProxyLaunch:
 
 def _split_spec(word: str) -> tuple[str, str | None]:
     """Split an executable path, package specifier or image reference into name and version."""
-    spec = word.removeprefix("--package=")
     # A scoped npm package is a different package, whatever its last segment says.
-    if spec.startswith("@"):
-        return spec, None
-    spec = spec.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    if word.startswith("@"):
+        return word, None
+    spec = word.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
     spec = spec.split("@sha256:", 1)[0]
-    for separator in ("==", "@", ":"):
+    for separator in ("@", "==", ":"):
         name, found, version = spec.partition(separator)
         if found:
             return name, version
     return spec.removesuffix(".cmd").removesuffix(".exe"), None
 
 
+def _package(name: str) -> str | None:
+    if name not in _PACKAGES:
+        return None
+    return "mcp-remote" if name == "mcp-remote-client" else name
+
+
+def _call_words(call: str) -> list[str]:
+    try:
+        return shlex.split(call)
+    except ValueError:
+        return []
+
+
 def proxy_launch(server: dict) -> ProxyLaunch | None:
-    """Return the proxy a server entry launches, with the arguments that follow its name."""
+    """Return the proxy a server entry executes, with the arguments that follow its name."""
     command = server.get("command")
     args = server.get("args")
     words = [word for word in [command, *(args if isinstance(args, list) else [])] if isinstance(word, str)]
-    found: ProxyLaunch | None = None
-    for index, word in enumerate(words):
-        # Once the proxy has its URL, a later word repeating a package name is only an argument.
-        if "://" in word:
-            if found is not None:
-                break
-            continue
-        name, version = _split_spec(word)
-        if name not in _PACKAGES:
-            continue
-        package = "mcp-remote" if name == "mcp-remote-client" else name
-        # npx --package=mcp-remote@1 mcp-remote-client names it twice: keep the version, take the later arguments.
-        if found is not None and found.package != package:
-            break
-        found = ProxyLaunch(package, version or (found.version if found else None), tuple(words[index + 1 :]))
-    return found
+    versions: dict[str, str] = {}
+    index = 0
+    while index < len(words):
+        word = words[index]
+        flag, equals, value = word.partition("=")
+        following = words[index + 1] if index + 1 < len(words) else ""
+        if flag in _PACKAGE_FLAGS:
+            name, version = _split_spec(value if equals else following)
+            if (package := _package(name)) and version:
+                versions[package] = version
+            index += 1 if equals else 2
+        elif flag in _CALL_FLAGS and " " in (call := value if equals else following):
+            # npx --call carries the whole command line in one string.
+            words[index : index + (1 if equals else 2)] = _call_words(call)
+        elif word == "--name":
+            index += 2
+        else:
+            name, version = _split_spec(word)
+            if package := _package(name):
+                return ProxyLaunch(package, version or versions.get(package), tuple(words[index + 1 :]))
+            index += 1
+    return None
 
 
 def _flag_values(args: tuple[str, ...], flag: str, count: int = 1) -> list[tuple[str, ...]]:
@@ -125,24 +148,41 @@ def _flag_values(args: tuple[str, ...], flag: str, count: int = 1) -> list[tuple
     return [value for value in values if value]
 
 
-def proxy_url(launch: ProxyLaunch) -> str | None:
-    """Return the remote server URL the proxy connects to, or None if it names none."""
-    if launch.package == "supergateway":
-        urls = (value[0] for flag in _SUPERGATEWAY_URL_FLAGS for value in _flag_values(launch.args, flag))
-        return next((url for url in urls if "://" in url), None)
-    value_flags = _VALUE_FLAGS[launch.package]
-    skip = 0
-    for arg in launch.args:
-        if skip:
-            skip -= 1
-        elif arg == "--":
-            break
-        elif arg.startswith("-"):
-            skip = value_flags.get(arg, 0)
-        else:
-            # The first positional decides: for mcp-proxy anything but a URL is a local command.
-            return arg if "://" in arg else None
+def _values_taken(flag: str, value_flags: dict, following: tuple[str, ...]) -> int:
+    """Return how many of the following words belong to a flag."""
+    if flag == "--verify-ssl":
+        # argparse would take a URL here too, but checking that URL is safer than dropping the server.
+        return int(bool(following) and not following[0].startswith("-") and "://" not in following[0])
+    count = value_flags.get(flag, 0)
+    if count is None:
+        return next((i for i, word in enumerate(following) if word.startswith("-")), len(following))
+    return count
+
+
+def _first_positional(args: tuple[str, ...], value_flags: dict) -> str | None:
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg == "--":
+            return args[index + 1] if index + 1 < len(args) else None
+        if not arg.startswith("-"):
+            return arg
+        index += 1 + _values_taken(arg, value_flags, args[index + 1 :])
     return None
+
+
+def proxy_url(launch: ProxyLaunch, server: dict) -> str | None:
+    """Return the remote endpoint the proxy is given, which may not be a valid URL, or None."""
+    if launch.package == "supergateway":
+        return next((v[0] for flag in _SUPERGATEWAY_URL_FLAGS for v in _flag_values(launch.args, flag)), None)
+    endpoint = _first_positional(launch.args, _VALUE_FLAGS[launch.package])
+    if launch.package == "mcp-remote":
+        return endpoint
+    env = server.get("env")
+    if endpoint is None and isinstance(env, dict):
+        endpoint = env.get("SSE_URL")
+    # For mcp-proxy anything but a URL is a local command.
+    return endpoint if isinstance(endpoint, str) and "://" in endpoint else None
 
 
 def _has_auth_header(values: list[tuple[str, ...]], headers: frozenset[str]) -> bool:

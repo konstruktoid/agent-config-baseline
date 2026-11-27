@@ -16,7 +16,9 @@ CONTROL_ID = "ACB-MCP-004"
 # CVE-2025-6514, inclusive bounds.
 _FIRST_AFFECTED = (0, 0, 5)
 _LAST_AFFECTED = (0, 1, 15)
-_EXACT_VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$")
+_IDENTIFIERS = r"[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*"
+# npm reads versions loosely, so leading =, v and spaces still name one exact version.
+_EXACT_VERSION_RE = re.compile(rf"^[\s=v]*(\d+)\.(\d+)\.(\d+)(?:-{_IDENTIFIERS})?(?:\+{_IDENTIFIERS})?\s*$")
 
 
 def _affected(version: str | None) -> bool:

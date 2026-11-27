@@ -21,7 +21,7 @@ A pinned version is not a safe version. An affected mcp-remote passes a server-s
 
 ### `mcp-remote-not-vulnerable` (structure)
 
-For each server entry whose command or args name mcp-remote with an exact version, the version is not between 0.0.5 and 0.1.15 inclusive. Unpinned and ranged specifiers are left to ACB-GEN-002. Image digests and lockfile-resolved versions are not examined.
+For each server entry whose command or args name mcp-remote with an exact version, including npm's loose forms such as =0.1.15 or v0.1.15, the version is not between 0.0.5 and 0.1.15 inclusive. Unpinned and ranged specifiers are left to ACB-GEN-002. Image digests and lockfile-resolved versions are not examined.
 
 Illustrative failing indicators (non-exhaustive):
 

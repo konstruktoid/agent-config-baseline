@@ -38,7 +38,7 @@ def _proxied_servers(ctx: CheckContext) -> Iterator[tuple[McpDeclaration, str, d
     for decl in ctx.inventory.mcp_declarations:
         for name, server in decl.servers.items():
             launch = proxy_launch(server)
-            raw = proxy_url(launch) if launch else None
+            raw = proxy_url(launch, server) if launch else None
             if raw is not None and not _is_loopback_url(raw):
                 yield decl, name, server, raw
 
