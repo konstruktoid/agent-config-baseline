@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
-from acb.controls._mcp_proxy import proxy_launch
+from acb.controls._mcp_proxy import exact_version, proxy_launch
 from acb.model import Finding, Outcome
 
 if TYPE_CHECKING:
@@ -16,14 +15,11 @@ CONTROL_ID = "ACB-MCP-004"
 # CVE-2025-6514, inclusive bounds.
 _FIRST_AFFECTED = (0, 0, 5)
 _LAST_AFFECTED = (0, 1, 15)
-_IDENTIFIERS = r"[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*"
-# npm reads versions loosely, so leading =, v and spaces still name one exact version.
-_EXACT_VERSION_RE = re.compile(rf"^[\s=v]*(\d+)\.(\d+)\.(\d+)(?:-{_IDENTIFIERS})?(?:\+{_IDENTIFIERS})?\s*$")
 
 
 def _affected(version: str | None) -> bool:
-    match = _EXACT_VERSION_RE.match(version or "")
-    return bool(match) and _FIRST_AFFECTED <= tuple(map(int, match.groups())) <= _LAST_AFFECTED
+    numbers = exact_version(version)
+    return numbers is not None and _FIRST_AFFECTED <= numbers <= _LAST_AFFECTED
 
 
 def _check_not_vulnerable(ctx: CheckContext) -> list[Finding]:

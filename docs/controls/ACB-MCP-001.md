@@ -30,7 +30,7 @@ Illustrative failing indicators (non-exhaustive):
 
 ### `remote-declares-auth` (structure)
 
-Each server entry with a url key whose host is not a loopback address declares authentication: an auth, oauth or authorization key, or a headers mapping that contains an authorization or API-key header. Credential values are not inspected here (see ACB-GEN-003). A proxied server declares it with an authorization or API-key header argument; for mcp-remote also --header-file or an OAuth client, client-credentials or device-code option; for supergateway also --oauth2Bearer; for mcp-proxy also --client-id, --username or an API_ACCESS_TOKEN environment entry. Interactive OAuth that the declaration does not mention does not count.
+Each server entry with a url key whose host is not a loopback address declares authentication: an auth, oauth or authorization key, or a headers mapping that contains an authorization or API-key header. Credential values are not inspected here (see ACB-GEN-003). A proxied server declares it with an authorization or API-key header argument; for mcp-remote also --header-file or an OAuth client, client-credentials or device-code option, each as separate words because it ignores --flag=value, and only the header and static OAuth options count for a version pinned at 0.1.16 or earlier; for supergateway also --oauth2Bearer; for mcp-proxy also --client-id, --username or an API_ACCESS_TOKEN environment entry. Interactive OAuth that the declaration does not mention does not count.
 
 Illustrative failing indicators (non-exhaustive):
 
