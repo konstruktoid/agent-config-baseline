@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M8E0Y176DJSYPDB4S3MHG19A",
+  "strategy": "manual-commit",
+  "branch": "mcp-proxy-checks",
+  "checkpoints_count": 9,
+  "files_touched": [
+    "controls/ACB-MCP-001.yaml",
+    "controls/ACB-MCP-004.yaml",
+    "docs/controls/ACB-MCP-001.md",
+    "docs/controls/ACB-MCP-004.md",
+    "site/controls/ACB-MCP-001.html",
+    "site/controls/ACB-MCP-004.html",
+    "src/acb/controls/_mcp_proxy.py",
+    "src/acb/controls/acb_mcp_001.py",
+    "src/acb/controls/acb_mcp_004.py",
+    "tests/test_controls/test_acb_mcp_001_proxy.py",
+    "tests/test_controls/test_acb_mcp_004.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 60,
+    "cache_creation_tokens": 484502,
+    "cache_read_tokens": 2721643,
+    "output_tokens": 21916,
+    "api_call_count": 22,
+    "subagent_tokens": {
+      "input_tokens": 10,
+      "cache_creation_tokens": 96132,
+      "cache_read_tokens": 199756,
+      "output_tokens": 4705,
+      "api_call_count": 5
+    }
+  },
+  "redaction": {
+    "replacements": 13,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 13,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

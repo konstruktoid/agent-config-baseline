@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.12.2",
+  "checkpoint_id": "01M8E0Y176DJSYPDB4S3MHG19A",
+  "session_id": "2d508454-3880-48c4-ac1f-3255bb4f3af6",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-27T08:11:17.955208036Z",
+  "branch": "mcp-proxy-checks",
+  "checkpoints_count": 9,
+  "save_step_count": 5,
+  "files_touched": [
+    "controls/ACB-MCP-001.yaml",
+    "controls/ACB-MCP-004.yaml",
+    "docs/controls/ACB-MCP-001.md",
+    "docs/controls/ACB-MCP-004.md",
+    "site/controls/ACB-MCP-001.html",
+    "site/controls/ACB-MCP-004.html",
+    "src/acb/controls/_mcp_proxy.py",
+    "src/acb/controls/acb_mcp_001.py",
+    "src/acb/controls/acb_mcp_004.py",
+    "tests/test_controls/test_acb_mcp_001_proxy.py",
+    "tests/test_controls/test_acb_mcp_004.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "9107ad03f53e",
+  "checkpoint_transcript_start": 326,
+  "transcript_lines_at_start": 326,
+  "compact_transcript_start": 24,
+  "token_usage": {
+    "input_tokens": 60,
+    "cache_creation_tokens": 484502,
+    "cache_read_tokens": 2721643,
+    "output_tokens": 21916,
+    "api_call_count": 22,
+    "subagent_tokens": {
+      "input_tokens": 10,
+      "cache_creation_tokens": 96132,
+      "cache_read_tokens": 199756,
+      "output_tokens": 4705,
+      "api_call_count": 5
+    }
+  },
+  "redaction": {
+    "replacements": 13,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 13,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 12
+  }
+}
