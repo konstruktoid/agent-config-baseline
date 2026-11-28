@@ -1,6 +1,12 @@
 {
   "mcpServers": {
     "remote": {"url": "https://mcp.example.com/mcp"},
-    "local": {"url": "http://127.0.0.1:8080/mcp"}
+    "local": {"url": "http://127.0.0.1:8080/mcp"},
+    "proxied": {"command": "npx", "args": ["-y", "mcp-remote@0.1.16", "https://mcp.example.com/mcp"]},
+    "proxied-local": {"command": "npx", "args": ["mcp-remote", "http://localhost:8080/mcp"]},
+    "proxied-resource": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://mcp.example.com/mcp", "--resource", "http://id.example.com/"]
+    }
   }
 }

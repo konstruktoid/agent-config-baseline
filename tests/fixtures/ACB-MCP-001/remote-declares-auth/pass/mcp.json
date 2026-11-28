@@ -4,6 +4,7 @@
       "url": "https://mcp.example.com/mcp",
       "headers": {"Authorization": "Bearer ${MCP_TOKEN}"}
     },
-    "local": {"url": "http://localhost:8080/mcp"}
+    "local": {"url": "http://localhost:8080/mcp"},
+    "proxied": {"command": "npx", "args": ["mcp-remote@0.1.16", "https://mcp.example.com/mcp", "--header", "Authorization:${AUTH}"]}
   }
 }

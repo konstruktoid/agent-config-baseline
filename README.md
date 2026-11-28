@@ -49,7 +49,8 @@ client data describes where they live.
 - `MCP`: MCP server declarations. Remote servers use TLS and declare
   authentication (ACB-MCP-001), and local servers are launched as a named
   executable, not through a shell (ACB-MCP-002), with no process-startup
-  hijack variables in the server's environment (ACB-MCP-003).
+  hijack variables in the server's environment (ACB-MCP-003), and the
+  mcp-remote proxy is not at a version with a known flaw (ACB-MCP-004).
 - `EXT`: extension packages, the plugin or extension bundles an agent host
   installs. Some hosts load extension code into their own process with the
   user's privileges, outside the sandbox that isolates the agent's commands,
@@ -93,6 +94,8 @@ that reads it still passes. The baseline narrows what such a server can do:
   picked up without a reviewed version change.
 - ACB-MCP-001 requires an encrypted endpoint and a declared authentication
   method. It checks the declaration, not whether the server enforces it.
+- ACB-MCP-004 rejects mcp-remote versions that let a server run code on the
+  client.
 - ACB-MCP-002 and ACB-MCP-003 keep the declaration itself from running
   code the reviewer did not see.
 - ACB-CFG-005 keeps allow rules from approving tools the server adds after

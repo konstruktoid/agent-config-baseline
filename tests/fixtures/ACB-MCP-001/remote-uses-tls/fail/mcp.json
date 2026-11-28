@@ -2,6 +2,10 @@
   "mcpServers": {
     "remote": {
       "url": "http://mcp.example.com/mcp"
+    },
+    "proxied": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@0.1.16", "http://mcp.example.com/mcp", "--allow-http"]
     }
   }
 }
